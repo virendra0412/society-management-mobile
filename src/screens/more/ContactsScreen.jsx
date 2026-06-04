@@ -1,0 +1,259 @@
+/**
+ * screens/more/ContactsScreen.jsx
+ *
+ * Converted from web ResourceScreens.jsx → React Native (Expo).
+ * Features:
+ *   • Emergency contacts (tap to call)
+ *   • Committee / Vendor / Other groups
+ *   • Admin: add / edit / delete contacts
+ */
+import { useState, useEffect, useCallback } from "react";
+import {
+  View, Text, StyleSheet, FlatList, SectionList, TouchableOpacity,
+  Linking, ScrollView,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+
+import { contactsApi } from "../../api/resources.api";
+import { useAuth }     from "../../context/AuthContext";
+import { useToast }    from "../../context/ToastContext";
+import {
+  Btn, Card, EmptyState, ErrorState,
+  Modal, Input, Spinner, ScreenHeader,
+} from "../../components/ui";
+import { C, CONTACT_GROUPS } from "../../constants/theme";
+
+const GROUP_COLORS = { Emergency: C.red, Committee: C.navy, Vendor: C.amber, Other: C.teal };
+
+// ─── PillSelect ───────────────────────────────────────────────────────────────
+const PillSelect = ({ label, value, options, onSelect }) => (
+  <View style={{ marginBottom: 14 }}>
+    {label && <Text style={{ fontSize: 12, fontWeight: "600", color: C.gray700, marginBottom: 6 }}>{label}</Text>}
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexDirection: "row", gap: 8 }}>
+      {options.map((opt) => (
+        <TouchableOpacity
+          key={opt}
+          onPress={() => onSelect(opt)}
+          style={{
+            paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, borderWidth: 1.5,
+            borderColor: value === opt ? C.teal : C.gray100,
+            backgroundColor: value === opt ? C.teal : "transparent",
+          }}
+        >
+          <Text style={{ fontSize: 13, fontWeight: "600", color: value === opt ? "#fff" : C.gray700 }}>{opt}</Text>
+        </TouchableOpacity>
+      ))}
+    </ScrollView>
+  </View>
+);
+
+// ─── Contact Card ─────────────────────────────────────────────────────────────
+const ContactCard = ({ contact, isAdmin, onEdit, onDelete, delBusy }) => {
+  const color = GROUP_COLORS[contact.group] || C.teal;
+
+  const handleCall = () => {
+    Linking.openURL(`tel:${contact.phone}`).catch(() => {});
+  };
+
+  return (
+    <Card style={{ padding: 12, marginBottom: 8 }}>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+        <View style={{ width: 42, height: 42, borderRadius: 11, backgroundColor: color + "15",
+          alignItems: "center", justifyContent: "center" }}>
+          <Text style={{ fontSize: 20 }}>{contact.icon || "📞"}</Text>
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={{ fontSize: 14, fontWeight: "700", color: C.text }}>{contact.name}</Text>
+          <Text style={{ fontSize: 12, color: C.gray500, marginTop: 1 }}>
+            {contact.designation ? `${contact.designation} · ` : ""}📞 {contact.phone}
+          </Text>
+        </View>
+
+        {isAdmin ? (
+          <View style={{ flexDirection: "row", gap: 6, alignItems: "center" }}>
+            <TouchableOpacity onPress={() => onEdit(contact)}
+              style={{ backgroundColor: C.teal + "15", borderRadius: 8, padding: 8 }}>
+              <Text style={{ fontSize: 14 }}>✏️</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => !delBusy && onDelete(contact._id)}
+              disabled={!!delBusy}
+              style={{ backgroundColor: C.red + "12", borderRadius: 8, padding: 8 }}
+            >
+              {delBusy ? <Spinner size={14} /> : <Text style={{ fontSize: 14 }}>🗑</Text>}
+            </TouchableOpacity>
+            <TouchableOpacity onPress={handleCall}
+              style={{ backgroundColor: C.teal, borderRadius: 10, width: 36, height: 36,
+                alignItems: "center", justifyContent: "center" }}>
+              <Text style={{ fontSize: 16 }}>📞</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <TouchableOpacity onPress={handleCall}
+            style={{ backgroundColor: C.teal, borderRadius: 10, width: 36, height: 36,
+              alignItems: "center", justifyContent: "center" }}>
+            <Text style={{ fontSize: 16 }}>📞</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    </Card>
+  );
+};
+
+// ─── Main Screen ──────────────────────────────────────────────────────────────
+export const ContactsScreen = ({ navigation }) => {
+  const { isAdmin } = useAuth();
+  const toast = useToast();
+
+  const [grouped,    setGrouped]    = useState({});
+  const [loading,    setLoading]    = useState(true);
+  const [error,      setError]      = useState(null);
+  const [showModal,  setShowModal]  = useState(false);
+  const [editTarget, setEditTarget] = useState(null);
+  const [form,       setForm]       = useState({ name: "", phone: "", group: "Emergency", designation: "", icon: "📞" });
+  const [submitting, setSubmitting] = useState(false);
+  const [delBusy,    setDelBusy]    = useState({});
+  const set = (k) => (v) => setForm((p) => ({ ...p, [k]: v }));
+
+  const fetchContacts = useCallback(async () => {
+    setLoading(true); setError(null);
+    try {
+      const res = await contactsApi.getAll();
+      setGrouped(res.data?.contacts || {});
+    } catch (e) {
+      setError(e.response?.data?.message || "Failed to load contacts.");
+    } finally { setLoading(false); }
+  }, []);
+
+  useEffect(() => { fetchContacts(); }, [fetchContacts]);
+
+  const openAdd = () => {
+    setEditTarget(null);
+    setForm({ name: "", phone: "", group: "Emergency", designation: "", icon: "📞" });
+    setShowModal(true);
+  };
+
+  const openEdit = (contact) => {
+    setEditTarget(contact);
+    setForm({
+      name: contact.name || "", phone: contact.phone || "",
+      group: contact.group || "Emergency",
+      designation: contact.designation || "", icon: contact.icon || "📞",
+    });
+    setShowModal(true);
+  };
+
+  const handleSave = async () => {
+    if (!form.name.trim() || !form.phone.trim()) return toast.error("Name and phone are required.");
+    setSubmitting(true);
+    try {
+      if (editTarget) {
+        const res = await contactsApi.update(editTarget._id, form);
+        const updated = res.data?.contact;
+        if (updated && updated.group === editTarget.group) {
+          setGrouped((prev) => {
+            const next = {};
+            Object.entries(prev).forEach(([grp, items]) => {
+              next[grp] = items.map((c) => c._id === updated._id ? updated : c);
+            });
+            return next;
+          });
+        } else { fetchContacts(); }
+        toast.success("Contact updated.");
+      } else {
+        await contactsApi.create(form);
+        toast.success("Contact added.");
+        fetchContacts();
+      }
+      setShowModal(false); setEditTarget(null);
+    } catch (e) {
+      toast.error(e.response?.data?.message || "Failed to save contact.");
+    } finally { setSubmitting(false); }
+  };
+
+  const handleDelete = async (contactId) => {
+    if (delBusy[contactId]) return;
+    setDelBusy((d) => ({ ...d, [contactId]: true }));
+    try {
+      await contactsApi.remove(contactId);
+      setGrouped((prev) => {
+        const next = {};
+        Object.entries(prev).forEach(([grp, items]) => {
+          const filtered = items.filter((c) => c._id !== contactId);
+          if (filtered.length) next[grp] = filtered;
+        });
+        return next;
+      });
+      toast.success("Contact deleted.");
+    } catch (e) {
+      toast.error(e.response?.data?.message || "Failed to delete contact.");
+    } finally { setDelBusy((d) => ({ ...d, [contactId]: false })); }
+  };
+
+  const groups = Object.entries(grouped);
+
+  return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }} edges={["top"]}>
+      <ScreenHeader
+        title="Contacts"
+        action={isAdmin && (
+          <TouchableOpacity
+            onPress={openAdd}
+            style={{ backgroundColor: C.teal + "15", borderRadius: 8, paddingHorizontal: 12, paddingVertical: 5 }}
+          >
+            <Text style={{ fontSize: 12, fontWeight: "700", color: C.teal }}>+ Add</Text>
+          </TouchableOpacity>
+        )}
+      />
+
+      {loading ? (
+        <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}><Spinner size={32} /></View>
+      ) : error ? (
+        <ErrorState message={error} onRetry={fetchContacts} />
+      ) : groups.length === 0 ? (
+        <EmptyState icon="📞" message="No contacts added yet." />
+      ) : (
+        <FlatList
+          data={groups}
+          keyExtractor={([group]) => group}
+          contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 24, paddingTop: 8 }}
+          showsVerticalScrollIndicator={false}
+          renderItem={({ item: [group, items] }) => (
+            <View style={{ marginBottom: 20 }}>
+              <Text style={{ fontSize: 11, fontWeight: "700", color: C.gray500,
+                textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 8 }}>
+                {group}
+              </Text>
+              {items.map((c) => (
+                <ContactCard
+                  key={c._id}
+                  contact={c}
+                  isAdmin={isAdmin}
+                  delBusy={delBusy[c._id]}
+                  onEdit={openEdit}
+                  onDelete={handleDelete}
+                />
+              ))}
+            </View>
+          )}
+        />
+      )}
+
+      {/* Add / Edit Modal */}
+      <Modal
+        open={showModal}
+        onClose={() => { setShowModal(false); setEditTarget(null); }}
+        title={editTarget ? "Edit Contact" : "Add Contact"}
+      >
+        <Input label="Name *"        value={form.name}        onChangeText={set("name")}        placeholder="Raju Electrician" />
+        <Input label="Phone *"       value={form.phone}       onChangeText={set("phone")}       placeholder="9876543210" keyboardType="phone-pad" />
+        <Input label="Designation"   value={form.designation} onChangeText={set("designation")} placeholder="Committee Treasurer" />
+        <Input label="Icon (emoji)"  value={form.icon}        onChangeText={set("icon")}        placeholder="⚡" />
+        <PillSelect label="Group" value={form.group} options={CONTACT_GROUPS} onSelect={set("group")} />
+        <Btn onPress={handleSave} loading={submitting} style={{ width: "100%" }}>
+          {editTarget ? "Save Changes" : "Add Contact"}
+        </Btn>
+      </Modal>
+    </SafeAreaView>
+  );
+};
