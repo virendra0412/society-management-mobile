@@ -12,7 +12,7 @@ import axios from "axios";
 import * as SecureStore from "expo-secure-store";
 import Constants from "expo-constants";
 
-const BASE_URL = Constants.expoConfig?.extra?.apiBaseUrl || "http://localhost:3000/api/v1";
+const BASE_URL = Constants.expoConfig?.extra?.apiBaseUrl || "https://society-management-system-clou.onrender.com/api/v1";
 
 
 // ─── SA Token Storage (with SecureStore) ─────────────────────────────────────

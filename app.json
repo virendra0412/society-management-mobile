@@ -14,7 +14,7 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.yourcompany.societyapp",
+      "bundleIdentifier": "com.societymanagementcompany.societyapp",
       "infoPlist": {
         "UIBackgroundModes": ["fetch", "remote-notification"]
       }
@@ -24,7 +24,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0F2040"
       },
-      "package": "com.yourcompany.societyapp",
+      "package": "com.societymanagementcompany.societyapp",
       "permissions": [
         "RECEIVE_BOOT_COMPLETED",
         "VIBRATE",
@@ -48,7 +48,7 @@
       "expo-font"
     ],
     "extra": {
-      "eas": { "projectId": "your-eas-project-id" }
+      "eas": { "projectId": "0e3f0d4f-6411-4be3-b5f1-c209904d1ed4" }
     }
   }
 }

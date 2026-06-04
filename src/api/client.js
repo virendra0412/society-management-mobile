@@ -18,7 +18,7 @@ import { tokenStorage } from "../utils/storage";
 // Fallback keeps localhost working for bare `expo start` without an .env.
 const BASE_URL =
   process.env.EXPO_PUBLIC_API_BASE_URL ||
-  "http://localhost:5000/api/v1";
+  "https://society-management-system-clou.onrender.com/api/v1";
 
 export { BASE_URL };
 
