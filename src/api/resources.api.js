@@ -95,10 +95,10 @@ export const amenitiesApi = {
   getAvailability:(id,dt) => client.get(`/amenities/${id}/availability`, { params: { date: dt } }).then(unwrap),
   book:          (id, d)  => client.post(`/amenities/${id}/bookings`,          d).then(unwrap),
   getMyBookings: (p = {}) => client.get("/amenities/bookings/mine",      { params: p }).then(unwrap),
-  getAllBookings: (p = {}) => client.get("/amenities/bookings",           { params: p }).then(unwrap),
-  cancelBooking: (id,bId,r)=> client.patch(`/amenities/${id}/bookings/${bId}/cancel`, { reason: r }).then(unwrap),
-  confirmBooking:(id,bId,n)=> client.patch(`/amenities/${id}/bookings/${bId}/confirm`, { adminNote: n }).then(unwrap),
-  rejectBooking: (id,bId,n)=> client.patch(`/amenities/${id}/bookings/${bId}/reject`,  { adminNote: n }).then(unwrap),
+  getAllBookings: (p = {}) => client.get("/amenities/bookings/all",       { params: p }).then(unwrap),
+  cancelBooking: (id,bId,r)=> client.patch(`/amenities/bookings/${bId}/cancel`, { reason: r }).then(unwrap),
+  confirmBooking:(id,bId,n)=> client.patch(`/amenities/bookings/${bId}/confirm`, { adminNote: n }).then(unwrap),
+  rejectBooking: (id,bId,n)=> client.patch(`/amenities/bookings/${bId}/reject`,  { adminNote: n }).then(unwrap),
 };
 
 // ─── Events ───────────────────────────────────────────────────────────────────
