@@ -68,8 +68,8 @@ const CategoryFilter = ({ selected, onChange }) => {
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
-      style={{ backgroundColor: C.gray50, paddingVertical: 10 }}
-      contentContainerStyle={{ paddingHorizontal: 14, gap: 8 }}
+      style={{ flexGrow: 0, flexShrink: 0, backgroundColor: C.gray50 }}
+      contentContainerStyle={{ paddingHorizontal: 14, paddingVertical: 10, gap: 8 }}
     >
       {categories.map((cat) => {
         const active = selected === cat;
@@ -1124,7 +1124,7 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: 22, fontWeight: "800", color: "#fff", marginTop: 2 },
   createBtn: { backgroundColor: C.amber, borderRadius: 10, paddingVertical: 7, paddingHorizontal: 14 },
   createBtnText: { fontSize: 12, fontWeight: "700", color: "#fff" },
-  tabBar: { flexDirection: "row", backgroundColor: C.navy, paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.1)" },
+  tabBar: { flexGrow: 0, flexShrink: 0, flexDirection: "row", backgroundColor: C.navy, paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.1)" },
   tabBtn: { flex: 1, paddingVertical: 10, alignItems: "center", borderBottomWidth: 2.5, borderBottomColor: "transparent" },
   tabActive: { borderBottomColor: C.amber },
   tabText: { fontSize: 12, fontWeight: "700", color: "rgba(255,255,255,0.4)" },
