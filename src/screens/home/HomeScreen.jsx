@@ -307,6 +307,14 @@ export const HomeScreen = () => {
             <QuickAction icon="🗳️" label={t("nav_polls")}         color={C.purple} onPress={() => goMore("Polls")} />
           </View>
 
+          {/* Events · Parking · Amenity — always visible, lives in More stack */}
+          <View style={styles.quickGrid}>
+            <QuickAction icon="🎉" label={t("nav_events",  "Events")}  color="#D97706" onPress={() => goMore("Events")} />
+            <QuickAction icon="🚗" label={t("nav_parking", "Parking")} color={C.navy}  onPress={() => goMore("Parking")} />
+            <QuickAction icon="🏊" label={t("nav_amenity", "Amenity")} color={C.teal}  onPress={() => goMore("Amenity")} />
+            <QuickAction icon="👤" label={t("btn_profile", "Profile")} color={C.gray700} onPress={() => goMore("Profile")} />
+          </View>
+
           {isAdmin && (
             <View style={[styles.quickGrid, { marginTop: 0 }]}>
               <QuickAction icon="📋" label="Post Notice" color={C.navy}  onPress={() => goMore("Notices")} />

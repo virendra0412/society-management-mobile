@@ -789,7 +789,12 @@ const EventFormModal = ({ open, editing, onClose, onSaved }) => {
           </TouchableOpacity>
         </View>
 
-        <ScrollView style={{ flex: 1, padding: 16 }} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={{ padding: 16, paddingBottom: 48 }}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
           <Input
             label="Title *"
             value={form.title}
@@ -1039,6 +1044,7 @@ export const EventsScreen = () => {
 
       {/* Event list */}
       <FlatList
+        style={{ flex: 1 }}
         data={events}
         keyExtractor={(item) => item._id}
         renderItem={({ item }) => (

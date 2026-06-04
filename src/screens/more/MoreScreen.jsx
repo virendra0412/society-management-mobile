@@ -15,6 +15,11 @@ import { ContactsScreen } from "./ContactsScreen";
 import { PollsScreen }    from "./PollsScreen";
 import { ProfileScreen }  from "./ProfileScreen";
 
+// Screens that were built but not wired (Events / Parking / Amenity)
+import { EventsScreen }  from "../events/EventsScreen";
+import { ParkingScreen } from "../parking/ParkingScreen";
+import { AmenityScreen } from "../amenity/AmenityScreen";
+
 const { width } = Dimensions.get("window");
 const TILE_SIZE = (width - 56) / 3;
 
@@ -124,7 +129,10 @@ const MoreGrid = () => {
     { id: "Help",     icon: "🤝", label: t("nav_help"),     color: C.amber  },
     { id: "Contacts", icon: "📞", label: t("nav_contacts"), color: C.green  },
     { id: "Polls",    icon: "🗳️", label: t("nav_polls"),    color: C.purple },
-    { id: "Profile",  icon: "👤", label: t("btn_profile"),  color: C.navy   },
+    { id: "Events",   icon: "🎉", label: t("nav_events",  "Events"),  color: "#D97706" },
+    { id: "Parking",  icon: "🚗", label: t("nav_parking", "Parking"), color: C.navy   },
+    { id: "Amenity",  icon: "🏊", label: t("nav_amenity", "Amenity"), color: C.teal   },
+    { id: "Profile",  icon: "👤", label: t("btn_profile"),  color: C.gray700 },
   ];
 
   return (
@@ -167,6 +175,9 @@ export const MoreScreen = () => (
     <Stack.Screen name="Help"      component={HelpScreen} />
     <Stack.Screen name="Contacts"  component={ContactsScreen} />
     <Stack.Screen name="Polls"     component={PollsScreen} />
+    <Stack.Screen name="Events"    component={EventsScreen} />
+    <Stack.Screen name="Parking"   component={ParkingScreen} />
+    <Stack.Screen name="Amenity"   component={AmenityScreen} />
     <Stack.Screen name="Profile"   component={ProfileScreen} />
   </Stack.Navigator>
 );

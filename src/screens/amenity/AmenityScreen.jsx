@@ -175,6 +175,12 @@ const ac = StyleSheet.create({
   deactivateBtnText:{ fontSize: 11, fontWeight: "700", color: C.red },
 });
 
+// ─── Helper: booking.amenity can be a populated object OR a bare string ID ────
+const resolveAmenityId = (booking) =>
+  typeof booking.amenity === "string"
+    ? booking.amenity
+    : booking.amenity?._id ?? booking.amenityId ?? null;
+
 // ═══════════════════════════════════════════════════════
 // BOOKING CARD — my bookings / all bookings
 // ═══════════════════════════════════════════════════════
@@ -511,18 +517,19 @@ const BrowseTab = ({ onBook, onDeactivate, onEdit, isAdmin }) => {
   }
 
   if (error) {
-    return <ErrorState message={error} onRetry={load} />;
+    return <View style={styles.centerContainer}><ErrorState message={error} onRetry={load} /></View>;
   }
 
   if (amenities.length === 0) {
     return (
-      <EmptyState
-        icon="🏢"
-        message={isAdmin ? "No amenities yet. Add one!" : "No amenities available."}
-      />
+      <View style={styles.centerContainer}>
+        <EmptyState
+          icon="🏢"
+          message={isAdmin ? "No amenities yet. Add one!" : "No amenities available."}
+        />
+      </View>
     );
   }
-
   return (
     <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
       <View style={{ padding: 16, paddingBottom: 40, gap: 10 }}>
@@ -795,7 +802,7 @@ const ReviewModal = ({ open, booking, action, onClose, onDone }) => {
   const submit = async () => {
     setBusy(true);
     try {
-      const amenityId = booking.amenity?._id;
+      const amenityId = resolveAmenityId(booking);
       const bookingId = booking._id;
 
       if (action === "confirm") {
@@ -870,9 +877,8 @@ const CancelModal = ({ open, booking, onClose, onCancelled }) => {
 
     setBusy(true);
     try {
-      const amenityId = booking.amenity?._id;
+      const amenityId = resolveAmenityId(booking);
       const bookingId = booking._id;
-      await amenitiesApi.cancelBooking(amenityId, bookingId, reason.trim());
       toast.success("Booking cancelled.");
       onCancelled({ ...booking, status: "cancelled", cancelReason: reason });
       setReason("");

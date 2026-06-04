@@ -184,8 +184,8 @@ const SlotsTab = ({ isAdmin }) => {
         ))}
       </ScrollView>
       {loading ? <View style={util.center}><Spinner size={28} /></View>
-        : error  ? <ErrorState message={error} onRetry={load} />
-        : visible.length === 0 ? <EmptyState icon="🅿️" message="No slots found." />
+        : error  ? <View style={util.center}><ErrorState message={error} onRetry={load} /></View>
+        : visible.length === 0 ? <View style={util.center}><EmptyState icon="🅿️" message="No slots found." /></View>
         : <FlatList
             data={visible}
             keyExtractor={s => s._id}
@@ -274,11 +274,12 @@ const MyRequestsTab = () => {
 
   useEffect(() => { load(); }, [load]);
 
-  if (loading) return <View style={util.center}><Spinner size={28} /></View>;
-  if (error)   return <ErrorState message={error} onRetry={load} />;
-  if (!reqs.length) return <EmptyState icon="🚗" message="No parking requests yet." />;
+  if (loading) return <View style={util.flex1}><View style={util.center}><Spinner size={28} /></View></View>;
+  if (error)   return <View style={util.flex1}><View style={util.center}><ErrorState message={error} onRetry={load} /></View></View>;
+  if (!reqs.length) return <View style={util.flex1}><View style={util.center}><EmptyState icon="🚗" message="No parking requests yet." /></View></View>;
 
   return (
+    <View style={util.flex1}>
     <FlatList
       data={reqs}
       keyExtractor={r => r._id}
@@ -288,6 +289,7 @@ const MyRequestsTab = () => {
         <RequestCard req={item} onCancelled={(id) => setReqs(p => p.filter(r => r._id !== id))} />
       )}
     />
+    </View>
   );
 };
 
@@ -436,8 +438,8 @@ const AdminRequestsTab = ({ slots }) => {
       </ScrollView>
 
       {loading ? <View style={util.center}><Spinner size={28} /></View>
-        : error ? <ErrorState message={error} onRetry={load} />
-        : visible.length === 0 ? <EmptyState icon="📋" message={`No ${filter !== "all" ? filter : ""} requests.`} />
+        : error ? <View style={util.center}><ErrorState message={error} onRetry={load} /></View>
+        : visible.length === 0 ? <View style={util.center}><EmptyState icon="📋" message={`No ${filter !== "all" ? filter : ""} requests.`} /></View>
         : <FlatList
             data={visible}
             keyExtractor={r => r._id}
@@ -847,7 +849,7 @@ export const ParkingScreen = () => {
 
       {/* Tab content */}
       {tab === "overview" && (
-        <ScrollView contentContainerStyle={{ paddingVertical: 16, paddingBottom: 40 }}
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingVertical: 16, paddingBottom: 40 }}
           showsVerticalScrollIndicator={false}
           refreshControl={<RefreshControl refreshing={sumLoading} onRefresh={loadSummary} tintColor={C.teal} />}>
           <SlotSummary items={summary} loading={sumLoading} />
@@ -905,4 +907,5 @@ const ps = StyleSheet.create({
 
 const util = StyleSheet.create({
   center: { flex: 1, alignItems: "center", justifyContent: "center", padding: 40 },
+  flex1:  { flex: 1 },
 });
