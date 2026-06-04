@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "SocietyApp",
-    "slug": "society-app",
+    "slug": "soceirty-management-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -16,7 +16,10 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.societymanagementcompany.societyapp",
       "infoPlist": {
-        "UIBackgroundModes": ["fetch", "remote-notification"]
+        "UIBackgroundModes": [
+          "fetch",
+          "remote-notification"
+        ]
       }
     },
     "android": {
@@ -48,7 +51,10 @@
       "expo-font"
     ],
     "extra": {
-      "eas": { "projectId": "0e3f0d4f-6411-4be3-b5f1-c209904d1ed4" }
-    }
+      "eas": {
+        "projectId": "0e3f0d4f-6411-4be3-b5f1-c209904d1ed4"
+      }
+    },
+    "owner": "virendra16"
   }
 }
