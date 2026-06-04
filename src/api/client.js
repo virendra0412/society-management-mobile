@@ -9,13 +9,16 @@
  *   - Everything else is identical to the web client
  */
 import axios from "axios";
-import Constants from "expo-constants";
 import { tokenStorage } from "../utils/storage";
 
 // ─── Base URL ─────────────────────────────────────────────────────────────────
+// Reads from EXPO_PUBLIC_API_BASE_URL in your .env file.
+// Expo natively inlines any variable prefixed EXPO_PUBLIC_ at build time —
+// no extra plugin or expo-constants import needed.
+// Fallback keeps localhost working for bare `expo start` without an .env.
 const BASE_URL =
-  Constants.expoConfig?.extra?.apiBaseUrl ||
-  "http://localhost:5000/api/v1"; //https://society-management-system-clou.onrender.com/api/v1
+  process.env.EXPO_PUBLIC_API_BASE_URL ||
+  "http://localhost:5000/api/v1";
 
 export { BASE_URL };
 
