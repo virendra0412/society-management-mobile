@@ -7,7 +7,7 @@
 import { useState } from "react";
 import {
   View, Text, StyleSheet, TouchableOpacity,
-  KeyboardAvoidingView, Platform, ScrollView,
+  KeyboardAvoidingView, Platform, ScrollView,TextInput
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth }      from "../../context/AuthContext";
