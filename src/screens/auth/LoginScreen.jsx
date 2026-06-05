@@ -79,15 +79,48 @@ export const LoginScreen = ({ navigation }) => {
               keyboardType="email-address"
               error={errors.email}
             />
-            <Input
-              label={t("login_password")}
-              value={password}
-              onChangeText={setPassword}
-              placeholder={t("login_password_ph")}
-              secureTextEntry
-              error={errors.password}
-            />
+            {/* Password field with eye toggle (issue 21) */}
+            <View style={{ marginBottom: 14 }}>
+              <Text style={{ fontSize: 12, fontWeight: "600", color: C.gray700, marginBottom: 6 }}>
+                {t("login_password")}
+              </Text>
+              <View style={{
+                flexDirection: "row", alignItems: "center",
+                borderWidth: 1.5, borderColor: errors.password ? C.red : C.gray100,
+                borderRadius: 10, backgroundColor: C.gray50, overflow: "hidden",
+              }}>
+                <TextInput
+                  value={password}
+                  onChangeText={setPassword}
+                  placeholder={t("login_password_ph")}
+                  placeholderTextColor={C.gray300}
+                  secureTextEntry={!showPass}
+                  style={{ flex: 1, paddingHorizontal: 14, paddingVertical: 11, fontSize: 14, color: C.text }}
+                />
+                <TouchableOpacity
+                  onPress={() => setShowPass((v) => !v)}
+                  style={{ paddingHorizontal: 14, paddingVertical: 11 }}
+                  hitSlop={8}
+                >
+                  <Text style={{ fontSize: 18 }}>{showPass ? "🙈" : "👁️"}</Text>
+                </TouchableOpacity>
+              </View>
+              {!!errors.password && (
+                <Text style={{ fontSize: 11, color: C.red, marginTop: 4 }}>{errors.password}</Text>
+              )}
+            </View>
 
+            {/* Inline login error — persistent unlike toast (issue 22) */}
+            {!!loginError && (
+              <View style={{
+                backgroundColor: "#FEE2E2", borderRadius: 10, padding: 12,
+                marginBottom: 14, borderWidth: 1, borderColor: "#FCA5A5",
+              }}>
+                <Text style={{ fontSize: 13, color: "#B91C1C", fontWeight: "600", textAlign: "center" }}>
+                  ⚠️ {loginError}
+                </Text>
+              </View>
+            )}
             <Btn onPress={handleLogin} loading={loading} style={styles.loginBtn}>
               {t("login_btn")}
             </Btn>

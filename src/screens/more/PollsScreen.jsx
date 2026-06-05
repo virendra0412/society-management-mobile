@@ -10,7 +10,7 @@
  */
 import { useState, useEffect, useCallback } from "react";
 import {
-  View, Text, StyleSheet, FlatList, TouchableOpacity, ScrollView, TextInput,
+  View, Text, StyleSheet, FlatList, TouchableOpacity, ScrollView, TextInput, Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -39,6 +39,11 @@ const PollCard = ({ poll, isAdmin, onVote, onClose, voting, closeBusy }) => {
         {poll.isClosed && (
           <View style={{ backgroundColor: C.gray100, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 2 }}>
             <Text style={{ fontSize: 10, fontWeight: "700", color: C.gray500 }}>Closed</Text>
+          </View>
+        )}
+        {poll.myVote && !poll.isClosed && (
+          <View style={{ backgroundColor: C.teal + "15", borderRadius: 6, paddingHorizontal: 8, paddingVertical: 2 }}>
+            <Text style={{ fontSize: 10, fontWeight: "700", color: C.teal }}>✓ Voted</Text>
           </View>
         )}
       </View>
@@ -217,28 +222,46 @@ export const PollsScreen = ({ navigation }) => {
 
   const handleVote = async (pollId, optionId) => {
     if (voting[pollId]) return;
+    // Check if user already voted in this poll (client-side, avoids needless API call)
+    const poll = polls.find((p) => p._id === pollId);
+    if (poll?.myVote) {
+      toast.info("You have already voted in this poll.");
+      return;
+    }
     setVoting((v) => ({ ...v, [pollId]: true }));
     try {
-      const res = await pollsApi.vote(pollId, optionId);
-      setPolls((p) => p.map((poll) => poll._id === pollId ? res.data.poll : poll));
+      const res = await pollsApi.vote(pollId, { optionId });
+      setPolls((p) => p.map((po) => po._id === pollId ? res.data.poll : po));
       toast.success("Vote recorded!");
     } catch (e) {
       const code = e.response?.data?.code;
-      if (code === "ALREADY_VOTED") toast.error("You've already voted in this poll.");
+      if (code === "ALREADY_VOTED") toast.info("You have already voted in this poll.");
       else toast.error(e.response?.data?.message || "Voting failed.");
     } finally { setVoting((v) => ({ ...v, [pollId]: false })); }
   };
 
   const handleClosePoll = async (pollId) => {
     if (closeBusy[pollId]) return;
-    setCloseBusy((b) => ({ ...b, [pollId]: true }));
-    try {
-      await pollsApi.closePoll(pollId);
-      setPolls((p) => p.map((poll) => poll._id === pollId ? { ...poll, isClosed: true } : poll));
-      toast.success("Poll closed.");
-    } catch (e) {
-      toast.error(e.response?.data?.message || "Failed to close poll.");
-    } finally { setCloseBusy((b) => ({ ...b, [pollId]: false })); }
+    Alert.alert(
+      "Close Poll",
+      "Are you sure you want to close this poll? Residents will no longer be able to vote.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Close Poll", style: "destructive",
+          onPress: async () => {
+            setCloseBusy((b) => ({ ...b, [pollId]: true }));
+            try {
+              await pollsApi.close(pollId);
+              setPolls((p) => p.map((poll) => poll._id === pollId ? { ...poll, isClosed: true } : poll));
+              toast.success("Poll closed.");
+            } catch (e) {
+              toast.error(e.response?.data?.message || "Failed to close poll.");
+            } finally { setCloseBusy((b) => ({ ...b, [pollId]: false })); }
+          }
+        },
+      ]
+    );
   };
 
   return (

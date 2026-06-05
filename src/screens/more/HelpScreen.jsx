@@ -271,7 +271,7 @@ export const HelpScreen = ({ navigation }) => {
     if (!detailPost) return;
     setClosing(true);
     try {
-      await helpApi.closePost(detailPost._id);
+      await helpApi.close(detailPost._id);
       setDetailPost((p) => ({ ...p, isClosed: true }));
       setPosts((p) => p.map((h) => h._id === detailPost._id ? { ...h, isClosed: true } : h));
       toast.success("Help post closed.");

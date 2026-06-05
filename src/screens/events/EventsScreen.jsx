@@ -15,6 +15,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import DateTimePicker from "@react-native-community/datetimepicker";
 import { eventsApi } from "../../api/resources.api";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
@@ -716,6 +717,7 @@ const EventFormModal = ({ open, editing, onClose, onSaved }) => {
   };
   const [form, setForm] = useState(blank);
   const [submitting, setSubmitting] = useState(false);
+  const [formError, setFormError] = useState("");
 
   useEffect(() => {
     if (open) {
@@ -763,6 +765,7 @@ const EventFormModal = ({ open, editing, onClose, onSaved }) => {
     };
 
     setSubmitting(true);
+    setFormError("");
     try {
       const res = editing
         ? await eventsApi.update(editing._id, payload)
@@ -771,7 +774,7 @@ const EventFormModal = ({ open, editing, onClose, onSaved }) => {
       onSaved(res.data?.event);
       onClose();
     } catch (e) {
-      toast.error(e?.response?.data?.message || "Save failed.");
+      setFormError(e?.response?.data?.message || "Save failed. Please try again.");
     } finally {
       setSubmitting(false);
     }
@@ -859,47 +862,32 @@ const EventFormModal = ({ open, editing, onClose, onSaved }) => {
             </TouchableOpacity>
           </View>
 
-          <View style={{ flexDirection: "row", gap: 10, marginBottom: 16 }}>
-            <View style={{ flex: 1 }}>
-              <Input
-                label="Start Date *"
-                value={form.eventDate}
-                onChangeText={(v) => setForm((p) => ({ ...p, eventDate: v }))}
-                placeholder="YYYY-MM-DD"
-              />
-            </View>
-            {!form.isAllDay && (
-              <View style={{ flex: 1 }}>
-                <Input
-                  label="Start Time"
-                  value={form.eventTime}
-                  onChangeText={(v) => setForm((p) => ({ ...p, eventTime: v }))}
-                  placeholder="HH:MM"
-                />
-              </View>
-            )}
-          </View>
-
-          <View style={{ flexDirection: "row", gap: 10, marginBottom: 16 }}>
-            <View style={{ flex: 1 }}>
-              <Input
-                label="End Date"
-                value={form.endDate}
-                onChangeText={(v) => setForm((p) => ({ ...p, endDate: v }))}
-                placeholder="YYYY-MM-DD"
-              />
-            </View>
-            {!form.isAllDay && (
-              <View style={{ flex: 1 }}>
-                <Input
-                  label="End Time"
-                  value={form.endTime}
-                  onChangeText={(v) => setForm((p) => ({ ...p, endTime: v }))}
-                  placeholder="HH:MM"
-                />
-              </View>
-            )}
-          </View>
+          {/* ── Date / Time pickers (issue 16) ───────────────────────── */}
+          <DatePickerRow
+            label="Start Date *"
+            value={form.eventDate}
+            onChange={(v) => setForm((p) => ({ ...p, eventDate: v }))}
+          />
+          {!form.isAllDay && (
+            <TimePickerRow
+              label="Start Time"
+              value={form.eventTime}
+              onChange={(v) => setForm((p) => ({ ...p, eventTime: v }))}
+            />
+          )}
+          <DatePickerRow
+            label="End Date (optional)"
+            value={form.endDate}
+            onChange={(v) => setForm((p) => ({ ...p, endDate: v }))}
+            optional
+          />
+          {!form.isAllDay && form.endDate !== "" && (
+            <TimePickerRow
+              label="End Time"
+              value={form.endTime}
+              onChange={(v) => setForm((p) => ({ ...p, endTime: v }))}
+            />
+          )}
 
           <Input
             label="Venue"
@@ -925,6 +913,17 @@ const EventFormModal = ({ open, editing, onClose, onSaved }) => {
             numberOfLines={3}
           />
 
+          {!!formError && (
+            <View style={{
+              backgroundColor: "#FEE2E2", borderRadius: 10, padding: 12,
+              marginTop: 8, marginBottom: 4,
+              borderWidth: 1, borderColor: "#FCA5A5",
+            }}>
+              <Text style={{ fontSize: 13, color: "#B91C1C", fontWeight: "600", lineHeight: 18 }}>
+                ⚠️ {formError}
+              </Text>
+            </View>
+          )}
           <Btn onPress={handleSave} loading={submitting} style={{ width: "100%", marginTop: 20 }}>
             {editing ? "Save Changes" : "Create Draft"}
           </Btn>

@@ -106,7 +106,35 @@ export const RegisterScreen = ({ navigation, route }) => {
             <Input label={t("reg_name")}     value={form.name}     onChangeText={set("name")}     placeholder={t("reg_name_ph")}     error={errors.name}     />
             <Input label={t("reg_email")}    value={form.email}    onChangeText={set("email")}    placeholder={t("reg_email_ph")}    keyboardType="email-address" error={errors.email}    />
             <Input label={t("reg_phone")}    value={form.phone}    onChangeText={set("phone")}    placeholder={t("reg_phone_ph")}    keyboardType="phone-pad"     />
-            <Input label={t("reg_password")} value={form.password} onChangeText={set("password")} placeholder={t("reg_password_ph")} secureTextEntry              error={errors.password} />
+            <View style={{ marginBottom: 14 }}>
+              <Text style={{ fontSize: 12, fontWeight: "600", color: C.gray700, marginBottom: 6 }}>
+                {t("reg_password")}
+              </Text>
+              <View style={{
+                flexDirection: "row", alignItems: "center",
+                borderWidth: 1.5, borderColor: errors.password ? C.red : C.gray100,
+                borderRadius: 10, backgroundColor: C.gray50, overflow: "hidden",
+              }}>
+                <TextInput
+                  value={form.password}
+                  onChangeText={set("password")}
+                  placeholder={t("reg_password_ph")}
+                  placeholderTextColor={C.gray300}
+                  secureTextEntry={!showPass}
+                  style={{ flex: 1, paddingHorizontal: 14, paddingVertical: 11, fontSize: 14, color: C.text }}
+                />
+                <TouchableOpacity
+                  onPress={() => setShowPass((v) => !v)}
+                  style={{ paddingHorizontal: 14, paddingVertical: 11 }}
+                  hitSlop={8}
+                >
+                  <Text style={{ fontSize: 18 }}>{showPass ? "🙈" : "👁️"}</Text>
+                </TouchableOpacity>
+              </View>
+              {!!errors.password && (
+                <Text style={{ fontSize: 11, color: C.red, marginTop: 4 }}>{errors.password}</Text>
+              )}
+            </View>
 
             {/* Optional fields row */}
             <View style={styles.row}>

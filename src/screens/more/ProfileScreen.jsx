@@ -427,16 +427,16 @@ export const ProfileScreen = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
-      {/* ── Header banner ─────────────────────────────────────────────────── */}
-      <View style={styles.headerBanner}>
-        <Text style={styles.headerLabel}>MY PROFILE</Text>
-      </View>
-
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}
       >
+        {/* ── Header banner — inside ScrollView so avatarCard marginTop:-20
+             overlaps without being clipped by the ScrollView top edge ── */}
+        <View style={styles.headerBanner}>
+          <Text style={styles.headerLabel}>MY PROFILE</Text>
+        </View>
         {/* ── Avatar + name ────────────────────────────────────────────────── */}
         <View style={styles.avatarCard}>
           <AvatarSection profile={p} onAvatarUpdate={handleAvatarUpdate} />

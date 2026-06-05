@@ -86,6 +86,7 @@ const ss = StyleSheet.create({
 // ═══════════════════════════════════════════════════════
 const SlotCard = ({ slot, isAdmin, onReleased }) => {
   const [busy, setBusy] = useState(false);
+  const [modalError, setModalError] = useState("");
   const [confirm, setConfirm] = useState(false);
   const toast = useToast();
   const color = slotColor(slot.type);
@@ -622,8 +623,9 @@ const CreateSlotModal = ({ open, onClose, onCreated }) => {
   const previewSlots = buildBulkSlots({ ...bulk, padDigits: parseInt(bulk.padDigits, 10) || 2 });
 
   const submitBulk = async () => {
-    if (!previewSlots.length) return toast.error("Enter a valid range.");
-    if (previewSlots.length > 200) return toast.error("Max 200 slots per bulk operation.");
+    setModalError("");
+    if (!previewSlots.length) { setModalError("Enter a valid range. Set From and To numbers."); return; }
+    if (previewSlots.length > 200) { setModalError("Maximum 200 slots per bulk operation. Reduce the range."); return; }
     setBusy(true);
     try {
       const res     = await parkingApi.bulkCreateSlots({ slots: previewSlots });
@@ -637,7 +639,7 @@ const CreateSlotModal = ({ open, onClose, onCreated }) => {
       onCreated(created);
       handleClose();
     } catch (e) {
-      toast.error(e?.response?.data?.message || "Bulk create failed.");
+      setModalError(e?.response?.data?.message || "Bulk create failed. Please try again.");
     } finally { setBusy(false); }
   };
 
@@ -769,6 +771,11 @@ const CreateSlotModal = ({ open, onClose, onCreated }) => {
             </View>
           )}
 
+          {!!modalError && (
+            <View style={{ backgroundColor: "#FEE2E2", borderRadius: 10, padding: 12, marginBottom: 10, borderWidth: 1, borderColor: "#FCA5A5" }}>
+              <Text style={{ fontSize: 13, color: "#B91C1C", fontWeight: "600" }}>⚠️ {modalError}</Text>
+            </View>
+          )}
           <Btn
             onPress={submitBulk}
             loading={busy}
@@ -896,7 +903,7 @@ const ps = StyleSheet.create({
   headerBtn:     { backgroundColor: C.teal, borderRadius: 10, paddingVertical: 7, paddingHorizontal: 14 },
   headerBtnText: { fontSize: 12, fontWeight: "700", color: "#fff" },
   tabBar:        { height: 43, flexDirection: "row", alignItems: "center", backgroundColor: C.navy, paddingHorizontal: 16, paddingBottom: 0, borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.1)" },
-  tabBtn:        { flex: 1, flexGrow: 0, height: "100%", alignItems: "center", justifyContent: "center", borderBottomWidth: 2.5, borderBottomColor: "transparent" },
+  tabBtn:        { flex: 1, height: 43, alignItems: "center", justifyContent: "center", borderBottomWidth: 2.5, borderBottomColor: "transparent", paddingHorizontal: 4 },
   tabActive:     { borderBottomColor: C.teal },
   tabText:       { fontSize: 12, fontWeight: "700", color: "rgba(255,255,255,0.4)" },
   tabTextActive: { color: "#fff" },
