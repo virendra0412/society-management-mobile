@@ -236,13 +236,13 @@ const LogWalkInModal = ({ open, onClose, onLogged }) => {
 
   const handleSubmit = async () => {
     if (!form.name.trim())   return toast.error("Visitor name is required.");
-    if (!form.hostId.trim()) return toast.error("Resident ID is required.");
     setSubmitting(true);
     try {
       const payload = { ...form };
       if (!payload.phone) delete payload.phone;
       if (!payload.vehicleNumber) delete payload.vehicleNumber;
       if (!payload.note) delete payload.note;
+      if (!payload.hostId) delete payload.hostId;   // optional — omit if blank
       const res = await visitorApi.logWalkIn(payload);
       toast.success("Walk-in logged. Resident notified.");
       onLogged(res.data.visitor);
@@ -259,7 +259,7 @@ const LogWalkInModal = ({ open, onClose, onLogged }) => {
       <PillSelect label="Purpose"           value={form.purpose}       options={VISIT_PURPOSES}             onSelect={set("purpose")} />
       <Input label="Vehicle No. (optional)" value={form.vehicleNumber} onChangeText={set("vehicleNumber")} placeholder="GJ01AB1234" />
       <Input label="Note (optional)"        value={form.note}          onChangeText={set("note")}          placeholder="Any note for resident" multiline />
-      <Input label="Resident ID *"          value={form.hostId}        onChangeText={set("hostId")}        placeholder="Paste resident's user ID" />
+      <Input label="Resident Flat / ID (optional)"  value={form.hostId}        onChangeText={set("hostId")}        placeholder="e.g. A-101 resident ID (leave blank if unknown)" />
       <Text style={{ fontSize: 11, color: C.gray500, marginTop: -8, marginBottom: 14, lineHeight: 16 }}>
         ℹ️ Find the resident's ID from the admin panel or ask them to share it.
       </Text>

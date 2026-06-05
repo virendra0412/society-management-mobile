@@ -9,7 +9,7 @@ import client, { unwrap } from "./client";
 export const noticesApi = {
   getAll:    (p = {})       => client.get("/notices",               { params: p }).then(unwrap),
   create:    (d)            => client.post("/notices",               d).then(unwrap),
-  update:    (id, d)        => client.put(`/notices/${id}`,         d).then(unwrap),
+  update:    (id, d)        => client.patch(`/notices/${id}`,       d).then(unwrap),
   remove:    (id)           => client.delete(`/notices/${id}`).then(unwrap),
   // Bug fix: setPinned was in web API but missing from mobile.
   // PATCH /notices/:id/pin  { isPinned: bool }
@@ -30,7 +30,7 @@ export const visitorsApi = {
 
   // VisitorsScreen method-name aliases (Bug 3 fix — screen used visitorApi with
   // different method names; we normalise here so both spellings work)
-  createInvite:  (d)  => client.post("/visitors", d).then(unwrap),
+  createInvite:  (d)  => client.post("/visitors/invite", d).then(unwrap),
   logWalkIn:     (d)  => client.post("/visitors/walk-in", d).then(unwrap),
   getMyVisitors: (p = {}) => client.get("/visitors/mine", { params: p }).then(unwrap),
   approveWalkIn: (id) => client.patch(`/visitors/${id}/approve`).then(unwrap),
@@ -40,16 +40,16 @@ export const visitorsApi = {
 
 // ─── Issues ───────────────────────────────────────────────────────────────────
 export const issuesApi = {
-  getAll:      (p = {}) => client.get("/issues",          { params: p }).then(unwrap),
-  getOne:      (id)     => client.get(`/issues/${id}`).then(unwrap),
-  create:      (d)      => client.post("/issues",          d).then(unwrap),
-  update:      (id, d)  => client.put(`/issues/${id}`,    d).then(unwrap),
-  remove:      (id)     => client.delete(`/issues/${id}`).then(unwrap),
-  // Bug 4 fix: backend uses /notes (kept as addNote; web called this addComment
-  // pointing at /comments — align to /notes which is what the mobile backend expects)
-  addNote:     (id, t)  => client.post(`/issues/${id}/notes`, { text: t }).then(unwrap),
-  // Feature: photo upload — POST /issues/:id/photos  (multipart/form-data)
-  uploadPhoto: (id, asset) => {
+  getAll:       (p = {}) => client.get("/issues",            { params: p }).then(unwrap),
+  getOne:       (id)     => client.get(`/issues/${id}`).then(unwrap),
+  create:       (d)      => client.post("/issues",            d).then(unwrap),
+  update:       (id, d)  => client.patch(`/issues/${id}`,    d).then(unwrap),   // was PUT
+  remove:       (id)     => client.delete(`/issues/${id}`).then(unwrap),
+  // Fixed: backend route is /comments with body { body }, not /notes with { text }
+  addNote:      (id, t)  => client.post(`/issues/${id}/comments`, { body: t }).then(unwrap),
+  // Dedicated vendor assignment route (PATCH /issues/:id/vendor)
+  assignVendor: (id, d)  => client.patch(`/issues/${id}/vendor`, d).then(unwrap),
+  uploadPhoto:  (id, asset) => {
     const fd  = new FormData();
     const ext = (asset.uri.split(".").pop() || "jpg").replace("jpg", "jpeg");
     fd.append("photo", { uri: asset.uri, name: `photo.${ext}`, type: `image/${ext}` });
@@ -65,7 +65,7 @@ export const helpApi = {
   getOne:       (id)     => client.get(`/help/${id}`).then(unwrap),
   create:       (d)      => client.post("/help",                       d).then(unwrap),
   addReply:     (id, d)  => client.post(`/help/${id}/replies`,        d).then(unwrap),
-  upvoteReply:  (id, rId)=> client.patch(`/help/${id}/replies/${rId}/upvote`).then(unwrap),
+  upvoteReply:  (id, rId)=> client.post(`/help/${id}/replies/${rId}/upvote`).then(unwrap),
   close:        (id)     => client.patch(`/help/${id}/close`).then(unwrap),
 };
 
@@ -162,4 +162,8 @@ export const userApi = {
   addFamilyMember:    (d)         => client.post("/users/profile/family", d).then(unwrap),
   updateFamilyMember: (id, d)     => client.patch(`/users/profile/family/${id}`, d).then(unwrap),
   removeFamilyMember: (id)        => client.delete(`/users/profile/family/${id}`).then(unwrap),
+  // Admin — member approval (were missing, caused "failed to load pending members")
+  getPendingMembers:  ()          => client.get("/users/pending").then(unwrap),
+  approveMember:      (id)        => client.patch(`/users/${id}/approve`).then(unwrap),
+  rejectMember:       (id)        => client.patch(`/users/${id}/reject`).then(unwrap),
 };
