@@ -81,7 +81,7 @@ export const contactsApi = {
 export const pollsApi = {
   getAll:  (p = {}) => client.get("/polls",             { params: p }).then(unwrap),
   create:  (d)      => client.post("/polls",             d).then(unwrap),
-  vote:    (id, opt)=> client.post(`/polls/${id}/vote`, { optionIndex: opt }).then(unwrap),
+  vote:    (id, d)  => client.post(`/polls/${id}/vote`, d).then(unwrap),
   close:   (id)     => client.patch(`/polls/${id}/close`).then(unwrap),
 };
 

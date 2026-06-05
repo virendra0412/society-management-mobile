@@ -235,8 +235,9 @@ export const PollsScreen = ({ navigation }) => {
       toast.success("Vote recorded!");
     } catch (e) {
       const code = e.response?.data?.code;
-      if (code === "ALREADY_VOTED") toast.info("You have already voted in this poll.");
-      else toast.error(e.response?.data?.message || "Voting failed.");
+      const message = e.response?.data?.message || "";
+      if (code === "ALREADY_VOTED" || /already voted/i.test(message)) toast.info("You have already voted in this poll.");
+      else toast.error(message || "Voting failed.");
     } finally { setVoting((v) => ({ ...v, [pollId]: false })); }
   };
 

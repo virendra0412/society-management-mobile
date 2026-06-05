@@ -229,9 +229,9 @@ const CreateInviteModal = ({ open, onClose, onCreated }) => {
 // ─── Log Walk-in Modal (Admin) ────────────────────────────────────────────────
 const LogWalkInModal = ({ open, onClose, onLogged }) => {
   const toast = useToast();
-  const [form, setForm] = useState({ name: "", phone: "", purpose: "Guest", vehicleNumber: "", note: "", hostId: "" });
+  const [form, setForm] = useState({ name: "", phone: "", purpose: "Guest", vehicleNumber: "", note: "", hostFlat: "" });
   const [submitting, setSubmitting] = useState(false);
-  const reset = () => setForm({ name: "", phone: "", purpose: "Guest", vehicleNumber: "", note: "", hostId: "" });
+  const reset = () => setForm({ name: "", phone: "", purpose: "Guest", vehicleNumber: "", note: "", hostFlat: "" });
   const set = (k) => (v) => setForm((p) => ({ ...p, [k]: v }));
 
   const handleSubmit = async () => {
@@ -242,7 +242,7 @@ const LogWalkInModal = ({ open, onClose, onLogged }) => {
       if (!payload.phone) delete payload.phone;
       if (!payload.vehicleNumber) delete payload.vehicleNumber;
       if (!payload.note) delete payload.note;
-      if (!payload.hostId) delete payload.hostId;   // optional — omit if blank
+      if (!payload.hostFlat) delete payload.hostFlat;
       const res = await visitorApi.logWalkIn(payload);
       toast.success("Walk-in logged. Resident notified.");
       onLogged(res.data.visitor);
@@ -259,9 +259,9 @@ const LogWalkInModal = ({ open, onClose, onLogged }) => {
       <PillSelect label="Purpose"           value={form.purpose}       options={VISIT_PURPOSES}             onSelect={set("purpose")} />
       <Input label="Vehicle No. (optional)" value={form.vehicleNumber} onChangeText={set("vehicleNumber")} placeholder="GJ01AB1234" />
       <Input label="Note (optional)"        value={form.note}          onChangeText={set("note")}          placeholder="Any note for resident" multiline />
-      <Input label="Resident Flat / ID (optional)"  value={form.hostId}        onChangeText={set("hostId")}        placeholder="e.g. A-101 resident ID (leave blank if unknown)" />
+      <Input label="Resident Flat (optional)"  value={form.hostFlat}        onChangeText={set("hostFlat")}        placeholder="e.g. A-101 (leave blank if unknown)" />
       <Text style={{ fontSize: 11, color: C.gray500, marginTop: -8, marginBottom: 14, lineHeight: 16 }}>
-        ℹ️ Find the resident's ID from the admin panel or ask them to share it.
+        Enter the flat number to notify the resident. Resident ID is no longer required.
       </Text>
       <Btn onPress={handleSubmit} loading={submitting} style={{ width: "100%" }}>Log Walk-in</Btn>
     </Modal>

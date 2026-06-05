@@ -846,13 +846,13 @@ export const ParkingScreen = () => {
       </View>
 
       {/* Tab bar */}
-      <View style={ps.tabBar}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={ps.tabBar} contentContainerStyle={ps.tabBarContent}>
         {TABS.map(t => (
           <TouchableOpacity key={t.id} onPress={() => setTab(t.id)} style={[ps.tabBtn, tab === t.id && ps.tabActive]}>
-            <Text style={[ps.tabText, tab === t.id && ps.tabTextActive]}>{t.label}</Text>
+            <Text style={[ps.tabText, tab === t.id && ps.tabTextActive]} numberOfLines={1}>{t.label}</Text>
           </TouchableOpacity>
         ))}
-      </View>
+      </ScrollView>
 
       {/* Tab content */}
       {tab === "overview" && (
@@ -902,8 +902,9 @@ const ps = StyleSheet.create({
   headerTitle:   { fontSize: 22, fontWeight: "800", color: "#fff", marginTop: 2 },
   headerBtn:     { backgroundColor: C.teal, borderRadius: 10, paddingVertical: 7, paddingHorizontal: 14 },
   headerBtnText: { fontSize: 12, fontWeight: "700", color: "#fff" },
-  tabBar:        { height: 43, flexDirection: "row", alignItems: "center", backgroundColor: C.navy, paddingHorizontal: 16, paddingBottom: 0, borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.1)" },
-  tabBtn:        { flex: 1, height: 43, alignItems: "center", justifyContent: "center", borderBottomWidth: 2.5, borderBottomColor: "transparent", paddingHorizontal: 4 },
+  tabBar:        { flexGrow: 0, flexShrink: 0, backgroundColor: C.navy, borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.1)" },
+  tabBarContent: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16 },
+  tabBtn:        { minWidth: 108, height: 43, alignItems: "center", justifyContent: "center", borderBottomWidth: 2.5, borderBottomColor: "transparent", paddingHorizontal: 10 },
   tabActive:     { borderBottomColor: C.teal },
   tabText:       { fontSize: 12, fontWeight: "700", color: "rgba(255,255,255,0.4)" },
   tabTextActive: { color: "#fff" },

@@ -244,7 +244,14 @@ export const HelpScreen = ({ navigation }) => {
     if (!detailPost || upvoting[replyId]) return;
     setUpvoting((u) => ({ ...u, [replyId]: true }));
     try {
-      await helpApi.upvoteReply(detailPost._id, replyId);
+      const res = await helpApi.upvoteReply(detailPost._id, replyId);
+      const updatedPost = res.data?.post;
+      const updatedReplies = updatedPost?.replies || res.data?.replies;
+      if (updatedReplies) {
+        setDetailPost((prev) => ({ ...(updatedPost || prev), replies: updatedReplies }));
+        if (updatedPost) setPosts((p) => p.map((h) => h._id === updatedPost._id ? updatedPost : h));
+        return;
+      }
       setDetailPost((prev) => {
         if (!prev) return prev;
         return {

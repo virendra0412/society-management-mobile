@@ -257,7 +257,20 @@ const IssueDetailModal = ({ issue, visible, onClose, isAdmin, onUpdated }) => {
     setCommentLoading(true);
     try {
       const res = await issuesApi.addNote(localIssue._id, commentBody.trim());
-      setComments(res.data.comments || []);
+      const updatedIssue = res.data?.issue;
+      const nextComments = updatedIssue?.comments || res.data?.comments || [];
+      setComments(nextComments);
+      if (updatedIssue) {
+        setLocalIssue(updatedIssue);
+        onUpdated?.(updatedIssue);
+      } else {
+        const updated = {
+          ...localIssue,
+          commentCount: Math.max(localIssue.commentCount || 0, nextComments.length),
+        };
+        setLocalIssue(updated);
+        onUpdated?.(updated);
+      }
       setCommentBody("");
     } catch (e) {
       toast.error(e?.response?.data?.message || "Failed");
@@ -272,7 +285,7 @@ const IssueDetailModal = ({ issue, visible, onClose, isAdmin, onUpdated }) => {
       return toast.error("Vendor name and phone are required.");
     setVendorLoading(true);
     try {
-      const res = await issuesApi.update(localIssue._id, { assignedVendor: vendorForm });
+      const res = await issuesApi.assignVendor(localIssue._id, vendorForm);
       const updated = res.data?.issue || { ...localIssue, assignedVendor: vendorForm };
       setLocalIssue(updated);
       onUpdated?.(updated);
@@ -475,6 +488,7 @@ export const IssuesScreen = () => {
   const [selected,  setSelected]  = useState(null);
   const [showNew,   setShowNew]   = useState(false);
   const [form,      setForm]      = useState(EMPTY_FORM);
+  const [formError, setFormError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [photoAssets, setPhotoAssets] = useState([]); // expo-image-picker assets
 
@@ -495,10 +509,13 @@ export const IssuesScreen = () => {
   useEffect(() => { fetchIssues(); }, [fetchIssues]);
 
   const handleCreate = async () => {
-    if (!form.title.trim()) { toast.error("Title is required."); return; }
+    const title = form.title.trim();
+    setFormError("");
+    if (!title) { setFormError("Title is required."); return; }
+    if (title.length < 5) { setFormError("Please enter a clear issue title with at least 5 characters."); return; }
     setSubmitting(true);
     try {
-      const res = await issuesApi.create(form);
+      const res = await issuesApi.create({ ...form, title });
       const created = res.data.issue;
 
       // Upload photos sequentially (non-fatal — continue if one fails)
@@ -513,7 +530,7 @@ export const IssuesScreen = () => {
       setShowNew(false);
       toast.success("Issue reported!");
     } catch (e) {
-      toast.error(e?.response?.data?.message || "Failed to create issue.");
+      setFormError(e?.response?.data?.message || "Failed to create issue.");
     } finally {
       setSubmitting(false);
     }
@@ -582,7 +599,12 @@ export const IssuesScreen = () => {
       />
 
       {/* New issue modal */}
-      <Modal open={showNew} onClose={() => { setShowNew(false); setPhotoAssets([]); }} title="Report an Issue">
+      <Modal open={showNew} onClose={() => { setShowNew(false); setPhotoAssets([]); setFormError(""); }} title="Report an Issue">
+        {!!formError && (
+          <View style={styles.formError}>
+            <Text style={styles.formErrorText}>{formError}</Text>
+          </View>
+        )}
         <Input
           label="Issue Title *"
           value={form.title}
@@ -640,4 +662,6 @@ const styles = StyleSheet.create({
   issueMeta:    { fontSize: 11, color: C.gray500, marginTop: 2, marginBottom: 6 },
   badgeRow:     { flexDirection: "row", gap: 6, flexWrap: "wrap" },
   commentCount: { fontSize: 11, color: C.gray500, marginLeft: 8, marginTop: 4 },
+  formError:    { backgroundColor: "#FEE2E2", borderRadius: 10, padding: 12, marginBottom: 10, borderWidth: 1, borderColor: "#FCA5A5" },
+  formErrorText:{ fontSize: 13, color: "#B91C1C", fontWeight: "600", lineHeight: 18 },
 });

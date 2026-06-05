@@ -16,7 +16,7 @@ import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   Image, ActivityIndicator, Alert, Platform,
 } from "react-native";
-import { SafeAreaView }  from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets }  from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
 
 import { useAuth }    from "../../context/AuthContext";
@@ -362,6 +362,7 @@ export const ProfileScreen = ({ navigation }) => {
   const { user, refreshUser } = useAuth();
   const toast = useToast();
   const { t }     = useLanguage();
+  const insets = useSafeAreaInsets();
 
   const [profile,       setProfile]       = useState(null);
   const [loading,       setLoading]       = useState(true);
@@ -434,7 +435,7 @@ export const ProfileScreen = ({ navigation }) => {
       >
         {/* ── Header banner — inside ScrollView so avatarCard marginTop:-20
              overlaps without being clipped by the ScrollView top edge ── */}
-        <View style={styles.headerBanner}>
+        <View style={[styles.headerBanner, { paddingTop: Math.max(20, insets.top + 12) }]}>
           <Text style={styles.headerLabel}>MY PROFILE</Text>
         </View>
         {/* ── Avatar + name ────────────────────────────────────────────────── */}
@@ -554,7 +555,7 @@ const styles = StyleSheet.create({
   // Header
   headerBanner:      {
     backgroundColor: C.navy,
-    paddingHorizontal: 20, paddingTop: 16, paddingBottom: 32,
+    paddingHorizontal: 20, paddingBottom: 32,
   },
   headerLabel:       {
     fontSize: 11, fontWeight: "700", color: "rgba(255,255,255,0.5)",
