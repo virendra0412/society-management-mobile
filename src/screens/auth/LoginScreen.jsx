@@ -21,10 +21,12 @@ export const LoginScreen = ({ navigation }) => {
   const { t }            = useLanguage();
   const toast            = useToast();
 
-  const [email,    setEmail]    = useState("");
-  const [password, setPassword] = useState("");
-  const [errors,   setErrors]   = useState({});
-  const [loading,  setLoading]  = useState(false);
+  const [email,      setEmail]      = useState("");
+  const [password,   setPassword]   = useState("");
+  const [errors,     setErrors]     = useState({});
+  const [loading,    setLoading]    = useState(false);
+  const [showPass,   setShowPass]   = useState(false);   // issue 21 — eye icon toggle
+  const [loginError, setLoginError] = useState("");      // issue 22 — persistent inline error
 
   const validate = () => {
     const e = {};
@@ -37,13 +39,14 @@ export const LoginScreen = ({ navigation }) => {
     const errs = validate();
     if (Object.keys(errs).length) { setErrors(errs); return; }
     setErrors({});
+    setLoginError("");
     setLoading(true);
     try {
       await login({ email: email.trim().toLowerCase(), password });
       // RootNavigator handles redirect automatically via isLogged state
     } catch (err) {
       const msg = err.response?.data?.message || t("login_failed");
-      toast.error(msg);
+      setLoginError(msg);   // issue 22 — show inline below form (persistent, readable)
     } finally {
       setLoading(false);
     }
