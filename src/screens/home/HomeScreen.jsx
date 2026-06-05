@@ -62,17 +62,58 @@ const StatBox = ({ icon, count, label, loading }) => (
   </View>
 );
 
-// ─── Quick Action tile ────────────────────────────────────────────────────────
-const QuickAction = ({ icon, label, color, onPress }) => (
-  <TouchableOpacity
-    onPress={onPress}
-    activeOpacity={0.75}
-    style={[styles.quickTile, { borderColor: color + "30", backgroundColor: color + "10" }]}
-  >
-    <Text style={styles.quickIcon}>{icon}</Text>
-    <Text style={[styles.quickLabel, { color }]}>{label}</Text>
-  </TouchableOpacity>
-);
+// ─── Quick Action grid ────────────────────────────────────────────────────────
+// Renders all actions in strict 4-per-row layout.
+// Calculates tile width from screen width minus container padding and gaps
+// so tiles NEVER wrap to a new line unexpectedly.
+const COLS        = 4;
+const H_PADDING   = 32;   // styles.body paddingHorizontal * 2
+const GAP         = 8;
+const TILE_WIDTH  = (width - H_PADDING - GAP * (COLS - 1)) / COLS;
+
+const QuickActionGrid = ({ actions }) => {
+  // Pad to a full row so the last row aligns left (no stretching)
+  const remainder = actions.length % COLS;
+  const padded = remainder === 0
+    ? actions
+    : [...actions, ...Array(COLS - remainder).fill(null)];
+
+  // Chunk into rows of 4
+  const rows = [];
+  for (let i = 0; i < padded.length; i += COLS) {
+    rows.push(padded.slice(i, i + COLS));
+  }
+
+  return (
+    <View style={{ marginBottom: 12, gap: GAP }}>
+      {rows.map((row, ri) => (
+        <View key={ri} style={{ flexDirection: "row", gap: GAP }}>
+          {row.map((action, ci) =>
+            action ? (
+              <TouchableOpacity
+                key={ci}
+                onPress={action.onPress}
+                activeOpacity={0.75}
+                style={[
+                  styles.quickTile,
+                  { borderColor: action.color + "30", backgroundColor: action.color + "10" },
+                ]}
+              >
+                <Text style={styles.quickIcon}>{action.icon}</Text>
+                <Text style={[styles.quickLabel, { color: action.color }]} numberOfLines={2}>
+                  {action.label}
+                </Text>
+              </TouchableOpacity>
+            ) : (
+              // Invisible spacer to keep alignment
+              <View key={`pad-${ci}`} style={{ width: TILE_WIDTH }} />
+            )
+          )}
+        </View>
+      ))}
+    </View>
+  );
+};
 
 // ─── Section header ───────────────────────────────────────────────────────────
 const SectionHeader = ({ title, onSeeAll }) => (
@@ -299,30 +340,25 @@ export const HomeScreen = () => {
           )}
 
           {/* ── Quick Actions ── */}
-          <Text style={[styles.sectionTitle, { marginBottom: 8 }]}>{t("home_quick_actions")}</Text>
-          <View style={styles.quickGrid}>
-            <QuickAction icon="🔴" label={t("home_report_issue")} color={C.red}    onPress={() => go("Issues")} />
-            <QuickAction icon="🤝" label={t("home_ask_help")}     color={C.amber}  onPress={() => goMore("Help")} />
-            <QuickAction icon="📢" label={t("nav_notices")}       color={C.teal}   onPress={() => goMore("Notices")} />
-            <QuickAction icon="🗳️" label={t("nav_polls")}         color={C.purple} onPress={() => goMore("Polls")} />
-          </View>
-
-          {/* Events · Parking · Amenity — always visible, lives in More stack */}
-          <View style={styles.quickGrid}>
-            <QuickAction icon="🎉" label={t("nav_events",  "Events")}  color="#D97706" onPress={() => goMore("Events")} />
-            <QuickAction icon="🚗" label={t("nav_parking", "Parking")} color={C.navy}  onPress={() => goMore("Parking")} />
-            <QuickAction icon="🏊" label={t("nav_amenity", "Amenity")} color={C.teal}  onPress={() => goMore("Amenity")} />
-            <QuickAction icon="👤" label={t("btn_profile", "Profile")} color={C.gray700} onPress={() => goMore("Profile")} />
-          </View>
-
-          {isAdmin && (
-            <View style={[styles.quickGrid, { marginTop: 0 }]}>
-              <QuickAction icon="📋" label="Post Notice" color={C.navy}  onPress={() => goMore("Notices")} />
-              <QuickAction icon="👑" label="Approvals"   color={C.amber} onPress={() => go("Admin")} />
-              <QuickAction icon="📞" label="Contacts"    color={C.green} onPress={() => goMore("Contacts")} />
-              <QuickAction icon="💰" label="Billing"     color={C.teal}  onPress={() => go("Maintenance")} />
-            </View>
-          )}
+          <Text style={[styles.sectionTitle, { marginBottom: 10 }]}>{t("home_quick_actions")}</Text>
+          <QuickActionGrid
+            actions={[
+              { icon: "🔴", label: t("home_report_issue"),          color: C.red,     onPress: () => go("Issues") },
+              { icon: "🤝", label: t("home_ask_help"),              color: C.amber,   onPress: () => goMore("Help") },
+              { icon: "📢", label: t("nav_notices"),                color: C.teal,    onPress: () => goMore("Notices") },
+              { icon: "🗳️", label: t("nav_polls"),                  color: C.purple,  onPress: () => goMore("Polls") },
+              { icon: "🎉", label: t("nav_events",  "Events"),      color: "#D97706", onPress: () => goMore("Events") },
+              { icon: "🚗", label: t("nav_parking", "Parking"),     color: C.navy,    onPress: () => goMore("Parking") },
+              { icon: "🏊", label: t("nav_amenity", "Amenity"),     color: C.teal,    onPress: () => goMore("Amenity") },
+              { icon: "👤", label: t("btn_profile", "Profile"),     color: C.gray700, onPress: () => goMore("Profile") },
+              ...(isAdmin ? [
+                { icon: "📋", label: "Post Notice", color: C.navy,  onPress: () => goMore("Notices") },
+                { icon: "👑", label: "Approvals",   color: C.amber, onPress: () => go("Admin") },
+                { icon: "📞", label: "Contacts",    color: C.green, onPress: () => goMore("Contacts") },
+                { icon: "💰", label: "Billing",     color: C.teal,  onPress: () => go("Maintenance") },
+              ] : []),
+            ]}
+          />
 
           {/* ── Urgent Notice Banner ── */}
           {urgentNotice && (
@@ -428,9 +464,8 @@ const styles = StyleSheet.create({
   dueSub:      { fontSize: 12, fontWeight: "600" },
 
   // Quick actions
-  quickGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 12 },
   quickTile: {
-    width: (width - 56) / 4,
+    width: TILE_WIDTH,
     aspectRatio: 1,
     borderRadius: 12,
     borderWidth: 1.5,
@@ -439,7 +474,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   quickIcon:  { fontSize: 22 },
-  quickLabel: { fontSize: 10, fontWeight: "700", textAlign: "center" },
+  quickLabel: { fontSize: 10, fontWeight: "700", textAlign: "center", lineHeight: 13 },
 
   // Section header
   sectionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 16, marginBottom: 8 },

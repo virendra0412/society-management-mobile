@@ -698,6 +698,133 @@ const EventDetailView = ({ eventId, onBack, isAdmin }) => {
 };
 
 // ═══════════════════════════════════════════════════════
+// DATE PICKER ROW
+// Cross-platform: shows a native DateTimePicker on iOS/Android.
+// value: "YYYY-MM-DD" string | ""
+// onChange: (newValue: "YYYY-MM-DD" | "") => void
+// ═══════════════════════════════════════════════════════
+const DatePickerRow = ({ label, value, onChange, optional = false }) => {
+  const [show, setShow] = useState(false);
+
+  // Convert "YYYY-MM-DD" string → Date object for the picker
+  const dateValue = value ? new Date(value + "T00:00:00") : new Date();
+
+  const handleChange = (_event, selected) => {
+    setShow(false);
+    if (!selected) return; // user dismissed
+    const y = selected.getFullYear();
+    const m = String(selected.getMonth() + 1).padStart(2, "0");
+    const d = String(selected.getDate()).padStart(2, "0");
+    onChange(`${y}-${m}-${d}`);
+  };
+
+  const displayText = value
+    ? new Date(value + "T00:00:00").toLocaleDateString("en-IN", {
+        day: "numeric", month: "short", year: "numeric",
+      })
+    : optional ? "Not set" : "Select date";
+
+  return (
+    <View style={{ marginBottom: 14 }}>
+      <Text style={styles.label}>{label}</Text>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+        <TouchableOpacity
+          onPress={() => setShow(true)}
+          style={{
+            flex: 1, borderWidth: 1.5, borderColor: C.gray200, borderRadius: 10,
+            paddingHorizontal: 12, paddingVertical: 10, backgroundColor: "#fff",
+            flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+          }}
+        >
+          <Text style={{ fontSize: 13, color: value ? C.text : C.gray400 }}>
+            {displayText}
+          </Text>
+          <Text style={{ fontSize: 16 }}>📅</Text>
+        </TouchableOpacity>
+
+        {optional && !!value && (
+          <TouchableOpacity
+            onPress={() => onChange("")}
+            style={{ padding: 8 }}
+          >
+            <Text style={{ fontSize: 16, color: C.gray400 }}>✕</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+
+      {show && (
+        <DateTimePicker
+          value={dateValue}
+          mode="date"
+          display="default"
+          onChange={handleChange}
+          minimumDate={optional ? undefined : new Date()}
+        />
+      )}
+    </View>
+  );
+};
+
+// ═══════════════════════════════════════════════════════
+// TIME PICKER ROW
+// value: "HH:MM" string
+// onChange: (newValue: "HH:MM") => void
+// ═══════════════════════════════════════════════════════
+const TimePickerRow = ({ label, value, onChange }) => {
+  const [show, setShow] = useState(false);
+
+  const toDate = (hhmm) => {
+    const [h, m] = (hhmm || "10:00").split(":").map(Number);
+    const d = new Date();
+    d.setHours(h, m, 0, 0);
+    return d;
+  };
+
+  const handleChange = (_event, selected) => {
+    setShow(false);
+    if (!selected) return;
+    const h = String(selected.getHours()).padStart(2, "0");
+    const m = String(selected.getMinutes()).padStart(2, "0");
+    onChange(`${h}:${m}`);
+  };
+
+  const display = (() => {
+    if (!value) return "10:00 AM";
+    const [h, m] = value.split(":").map(Number);
+    const ampm = h >= 12 ? "PM" : "AM";
+    const h12  = h % 12 || 12;
+    return `${String(h12).padStart(2, "0")}:${String(m).padStart(2, "0")} ${ampm}`;
+  })();
+
+  return (
+    <View style={{ marginBottom: 14 }}>
+      <Text style={styles.label}>{label}</Text>
+      <TouchableOpacity
+        onPress={() => setShow(true)}
+        style={{
+          borderWidth: 1.5, borderColor: C.gray200, borderRadius: 10,
+          paddingHorizontal: 12, paddingVertical: 10, backgroundColor: "#fff",
+          flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+        }}
+      >
+        <Text style={{ fontSize: 13, color: C.text }}>{display}</Text>
+        <Text style={{ fontSize: 16 }}>🕐</Text>
+      </TouchableOpacity>
+
+      {show && (
+        <DateTimePicker
+          value={toDate(value)}
+          mode="time"
+          is24Hour={false}
+          display="default"
+          onChange={handleChange}
+        />
+      )}
+    </View>
+  );
+};
+
+// ═══════════════════════════════════════════════════════
 // CREATE / EDIT EVENT MODAL
 // ═══════════════════════════════════════════════════════
 const EventFormModal = ({ open, editing, onClose, onSaved }) => {
@@ -862,7 +989,7 @@ const EventFormModal = ({ open, editing, onClose, onSaved }) => {
             </TouchableOpacity>
           </View>
 
-          {/* ── Date / Time pickers (issue 16) ───────────────────────── */}
+          {/* ── Date / Time pickers ──────────────────────────────────── */}
           <DatePickerRow
             label="Start Date *"
             value={form.eventDate}
