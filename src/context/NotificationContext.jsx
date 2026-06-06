@@ -10,6 +10,12 @@
  * Foreground:   notification displayed as in-app toast via ToastContext
  * Background:   handled natively by expo-notifications
  * Deep linking: tapping notification navigates to the relevant screen
+ *
+ * Wiring:
+ *   NotificationProvider reads registerPushRef from AuthContext and
+ *   assigns registerForPushNotifications into it. This avoids any
+ *   circular context dependency — AuthContext calls the fn after login
+ *   without importing NotificationContext directly.
  */
 import {
   createContext, useContext, useEffect, useRef, useCallback,
@@ -19,6 +25,7 @@ import * as Device          from "expo-device";
 import { Platform }         from "react-native";
 import { authApi }          from "../api/auth.api";
 import { useToast }         from "./ToastContext";
+import { useAuth }          from "./AuthContext";
 
 // How foreground notifications are shown
 Notifications.setNotificationHandler({
@@ -33,6 +40,7 @@ const NotificationContext = createContext(null);
 
 export const NotificationProvider = ({ children }) => {
   const toast              = useToast();
+  const { registerPushRef } = useAuth();
   const notifListener      = useRef();
   const responseListener   = useRef();
   const navigationRef      = useRef(null); // Set from RootNavigator
@@ -41,6 +49,7 @@ export const NotificationProvider = ({ children }) => {
   const registerForPushNotifications = useCallback(async () => {
     if (!Device.isDevice) {
       // Simulators can't receive push notifications
+      console.log("[Notifications] Skipping — not a physical device");
       return null;
     }
 
@@ -70,7 +79,7 @@ export const NotificationProvider = ({ children }) => {
     const tokenData = await Notifications.getExpoPushTokenAsync();
     const expoPushToken = tokenData.data;
 
-    // Register token with backend
+    // Register token with backend (PATCH /users/profile)
     try {
       await authApi.updateProfile({ fcmToken: expoPushToken });
       console.log("[Notifications] Token registered:", expoPushToken);
@@ -81,7 +90,15 @@ export const NotificationProvider = ({ children }) => {
     return expoPushToken;
   }, []);
 
-  // Set up foreground notification listener
+  // ── Inject registerForPushNotifications into AuthContext's ref ─────────────
+  // AuthContext.login calls registerPushRef.current() after a successful login.
+  // This is the bridge that avoids a circular import between the two contexts.
+  useEffect(() => {
+    registerPushRef.current = registerForPushNotifications;
+    return () => { registerPushRef.current = null; };
+  }, [registerForPushNotifications, registerPushRef]);
+
+  // ── Foreground notification listener ──────────────────────────────────────
   useEffect(() => {
     // Foreground notification → show as toast
     notifListener.current = Notifications.addNotificationReceivedListener(
@@ -109,7 +126,6 @@ export const NotificationProvider = ({ children }) => {
   /**
    * Map notification data.type → navigation destination.
    * Called when user taps a notification (background or killed state).
-   * Extend this as you add more notification types.
    */
   const handleNotificationNavigation = (data) => {
     if (!data?.type || !navigationRef.current) return;
