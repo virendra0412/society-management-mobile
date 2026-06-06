@@ -18,24 +18,33 @@ export const noticesApi = {
 
 // ─── Visitors ────────────────────────────────────────────────────────────────
 export const visitorsApi = {
-  getAll:        (p = {}) => client.get("/visitors",                 { params: p }).then(unwrap),
-  getMine:       (p = {}) => client.get("/visitors/mine",            { params: p }).then(unwrap),
+  // ── Core visitor APIs (Flows A & B) ────────────────────────────────────────
+  getAll:        (p = {}) => client.get("/visitors",                  { params: p }).then(unwrap),
+  getMine:       (p = {}) => client.get("/visitors/mine",             { params: p }).then(unwrap),
   getOne:        (id)     => client.get(`/visitors/${id}`).then(unwrap),
-  create:        (d)      => client.post("/visitors",                 d).then(unwrap),
-  approve:       (id)     => client.patch(`/visitors/${id}/approve`).then(unwrap),
-  reject:        (id)     => client.patch(`/visitors/${id}/reject`).then(unwrap),
-  checkout:      (id)     => client.patch(`/visitors/${id}/checkout`).then(unwrap),
+  createInvite:  (d)      => client.post("/visitors/invite",          d).then(unwrap),
+  logWalkIn:     (d)      => client.post("/visitors/walk-in",         d).then(unwrap),
+  approveWalkIn: (id)     => client.patch(`/visitors/${id}/approve`).then(unwrap),
+  rejectWalkIn:  (id)     => client.patch(`/visitors/${id}/reject`).then(unwrap),
   cancelInvite:  (id)     => client.patch(`/visitors/${id}/cancel`).then(unwrap),
   verifyOTP:     (id, otp)=> client.post(`/visitors/${id}/verify-otp`, { otp }).then(unwrap),
+  // Bug fix: was /checkout → backend route is /exit
+  markExit:      (id)     => client.patch(`/visitors/${id}/exit`).then(unwrap),
+  getMyVisitors: (p = {}) => client.get("/visitors/mine",             { params: p }).then(unwrap),
 
-  // VisitorsScreen method-name aliases (Bug 3 fix — screen used visitorApi with
-  // different method names; we normalise here so both spellings work)
-  createInvite:  (d)  => client.post("/visitors/invite", d).then(unwrap),
-  logWalkIn:     (d)  => client.post("/visitors/walk-in", d).then(unwrap),
-  getMyVisitors: (p = {}) => client.get("/visitors/mine", { params: p }).then(unwrap),
-  approveWalkIn: (id) => client.patch(`/visitors/${id}/approve`).then(unwrap),
-  rejectWalkIn:  (id) => client.patch(`/visitors/${id}/reject`).then(unwrap),
-  markExit:      (id) => client.patch(`/visitors/${id}/checkout`).then(unwrap),
+  // ── Flow C: Trusted Visitor APIs ───────────────────────────────────────────
+  // Resident: register a new trusted pass (maid, cook, driver, etc.)
+  registerTrusted:  (d)      => client.post("/visitors/trusted",              d).then(unwrap),
+  // Resident: list their own trusted passes (?activeOnly=true to filter)
+  getMyTrusted:     (p = {}) => client.get("/visitors/trusted/mine",          { params: p }).then(unwrap),
+  // Resident: update schedule, passType, notes etc.
+  updateTrusted:    (id, d)  => client.patch(`/visitors/trusted/${id}`,       d).then(unwrap),
+  // Resident: revoke a pass immediately
+  revokeTrusted:    (id)     => client.patch(`/visitors/trusted/${id}/revoke`).then(unwrap),
+  // Security: look up a trusted visitor by phone or name (guard screen)
+  lookupTrusted:    (p = {}) => client.get("/visitors/trusted/lookup",        { params: p }).then(unwrap),
+  // Security: record auto-entry for a trusted visitor
+  trustedEntry:     (id)     => client.post(`/visitors/trusted/${id}/entry`).then(unwrap),
 };
 
 // ─── Issues ───────────────────────────────────────────────────────────────────
