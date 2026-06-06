@@ -156,6 +156,9 @@ export const NotificationProvider = ({ children }) => {
       case "new_notice":
         nav.navigate("More");
         break;
+      case "new_poll":
+        nav.navigate("More");
+        break;
       default:
         nav.navigate("Home");
     }

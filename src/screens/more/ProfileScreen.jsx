@@ -359,7 +359,7 @@ const SectionCard = ({ title, action, children }) => (
 
 // ─── Main ProfileScreen ────────────────────────────────────────────────────────
 export const ProfileScreen = ({ navigation }) => {
-  const { user, refreshUser } = useAuth();
+  const { user, refreshUser, logout } = useAuth();
   const toast = useToast();
   const { t }     = useLanguage();
   const insets = useSafeAreaInsets();
@@ -406,6 +406,22 @@ export const ProfileScreen = ({ navigation }) => {
     } catch {
       toast.error(t("error_generic"));
     }
+  };
+  const handleLogout = () => {
+    Alert.alert(
+      "Sign Out",
+      "Are you sure you want to sign out?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Sign Out",
+          style: "destructive",
+          onPress: async () => {
+            try { await logout(); } catch (e) { console.warn(e?.message); }
+          },
+        },
+      ]
+    );
   };
 
   const handleEditMember = (member) => {
@@ -528,7 +544,14 @@ export const ProfileScreen = ({ navigation }) => {
           </View>
         </SectionCard>
       </ScrollView>
-
+      {/* ── Sign Out ─────────────────────────────────────────────────── */}
+      <TouchableOpacity
+        onPress={handleLogout}
+        activeOpacity={0.75}
+        style={styles.signOutBtn}
+      >
+        <Text style={styles.signOutText}>🚪 {t("btn_sign_out", "Sign Out")}</Text>
+      </TouchableOpacity>
       {/* ── Modals ─────────────────────────────────────────────────────────── */}
       <EditProfileModal
         open={editOpen}
@@ -661,4 +684,15 @@ const styles = StyleSheet.create({
   langRow:           { flexDirection: "row", alignItems: "center", paddingVertical: 4 },
   langLabel:         { fontSize: 13, fontWeight: "600", color: C.text },
   langHint:          { fontSize: 11, color: C.gray500, marginTop: 2 },
+  
+  signOutBtn: {
+    marginHorizontal: 16, marginTop: 8, marginBottom: 32,
+    paddingVertical: 14, borderRadius: 12,
+    backgroundColor: "#FEE2E2", alignItems: "center",
+    borderWidth: 1, borderColor: "#FECACA",
+  },
+  signOutText: {
+    fontSize: 14, fontWeight: "700", color: "#DC2626", letterSpacing: 0.2,
+  },
+
 });
