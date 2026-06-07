@@ -14,6 +14,7 @@ export const C = {
   navy:    "#0F2040",
   teal:    "#0D7377",
   amber:   "#F4A228",
+  orange:  "#EA580C",
   red:     "#E53E3E",
   green:   "#22835C",
   blue:    "#2563EB",
@@ -116,6 +117,16 @@ export const NAV_ITEMS = [
   { id: "Visitors",    label: "Visitors", icon: "🚶", rnIcon: "people-outline"   },
   { id: "Maintenance", label: "Payments", icon: "💰", rnIcon: "card-outline"     },
   { id: "More",        label: "More",     icon: "☰",  rnIcon: "apps-outline"     },
+];
+
+// Committee members see the same core tabs as residents
+// The Admin tab is only for full admins (they manage approvals + committee)
+export const NAV_ITEMS_COMMITTEE = [
+  { id: "Home",        label: "Home",      icon: "🏠", rnIcon: "home-outline"     },
+  { id: "Issues",      label: "Issues",    icon: "🔴", rnIcon: "warning-outline"  },
+  { id: "Visitors",    label: "Visitors",  icon: "🚶", rnIcon: "people-outline"   },
+  { id: "Maintenance", label: "Payments",  icon: "💰", rnIcon: "card-outline"     },
+  { id: "More",        label: "More",      icon: "☰",  rnIcon: "apps-outline"     },
 ];
 
 export const NAV_ITEMS_ADMIN = [

@@ -171,8 +171,21 @@ export const userApi = {
   addFamilyMember:    (d)         => client.post("/users/profile/family", d).then(unwrap),
   updateFamilyMember: (id, d)     => client.patch(`/users/profile/family/${id}`, d).then(unwrap),
   removeFamilyMember: (id)        => client.delete(`/users/profile/family/${id}`).then(unwrap),
-  // Admin — member approval (were missing, caused "failed to load pending members")
+  // Admin — member approval
   getPendingMembers:  ()          => client.get("/users/pending").then(unwrap),
   approveMember:      (id)        => client.patch(`/users/${id}/approve`).then(unwrap),
   rejectMember:       (id)        => client.patch(`/users/${id}/reject`).then(unwrap),
+  // Admin — committee management (RBAC)
+  getCommitteeMembers: ()         => client.get("/users/committee").then(unwrap),
+  assignCommitteeRole: (id, d)    => client.post(`/users/${id}/committee`, d).then(unwrap),
+  removeCommitteeRole: (id)       => client.delete(`/users/${id}/committee`).then(unwrap),
+};
+
+export const modulesApi = {
+  /** GET /api/v1/modules/status — which modules are enabled for the active society */
+  getStatus: () => client.get("/modules/status").then(unwrap),
+
+  /** POST /api/v1/modules/request-upgrade  { module: "visitors" } — admin requests SA to enable a module */
+  requestUpgrade: (moduleKey) =>
+    client.post("/modules/request-upgrade", { module: moduleKey }).then(unwrap),
 };

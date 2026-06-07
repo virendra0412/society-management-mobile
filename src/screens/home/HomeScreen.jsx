@@ -237,7 +237,7 @@ const langStyles = StyleSheet.create({
 
 // ─── HomeScreen ───────────────────────────────────────────────────────────────
 export const HomeScreen = () => {
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, hasPermission, committeeTitle } = useAuth();
   const { t }             = useLanguage();
   const navigation        = useNavigation();
 
@@ -351,11 +351,16 @@ export const HomeScreen = () => {
               { icon: "🚗", label: t("nav_parking", "Parking"),     color: C.navy,    onPress: () => goMore("Parking") },
               { icon: "🏊", label: t("nav_amenity", "Amenity"),     color: C.teal,    onPress: () => goMore("Amenity") },
               { icon: "👤", label: t("btn_profile", "Profile"),     color: C.gray700, onPress: () => goMore("Profile") },
-              ...(isAdmin ? [
+              // Committee-aware actions — shown based on module permissions
+              ...(hasPermission("notices", "write") ? [
                 { icon: "📋", label: "Post Notice", color: C.navy,  onPress: () => goMore("Notices") },
-                { icon: "👑", label: "Approvals",   color: C.amber, onPress: () => go("Admin") },
-                { icon: "📞", label: "Contacts",    color: C.green, onPress: () => goMore("Contacts") },
+              ] : []),
+              ...(hasPermission("maintenance", "read") ? [
                 { icon: "💰", label: "Billing",     color: C.teal,  onPress: () => go("Maintenance") },
+              ] : []),
+              ...(isAdmin ? [
+                { icon: "👑", label: "Approvals",   color: C.amber, onPress: () => go("Admin") },
+                { icon: "🛡️", label: "Committee",   color: C.purple, onPress: () => goMore("Committee") },
               ] : []),
             ]}
           />

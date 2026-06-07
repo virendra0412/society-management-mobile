@@ -151,6 +151,45 @@ export const AuthProvider = ({ children }) => {
 
   const memberships = user?.memberships || [];
 
+  // ── RBAC helpers ───────────────────────────────────────────────────────────
+  // Resolve the active membership's permissions object
+  const _activeMembership = user?.memberships?.find(
+    (m) => m.society?._id?.toString() === activeSocietyId ||
+           m.society?.toString()       === activeSocietyId
+  );
+
+  // Raw permissions map from the active membership
+  const permissions = _activeMembership?.permissions || {};
+
+  // Committee display title (e.g. "Treasurer", "Security In-charge")
+  const committeeTitle = _activeMembership?.committeeTitle || null;
+
+  // Role string for the active society
+  const role = _activeMembership?.role || user?.role || null;
+
+  const LEVEL_ORDER = ["none", "read", "write", "full"];
+
+  /**
+   * Check if the current user has at least `level` permission on `module`.
+   * Admin always returns true.
+   *
+   * hasPermission("maintenance", "write") → true for admin + treasurer
+   * hasPermission("visitors", "read")     → true for security + admin
+   */
+  const hasPermission = (module, level = "read") => {
+    if (isAdmin) return true;
+    const effectiveLevel = permissions[module] || "none";
+    const required = LEVEL_ORDER.indexOf(level);
+    const actual   = LEVEL_ORDER.indexOf(effectiveLevel);
+    return actual >= 1 && actual >= required;
+  };
+
+  /**
+   * isCommittee — true for any non-resident privileged role
+   * (admin, committee, security)
+   */
+  const isCommittee = ["admin", "committee", "security"].includes(role);
+
   return (
     <AuthContext.Provider
       value={{
@@ -158,6 +197,11 @@ export const AuthProvider = ({ children }) => {
         loading,
         isLogged,
         isAdmin,
+        isCommittee,
+        role,
+        permissions,
+        committeeTitle,
+        hasPermission,
         login,
         register,
         logout,

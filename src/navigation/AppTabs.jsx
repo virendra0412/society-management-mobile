@@ -20,7 +20,7 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 
-import { C, NAV_ITEMS, NAV_ITEMS_ADMIN } from "../constants/theme";
+import { C, NAV_ITEMS, NAV_ITEMS_COMMITTEE, NAV_ITEMS_ADMIN } from "../constants/theme";
 import { useAuth }     from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
 
@@ -205,9 +205,9 @@ const bar = StyleSheet.create({
 // APP TABS ROOT
 // ═══════════════════════════════════════════════════════
 export const AppTabs = () => {
-  const { isAdmin }    = useAuth();
-  const { t }          = useLanguage();
-  const items          = isAdmin ? NAV_ITEMS_ADMIN : NAV_ITEMS;
+  const { isAdmin, isCommittee } = useAuth();
+  const { t }                    = useLanguage();
+  const items                    = isAdmin ? NAV_ITEMS_ADMIN : isCommittee ? NAV_ITEMS_COMMITTEE : NAV_ITEMS;
 
   return (
     <Tab.Navigator

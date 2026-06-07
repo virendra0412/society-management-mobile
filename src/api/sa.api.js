@@ -127,3 +127,21 @@ export const saAnalyticsApi = {
   societyDetail: (id) =>
     saClient.get(`/superadmin/analytics/societies/${id}`).then(unwrapSA),
 };
+// ─── Module Management (Section 06) ───────────────────────────────────────────
+export const saModulesApi = {
+  /** GET /superadmin/societies/:id/modules */
+  getModules: (societyId) =>
+    saClient.get(`/superadmin/societies/${societyId}/modules`).then(unwrapSA),
+
+  /** PATCH /superadmin/societies/:id/modules  { modules: {visitors: true}, charges: {visitors: 350} } */
+  updateModules: (societyId, payload) =>
+    saClient.patch(`/superadmin/societies/${societyId}/modules`, payload).then(unwrapSA),
+
+  /** POST /superadmin/societies/:id/modules/bundle  { bundle: "starter"|"operations"|"fullstack", replaceAll?: bool } */
+  applyBundle: (societyId, payload) =>
+    saClient.post(`/superadmin/societies/${societyId}/modules/bundle`, payload).then(unwrapSA),
+
+  /** GET /superadmin/modules/upgrade-requests — list all pending upgrade requests across societies */
+  listUpgradeRequests: () =>
+    saClient.get("/superadmin/modules/upgrade-requests").then(unwrapSA),
+};

@@ -8,8 +8,7 @@ import { useAuth }     from "../../context/AuthContext";
 import { useLanguage } from "../../context/LanguageContext";
 import { C }           from "../../constants/theme";
 
-// Screens reachable from More
-import { NoticesScreen }  from "./NoticesScreen";
+// Screens reachable from Moreimport { NoticesScreen }  from "./NoticesScreen";
 import { HelpScreen }     from "./HelpScreen";
 import { ContactsScreen } from "./ContactsScreen";
 import { PollsScreen }    from "./PollsScreen";
@@ -19,6 +18,7 @@ import { ProfileScreen }  from "./ProfileScreen";
 import { EventsScreen }  from "../events/EventsScreen";
 import { ParkingScreen } from "../parking/ParkingScreen";
 import { AmenityScreen } from "../amenity/AmenityScreen";
+import { AdminScreen }   from "./AdminScreen";
 
 const { width } = Dimensions.get("window");
 const TILE_SIZE = (width - 56) / 3;
@@ -120,10 +120,9 @@ const tileStyles = StyleSheet.create({
 // ─── More Grid ────────────────────────────────────────────────────────────────
 const MoreGrid = () => {
   const navigation = useNavigation();
-  const { user }   = useAuth();
+  const { user, isAdmin }   = useAuth();
   const { t }      = useLanguage();
 
-  // Labels derived from translations so they re-render when locale changes
   const MODULES = [
     { id: "Notices",  icon: "📢", label: t("nav_notices"),  color: C.teal   },
     { id: "Help",     icon: "🤝", label: t("nav_help"),     color: C.amber  },
@@ -133,6 +132,8 @@ const MoreGrid = () => {
     { id: "Parking",  icon: "🚗", label: t("nav_parking", "Parking"), color: C.navy   },
     { id: "Amenity",  icon: "🏊", label: t("nav_amenity", "Amenity"), color: C.teal   },
     { id: "Profile",  icon: "👤", label: t("btn_profile"),  color: C.gray700 },
+    // Admin-only: Committee management
+    ...(isAdmin ? [{ id: "Committee", icon: "🛡️", label: "Committee", color: C.purple }] : []),
   ];
 
   return (
@@ -170,14 +171,15 @@ const Stack = createNativeStackNavigator();
 
 export const MoreScreen = () => (
   <Stack.Navigator screenOptions={{ headerShown: false }}>
-    <Stack.Screen name="MoreGrid"  component={MoreGrid} />
-    <Stack.Screen name="Notices"   component={NoticesScreen} />
-    <Stack.Screen name="Help"      component={HelpScreen} />
-    <Stack.Screen name="Contacts"  component={ContactsScreen} />
-    <Stack.Screen name="Polls"     component={PollsScreen} />
-    <Stack.Screen name="Events"    component={EventsScreen} />
-    <Stack.Screen name="Parking"   component={ParkingScreen} />
-    <Stack.Screen name="Amenity"   component={AmenityScreen} />
-    <Stack.Screen name="Profile"   component={ProfileScreen} />
+    <Stack.Screen name="MoreGrid"   component={MoreGrid} />
+    <Stack.Screen name="Notices"    component={NoticesScreen} />
+    <Stack.Screen name="Help"       component={HelpScreen} />
+    <Stack.Screen name="Contacts"   component={ContactsScreen} />
+    <Stack.Screen name="Polls"      component={PollsScreen} />
+    <Stack.Screen name="Events"     component={EventsScreen} />
+    <Stack.Screen name="Parking"    component={ParkingScreen} />
+    <Stack.Screen name="Amenity"    component={AmenityScreen} />
+    <Stack.Screen name="Profile"    component={ProfileScreen} />
+    <Stack.Screen name="Committee"  component={AdminScreen} />
   </Stack.Navigator>
 );
