@@ -1,21 +1,10 @@
 /**
  * context/NotificationContext.jsx
- * Expo push notification setup.
  *
- * On login:
- *   1. Request permission (iOS prompts user, Android grants automatically)
- *   2. Get Expo push token
- *   3. PATCH /users/profile with { fcmToken } — registers with backend
- *
- * Foreground:   notification displayed as in-app toast via ToastContext
- * Background:   handled natively by expo-notifications
- * Deep linking: tapping notification navigates to the relevant screen
- *
- * Wiring:
- *   NotificationProvider reads registerPushRef from AuthContext and
- *   assigns registerForPushNotifications into it. This avoids any
- *   circular context dependency — AuthContext calls the fn after login
- *   without importing NotificationContext directly.
+ * Added vs previous version:
+ *   - Auto-switches active society when user taps a notification from
+ *     a different society (reads societyId from notification data payload).
+ *   - Uses a ref for `user` to avoid stale closure inside the response listener.
  */
 import {
   createContext, useContext, useEffect, useRef, useCallback,
@@ -39,16 +28,24 @@ Notifications.setNotificationHandler({
 const NotificationContext = createContext(null);
 
 export const NotificationProvider = ({ children }) => {
-  const toast              = useToast();
-  const { registerPushRef } = useAuth();
-  const notifListener      = useRef();
-  const responseListener   = useRef();
-  const navigationRef      = useRef(null); // Set from RootNavigator
+  const toast                    = useToast();
+  const { registerPushRef, user, switchSociety } = useAuth();
+  const notifListener            = useRef();
+  const responseListener         = useRef();
+  const navigationRef            = useRef(null);
 
-  // Register for push notifications and save token to backend
+  // Keep a live ref to `user` so the notification handler never has a stale
+  // closure — response listeners are registered once and must read current user.
+  const userRef = useRef(user);
+  useEffect(() => { userRef.current = user; }, [user]);
+
+  // Same for switchSociety — stable callback but kept as ref for symmetry
+  const switchSocietyRef = useRef(switchSociety);
+  useEffect(() => { switchSocietyRef.current = switchSociety; }, [switchSociety]);
+
+  // ── Register for push notifications ────────────────────────────────────────
   const registerForPushNotifications = useCallback(async () => {
     if (!Device.isDevice) {
-      // Simulators can't receive push notifications
       console.log("[Notifications] Skipping — not a physical device");
       return null;
     }
@@ -66,20 +63,18 @@ export const NotificationProvider = ({ children }) => {
       return null;
     }
 
-    // Android needs a notification channel
     if (Platform.OS === "android") {
       await Notifications.setNotificationChannelAsync("default", {
-        name:        "default",
-        importance:  Notifications.AndroidImportance.MAX,
+        name:             "default",
+        importance:       Notifications.AndroidImportance.MAX,
         vibrationPattern: [0, 250, 250, 250],
-        lightColor:  "#0F2040",
+        lightColor:       "#0F2040",
       });
     }
 
-    const tokenData = await Notifications.getExpoPushTokenAsync();
-    const expoPushToken = tokenData.data;
+    const tokenData      = await Notifications.getExpoPushTokenAsync();
+    const expoPushToken  = tokenData.data;
 
-    // Register token with backend (PATCH /users/profile)
     try {
       await authApi.updateProfile({ fcmToken: expoPushToken });
       console.log("[Notifications] Token registered:", expoPushToken);
@@ -90,17 +85,14 @@ export const NotificationProvider = ({ children }) => {
     return expoPushToken;
   }, []);
 
-  // ── Inject registerForPushNotifications into AuthContext's ref ─────────────
-  // AuthContext.login calls registerPushRef.current() after a successful login.
-  // This is the bridge that avoids a circular import between the two contexts.
+  // ── Inject into AuthContext ref ────────────────────────────────────────────
   useEffect(() => {
     registerPushRef.current = registerForPushNotifications;
     return () => { registerPushRef.current = null; };
   }, [registerForPushNotifications, registerPushRef]);
 
-  // ── Foreground notification listener ──────────────────────────────────────
+  // ── Foreground + tap listeners ─────────────────────────────────────────────
   useEffect(() => {
-    // Foreground notification → show as toast
     notifListener.current = Notifications.addNotificationReceivedListener(
       (notification) => {
         const { title, body } = notification.request.content;
@@ -109,7 +101,6 @@ export const NotificationProvider = ({ children }) => {
       }
     );
 
-    // User tapped notification → navigate
     responseListener.current = Notifications.addNotificationResponseReceivedListener(
       (response) => {
         const data = response.notification.request.content.data;
@@ -124,41 +115,75 @@ export const NotificationProvider = ({ children }) => {
   }, [toast]);
 
   /**
-   * Map notification data.type → navigation destination.
-   * Called when user taps a notification (background or killed state).
+   * Navigate to the correct screen when a notification is tapped.
+   *
+   * Multi-society behaviour:
+   *   If the notification carries a `societyId` that differs from the user's
+   *   currently active society, we switch society first, then navigate.
+   *   This means tapping a walk-in alert from Society B while viewing Society A
+   *   seamlessly takes the resident to Society B's Visitors screen.
    */
-  const handleNotificationNavigation = (data) => {
+  const handleNotificationNavigation = async (data) => {
     if (!data?.type || !navigationRef.current) return;
+
+    // ── Auto-switch society if the notification is from a different one ────
+    if (data.societyId) {
+      const currentUser = userRef.current;
+      const currentId   =
+        currentUser?.activeSocietyId?._id?.toString() ||
+        currentUser?.activeSocietyId?.toString();
+
+      if (currentId && data.societyId !== currentId) {
+        try {
+          await switchSocietyRef.current(data.societyId);
+          console.log("[Notifications] Auto-switched to society:", data.societyId);
+        } catch (e) {
+          // Switch failed — still navigate, the screen will show correct data
+          // once the user manually switches from Profile.
+          console.warn("[Notifications] Auto-switch failed:", e?.message);
+        }
+      }
+    }
+
+    // ── Navigate to the correct screen ────────────────────────────────────
     const nav = navigationRef.current;
 
     switch (data.type) {
+      case "visitor_walkin":
       case "visitor_pending":
       case "visitor_approved":
       case "visitor_rejected":
+      case "visitor_entry":
+      case "trusted_pass_expiry":
+      case "trusted_visitor_digest":
         nav.navigate("Visitors");
         break;
+
       case "maintenance_due":
       case "maintenance_overdue":
       case "bill_published":
         nav.navigate("Maintenance");
         break;
+
       case "issue_update":
         nav.navigate("Issues");
         break;
+
       case "booking_confirmed":
       case "booking_rejected":
         nav.navigate("Amenity");
         break;
+
       case "parking_approved":
       case "parking_rejected":
         nav.navigate("Parking");
         break;
+
       case "new_notice":
-        nav.navigate("More");
-        break;
       case "new_poll":
         nav.navigate("More");
         break;
+
       default:
         nav.navigate("Home");
     }

@@ -1,6 +1,5 @@
 /**
  * api/auth.api.js
- * Identical API surface to web — same method names, same payloads.
  */
 import client, { unwrap } from "./client";
 
@@ -22,4 +21,17 @@ export const authApi = {
   logout:       ()             => client.post("/auth/logout").then(unwrap),
   getMe:        ()             => client.get("/auth/me").then(unwrap),
   updateProfile:(payload)      => client.patch("/users/profile",      payload).then(unwrap),
+
+  // ── Multi-society ────────────────────────────────────────────────────────────
+  /**
+   * Switch the active society context.
+   * Returns new { user, accessToken, refreshToken } with updated JWT.
+   */
+  switchSociety: (societyId)  => client.post("/auth/switch-society", { societyId }).then(unwrap),
+
+  /**
+   * Join a second (or subsequent) society using a join code.
+   * Returns { user, society, pendingApproval }.
+   */
+  joinSociety:  (payload)     => client.post("/auth/join-society",   payload).then(unwrap),
 };

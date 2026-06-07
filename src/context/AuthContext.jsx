@@ -1,13 +1,11 @@
 /**
  * context/AuthContext.jsx
- * React Native port of web AuthContext.
  *
- * Key differences:
- *   - tokenStorage is async → await getRefresh() / getUser()
- *   - authEvents.onLogout() replaces window.addEventListener("auth:logout")
- *   - useEffect restore is async-aware
- *   - registerPushToken callback wired in after login/register so the
- *     FCM token is sent to the backend as soon as the user is authenticated.
+ * Added vs previous version:
+ *   switchSociety(societyId) — switches active society, re-issues JWT, updates user state
+ *   joinSociety(payload)     — joins a second society, refreshes user
+ *   activeSocietyId          — convenience derived from user.activeSocietyId
+ *   memberships              — convenience derived from user.memberships
  */
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
 import { authApi }      from "../api/auth.api";
@@ -21,7 +19,6 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   // Holds the registerForPushNotifications fn injected by NotificationContext.
-  // Using a ref avoids a circular-context dependency.
   const registerPushRef = useRef(null);
 
   // ── Restore session on app launch ─────────────────────────────────────────
@@ -34,8 +31,8 @@ export const AuthProvider = ({ children }) => {
         tokenStorage.setAccess(data.accessToken);
         await tokenStorage.setRefresh(data.refreshToken);
 
-        const meRes   = await authApi.getMe();
-        const fresh   = meRes.data.user;
+        const meRes = await authApi.getMe();
+        const fresh = meRes.data.user;
         setUser(fresh);
         await tokenStorage.setUser(fresh);
       } catch {
@@ -58,22 +55,18 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   // ── Actions ────────────────────────────────────────────────────────────────
+
   const login = useCallback(async ({ email, password }) => {
     try {
       const response = await authApi.login({ email, password });
-      
       const { data } = response;
-      if (!data) {
-        throw new Error("No data in login response: " + JSON.stringify(response));
-      }
-      
+      if (!data) throw new Error("No data in login response: " + JSON.stringify(response));
+
       tokenStorage.setAccess(data.accessToken);
       await tokenStorage.setRefresh(data.refreshToken);
       await tokenStorage.setUser(data.user);
       setUser(data.user);
 
-      // Register FCM/Expo push token with backend after successful login.
-      // Fire-and-forget — a failure here must never block the login flow.
       if (registerPushRef.current) {
         registerPushRef.current().catch((e) =>
           console.warn("[AuthContext] Push token registration failed:", e?.message)
@@ -94,7 +87,6 @@ export const AuthProvider = ({ children }) => {
     await tokenStorage.setUser(data.user);
     setUser(data.user);
 
-    // Same fire-and-forget push token registration after signup.
     if (registerPushRef.current) {
       registerPushRef.current().catch((e) =>
         console.warn("[AuthContext] Push token registration failed:", e?.message)
@@ -118,12 +110,65 @@ export const AuthProvider = ({ children }) => {
     return fresh;
   }, []);
 
+  // ── Multi-society actions ──────────────────────────────────────────────────
+
+  /**
+   * Switch the active society context.
+   * Issues a new JWT with the new societyId.
+   * After this call, all subsequent API requests use the new society context.
+   */
+  const switchSociety = useCallback(async (societyId) => {
+    const { data } = await authApi.switchSociety(societyId);
+    // Replace tokens — new JWT carries the new societyId
+    tokenStorage.setAccess(data.accessToken);
+    await tokenStorage.setRefresh(data.refreshToken);
+    await tokenStorage.setUser(data.user);
+    setUser(data.user);
+    return data.user;
+  }, []);
+
+  /**
+   * Join a second (or subsequent) society.
+   * Adds a new membership entry to the user's account.
+   * Membership may be pending approval depending on society joinMode.
+   */
+  const joinSociety = useCallback(async (payload) => {
+    const { data } = await authApi.joinSociety(payload);
+    // Refresh user so memberships array is up-to-date
+    await refreshUser();
+    return data; // { user, society, pendingApproval }
+  }, [refreshUser]);
+
+  // ── Derived state ─────────────────────────────────────────────────────────
   const isAdmin  = user?.role === "admin";
   const isLogged = !!user;
 
+  // Convenience: resolve activeSocietyId whether populated or raw ObjectId
+  const activeSocietyId =
+    user?.activeSocietyId?._id?.toString() ||
+    user?.activeSocietyId?.toString() ||
+    null;
+
+  const memberships = user?.memberships || [];
+
   return (
     <AuthContext.Provider
-      value={{ user, loading, isLogged, isAdmin, login, register, logout, refreshUser, registerPushRef }}
+      value={{
+        user,
+        loading,
+        isLogged,
+        isAdmin,
+        login,
+        register,
+        logout,
+        refreshUser,
+        registerPushRef,
+        // Multi-society
+        switchSociety,
+        joinSociety,
+        activeSocietyId,
+        memberships,
+      }}
     >
       {children}
     </AuthContext.Provider>
