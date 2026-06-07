@@ -237,7 +237,7 @@ const langStyles = StyleSheet.create({
 
 // ─── HomeScreen ───────────────────────────────────────────────────────────────
 export const HomeScreen = () => {
-  const { user, isAdmin, hasPermission, committeeTitle } = useAuth();
+  const { user, isAdmin, hasPermission, committeeTitle, memberships, switchSociety, activeSocietyId } = useAuth();
   const { t }             = useLanguage();
   const navigation        = useNavigation();
 
@@ -246,6 +246,8 @@ export const HomeScreen = () => {
   const [notices,   setNotices]   = useState([]);
   const [dueBills,  setDueBills]  = useState([]);   // TC-HOME-02
   const [loading,   setLoading]   = useState(true);
+  const [showSwitcher, setShowSwitcher] = useState(false);
+  const [switching,    setSwitching]    = useState(null);
 
   useEffect(() => {
     const load = async () => {
@@ -317,7 +319,7 @@ export const HomeScreen = () => {
           </View>
           <Text style={styles.heroName}>{user?.name || "—"}</Text>
           <TouchableOpacity
-            onPress={() => goMore("Profile")}
+            onPress={() => memberships.length > 1 ? setShowSwitcher(true) : goMore("Profile")}
             activeOpacity={0.75}
             style={styles.heroSocietyButton}
           >
@@ -327,6 +329,71 @@ export const HomeScreen = () => {
             </Text>
             <Ionicons name="chevron-down" size={14} color="rgba(255,255,255,0.55)" />
           </TouchableOpacity>
+
+          {/* ── Society Switcher Bottom Sheet ─────────────────────────────── */}
+          <Modal
+            visible={showSwitcher}
+            transparent
+            animationType="slide"
+            onRequestClose={() => setShowSwitcher(false)}
+          >
+            <TouchableOpacity
+              style={styles.switcherBackdrop}
+              activeOpacity={1}
+              onPress={() => setShowSwitcher(false)}
+            >
+              <View style={styles.switcherSheet}>
+                <View style={styles.switcherHandle} />
+                <Text style={styles.switcherTitle}>Your Societies</Text>
+                {memberships.map((m) => {
+                  const soc  = m.society || {};
+                  const sid  = soc?._id?.toString() || m.society?.toString();
+                  const isActive = sid === (activeSocietyId?.toString() || activeSocietyId);
+                  const isBusy   = switching === sid;
+                  return (
+                    <TouchableOpacity
+                      key={sid}
+                      style={[styles.switcherRow, isActive && styles.switcherRowActive]}
+                      activeOpacity={isActive ? 1 : 0.7}
+                      onPress={async () => {
+                        if (isActive || isBusy) return;
+                        setSwitching(sid);
+                        try { await switchSociety(sid); setShowSwitcher(false); }
+                        catch { /* keep sheet open on error */ }
+                        finally { setSwitching(null); }
+                      }}
+                    >
+                      <View style={[styles.switcherAvatar, isActive && styles.switcherAvatarActive]}>
+                        <Text style={[styles.switcherAvatarText, isActive && { color: C.teal }]}>
+                          {(soc?.name || "?").split(" ").map(w => w[0] || "").join("").toUpperCase().slice(0, 2)}
+                        </Text>
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.switcherName} numberOfLines={1}>{soc?.name || "Unknown"}</Text>
+                        <Text style={styles.switcherMeta}>
+                          {[m.flat && `Flat ${m.flat}`, m.wing && `Wing ${m.wing}`].filter(Boolean).join(" · ")}
+                          {!m.isApproved ? " · Pending" : ""}
+                        </Text>
+                      </View>
+                      {isActive
+                        ? <Ionicons name="checkmark-circle" size={20} color={C.teal} />
+                        : isBusy
+                        ? <Ionicons name="hourglass-outline" size={18} color={C.gray400} />
+                        : <Ionicons name="chevron-forward" size={18} color={C.gray400} />
+                      }
+                    </TouchableOpacity>
+                  );
+                })}
+                <TouchableOpacity
+                  style={styles.switcherAddBtn}
+                  onPress={() => { setShowSwitcher(false); goMore("Profile"); }}
+                >
+                  <Ionicons name="add-circle-outline" size={18} color={C.teal} />
+                  <Text style={styles.switcherAddText}>Join another society</Text>
+                </TouchableOpacity>
+              </View>
+            </TouchableOpacity>
+          </Modal>
 
           {/* Stats row */}
           <View style={styles.statsRow}>
@@ -456,6 +523,21 @@ const styles = StyleSheet.create({
   heroEyebrow: { fontSize: 12, color: "rgba(255,255,255,0.5)", fontWeight: "600", letterSpacing: 0.6 },
   heroName:    { fontSize: 24, fontWeight: "800", color: "#fff", marginBottom: 2 },
   heroSocietyButton: { alignSelf: "flex-start", flexDirection: "row", alignItems: "center", gap: 4, maxWidth: "100%", marginBottom: 20 },
+
+  // Society switcher sheet
+  switcherBackdrop:     { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0,0,0,0.45)" },
+  switcherSheet:        { backgroundColor: C.bg, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, paddingBottom: 36 },
+  switcherHandle:       { width: 36, height: 4, backgroundColor: C.gray200, borderRadius: 2, alignSelf: "center", marginBottom: 16 },
+  switcherTitle:        { fontSize: 15, fontWeight: "700", color: C.text, marginBottom: 12 },
+  switcherRow:          { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: C.border },
+  switcherRowActive:    { opacity: 1 },
+  switcherAvatar:       { width: 40, height: 40, borderRadius: 12, backgroundColor: C.gray100, alignItems: "center", justifyContent: "center" },
+  switcherAvatarActive: { backgroundColor: C.teal + "20" },
+  switcherAvatarText:   { fontSize: 13, fontWeight: "700", color: C.gray500 },
+  switcherName:         { fontSize: 14, fontWeight: "600", color: C.text },
+  switcherMeta:         { fontSize: 12, color: C.gray500, marginTop: 1 },
+  switcherAddBtn:       { flexDirection: "row", alignItems: "center", gap: 8, paddingTop: 14 },
+  switcherAddText:      { fontSize: 14, color: C.teal, fontWeight: "600" },
   heroSub:     { fontSize: 13, color: "rgba(255,255,255,0.55)", flexShrink: 1 },
   statsRow:    { flexDirection: "row", gap: 10 },
   statBox:     { flex: 1, backgroundColor: "rgba(255,255,255,0.08)", borderRadius: 10, padding: 12, alignItems: "center" },
