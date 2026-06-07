@@ -38,7 +38,7 @@ const SAAnalytics = () => {
   const fetchAnalytics = async () => {
     try {
       const res = await saAnalyticsApi.overview({ period });
-      setAnalytics(res.data);
+      setAnalytics(res.data?.analytics || res.data);
     } catch (error) {
       console.error("Failed to fetch analytics:", error);
       Alert.alert("Error", "Failed to load analytics data");
@@ -113,173 +113,77 @@ const SAAnalytics = () => {
 
         {analytics && (
           <>
-            <Text style={styles.sectionTitle}>Platform Overview</Text>
+            <Text style={styles.sectionTitle}>Societies</Text>
             <View style={styles.metricsGrid}>
               <MetricCard
                 title="Total Societies"
-                value={formatNumber(analytics.totalSocieties)}
+                value={formatNumber(analytics.societies?.total)}
                 color={COLORS.primary}
                 icon="🏘️"
               />
               <MetricCard
-                title="Active Societies"
-                value={formatNumber(analytics.activeSocieties)}
+                title="Active"
+                value={formatNumber(analytics.societies?.active)}
                 color={COLORS.success}
                 icon="✅"
               />
               <MetricCard
-                title="Total Users"
-                value={formatNumber(analytics.totalUsers)}
+                title="Inactive"
+                value={formatNumber(analytics.societies?.inactive)}
+                color={COLORS.error}
+                icon="⛔"
+              />
+              <MetricCard
+                title="Open Issues"
+                value={formatNumber(analytics.issues?.open)}
+                color="#E91E63"
+                icon="🐛"
+              />
+            </View>
+
+            <Text style={styles.sectionTitle}>Residents</Text>
+            <View style={styles.metricsGrid}>
+              <MetricCard
+                title="Total Residents"
+                value={formatNumber(analytics.residents?.total)}
                 color={COLORS.info}
                 icon="👥"
               />
               <MetricCard
-                title="Total Units"
-                value={formatNumber(analytics.totalUnits)}
-                color="#FF9800"
-                icon="🏠"
+                title="Active Residents"
+                value={formatNumber(analytics.residents?.active)}
+                color={COLORS.success}
+                icon="✔️"
               />
             </View>
 
-            <Text style={styles.sectionTitle}>Revenue</Text>
-            <View style={styles.revenueGrid}>
+            <Text style={styles.sectionTitle}>Subscriptions & Revenue</Text>
+            <View style={styles.metricsGrid}>
               <MetricCard
-                title={`Total Revenue (${period})`}
-                value={formatCurrency(analytics.totalRevenue)}
+                title="Monthly MRR"
+                value={formatCurrency(analytics.subscriptions?.totalMRR)}
                 color={COLORS.success}
                 icon="💰"
               />
               <MetricCard
-                title="Pending Payments"
-                value={formatCurrency(analytics.pendingPayments)}
-                color={COLORS.warning}
-                icon="⏳"
+                title="Trial Plans"
+                value={formatNumber(analytics.subscriptions?.trial?.count)}
+                color="#17A2B8"
+                icon="🆓"
+              />
+              <MetricCard
+                title="Basic Plans"
+                value={formatNumber(analytics.subscriptions?.basic?.count)}
+                color="#6C757D"
+                icon="📦"
+              />
+              <MetricCard
+                title="Premium Plans"
+                value={formatNumber(analytics.subscriptions?.premium?.count)}
+                color="#FFD700"
+                icon="⭐"
               />
             </View>
-
-            <Text style={styles.sectionTitle}>Applications</Text>
-            <View style={styles.metricsGrid}>
-              <MetricCard
-                title="Pending"
-                value={formatNumber(analytics.pendingApplications)}
-                color={COLORS.warning}
-                icon="📋"
-              />
-              <MetricCard
-                title="Approved"
-                value={formatNumber(analytics.approvedApplications)}
-                color={COLORS.success}
-                icon="✓"
-              />
-              <MetricCard
-                title="Rejected"
-                value={formatNumber(analytics.rejectedApplications)}
-                color={COLORS.error}
-                icon="✕"
-              />
-              <MetricCard
-                title="Total"
-                value={formatNumber(analytics.totalApplications)}
-                color={COLORS.textSecondary}
-                icon="📊"
-              />
-            </View>
-
-            {analytics.subscriptionMetrics && (
-              <>
-                <Text style={styles.sectionTitle}>Subscriptions</Text>
-                <View style={styles.metricsGrid}>
-                  <MetricCard
-                    title="Trial Plans"
-                    value={formatNumber(
-                      analytics.subscriptionMetrics.trialPlans
-                    )}
-                    color="#17A2B8"
-                    icon="🆓"
-                  />
-                  <MetricCard
-                    title="Basic Plans"
-                    value={formatNumber(
-                      analytics.subscriptionMetrics.basicPlans
-                    )}
-                    color="#6C757D"
-                    icon="📦"
-                  />
-                  <MetricCard
-                    title="Premium Plans"
-                    value={formatNumber(
-                      analytics.subscriptionMetrics.premiumPlans
-                    )}
-                    color="#FFD700"
-                    icon="⭐"
-                  />
-                  <MetricCard
-                    title="Enterprise"
-                    value={formatNumber(
-                      analytics.subscriptionMetrics.enterprisePlans
-                    )}
-                    color="#FF6B6B"
-                    icon="👑"
-                  />
-                </View>
-              </>
-            )}
-
-            {analytics.activityMetrics && (
-              <>
-                <Text style={styles.sectionTitle}>Activity</Text>
-                <View style={styles.metricsGrid}>
-                  <MetricCard
-                    title="Events Created"
-                    value={formatNumber(analytics.activityMetrics.eventsCreated)}
-                    color={"#9C27B0"}
-                    icon="🎉"
-                  />
-                  <MetricCard
-                    title="Maintenance Bills"
-                    value={formatNumber(
-                      analytics.activityMetrics.maintenanceBills
-                    )}
-                    color={"#FF9800"}
-                    icon="📄"
-                  />
-                  <MetricCard
-                    title="Issues Reported"
-                    value={formatNumber(analytics.activityMetrics.issuesReported)}
-                    color={"#E91E63"}
-                    icon="🐛"
-                  />
-                  <MetricCard
-                    title="Visitors Registered"
-                    value={formatNumber(
-                      analytics.activityMetrics.visitorsRegistered
-                    )}
-                    color={"#2196F3"}
-                    icon="👤"
-                  />
-                </View>
-              </>
-            )}
-
-            {analytics.growth && (
-              <>
-                <Text style={styles.sectionTitle}>Growth</Text>
-                <View style={styles.metricsGrid}>
-                  <MetricCard
-                    title="New Societies"
-                    value={formatNumber(analytics.growth.newSocieties)}
-                    color={COLORS.success}
-                    icon="📈"
-                  />
-                  <MetricCard
-                    title="New Users"
-                    value={formatNumber(analytics.growth.newUsers)}
-                    color={COLORS.info}
-                    icon="👥"
-                  />
-                </View>
-              </>
-            )}
           </>
         )}
       </ScrollView>

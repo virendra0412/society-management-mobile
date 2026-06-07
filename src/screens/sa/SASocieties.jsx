@@ -45,7 +45,7 @@ const SASocieties = ({ navigation }) => {
         params.status = statusFilter;
       }
       const res = await saSocietiesApi.getAll(params);
-      setSocieties(res.data || []);
+      setSocieties(res.data?.societies || []);
     } catch (error) {
       console.error("Failed to fetch societies:", error);
       Alert.alert("Error", "Failed to load societies");
@@ -213,7 +213,7 @@ const SASocieties = ({ navigation }) => {
       <FlatList
         data={filteredSocieties}
         renderItem={renderSocietyCard}
-        keyExtractor={(item) => item.id.toString()}
+        keyExtractor={(item) => item._id?.toString()}
         contentContainerStyle={styles.listContent}
         refreshControl={
           <RefreshControl
@@ -299,7 +299,7 @@ const SASocieties = ({ navigation }) => {
               <TouchableOpacity
                 style={styles.reactivateButton}
                 onPress={() =>
-                  handleReactivate(selectedSociety.id)
+                  handleReactivate(selectedSociety._id || selectedSociety.id)
                 }
                 disabled={actionLoading}
               >
@@ -330,7 +330,7 @@ const SASocieties = ({ navigation }) => {
                 </View>
                 <TouchableOpacity
                   style={styles.suspendButton}
-                  onPress={() => handleSuspend(selectedSociety.id)}
+                  onPress={() => handleSuspend(selectedSociety._id || selectedSociety.id)}
                   disabled={actionLoading}
                 >
                   {actionLoading ? (

@@ -33,7 +33,7 @@ const SADashboard = ({ navigation }) => {
   const fetchAnalytics = async () => {
     try {
       const res = await saAnalyticsApi.overview({ period: "30d" });
-      setAnalytics(res.data);
+      setAnalytics(res.data?.analytics || res.data);
     } catch (error) {
       console.error("Failed to fetch analytics:", error);
       Alert.alert("Error", "Failed to load dashboard data");
@@ -100,30 +100,30 @@ const SADashboard = ({ navigation }) => {
           <View style={styles.statsGrid}>
             <View style={styles.statCard}>
               <Text style={styles.statValue}>
-                {analytics.totalSocieties || 0}
+                {analytics.societies?.total || 0}
               </Text>
               <Text style={styles.statLabel}>Total Societies</Text>
             </View>
 
             <View style={styles.statCard}>
               <Text style={styles.statValue}>
-                {analytics.activeSocieties || 0}
+                {analytics.societies?.active || 0}
               </Text>
               <Text style={styles.statLabel}>Active</Text>
             </View>
 
             <View style={styles.statCard}>
               <Text style={[styles.statValue, { color: COLORS.warning }]}>
-                {analytics.pendingApplications || 0}
+                {analytics.residents?.total || 0}
               </Text>
-              <Text style={styles.statLabel}>Pending Apps</Text>
+              <Text style={styles.statLabel}>Residents</Text>
             </View>
 
             <View style={styles.statCard}>
               <Text style={styles.statValue}>
-                ₹{(analytics.totalRevenue || 0).toLocaleString()}
+                ₹{(analytics.subscriptions?.totalMRR || 0).toLocaleString()}
               </Text>
-              <Text style={styles.statLabel}>Revenue (30d)</Text>
+              <Text style={styles.statLabel}>Monthly MRR</Text>
             </View>
           </View>
         )}

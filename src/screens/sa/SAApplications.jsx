@@ -40,7 +40,7 @@ const SAApplications = () => {
   const fetchApplications = async () => {
     try {
       const res = await saApplicationsApi.getAll({ status: filter });
-      setApplications(res.data || []);
+      setApplications(res.data?.applications || []);
     } catch (error) {
       console.error("Failed to fetch applications:", error);
       Alert.alert("Error", "Failed to load applications");
@@ -87,7 +87,7 @@ const SAApplications = () => {
 
     setActionLoading(true);
     try {
-      await saApplicationsApi.reject(selectedApp.id, rejectNote);
+      await saApplicationsApi.reject(selectedApp._id || selectedApp.id, rejectNote);
       Alert.alert("Success", "Application rejected");
       setShowModal(false);
       setRejectNote("");
@@ -153,7 +153,7 @@ const SAApplications = () => {
         <View style={styles.cardActions}>
           <TouchableOpacity
             style={[styles.actionButton, styles.approveButton]}
-            onPress={() => handleApprove(item.id)}
+            onPress={() => handleApprove(item._id)}
             disabled={actionLoading}
           >
             <Text style={styles.approveButtonText}>✓ Approve</Text>
@@ -208,7 +208,7 @@ const SAApplications = () => {
       <FlatList
         data={applications}
         renderItem={renderApplicationCard}
-        keyExtractor={(item) => item.id.toString()}
+        keyExtractor={(item) => item._id?.toString()}
         contentContainerStyle={styles.listContent}
         refreshControl={
           <RefreshControl
