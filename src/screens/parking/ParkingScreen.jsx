@@ -179,7 +179,8 @@ const SlotsTab = ({ isAdmin }) => {
   return (
     <View style={{ flex: 1 }}>
       <ScrollView horizontal showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ padding: 16, paddingBottom: 8, gap: 6, flexDirection: "row" }}>
+        style={ps.filterScroller}
+        contentContainerStyle={ps.filterContent}>
         {["All", ...SLOT_TYPES].map(t => (
           <FilterPill key={t} label={t} active={typeFilter === t} onPress={() => setTypeFilter(t)} />
         ))}
@@ -431,7 +432,8 @@ const AdminRequestsTab = ({ slots }) => {
       )}
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 8, gap: 6, flexDirection: "row" }}>
+        style={ps.filterScroller}
+        contentContainerStyle={ps.filterContentCompact}>
         {["all","pending","approved","rejected","cancelled"].map(f => (
           <FilterPill key={f} label={f.charAt(0).toUpperCase()+f.slice(1)}
             active={filter === f} onPress={() => setFilter(f)} />
@@ -849,7 +851,14 @@ export const ParkingScreen = () => {
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={ps.tabBar} contentContainerStyle={ps.tabBarContent}>
         {TABS.map(t => (
           <TouchableOpacity key={t.id} onPress={() => setTab(t.id)} style={[ps.tabBtn, tab === t.id && ps.tabActive]}>
-            <Text style={[ps.tabText, tab === t.id && ps.tabTextActive]} numberOfLines={1}>{t.label}</Text>
+            <Text
+              style={[ps.tabText, tab === t.id && ps.tabTextActive]}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.85}
+            >
+              {t.label}
+            </Text>
           </TouchableOpacity>
         ))}
       </ScrollView>
@@ -902,12 +911,15 @@ const ps = StyleSheet.create({
   headerTitle:   { fontSize: 22, fontWeight: "800", color: "#fff", marginTop: 2 },
   headerBtn:     { backgroundColor: C.teal, borderRadius: 10, paddingVertical: 7, paddingHorizontal: 14 },
   headerBtnText: { fontSize: 12, fontWeight: "700", color: "#fff" },
-  tabBar:        { flexGrow: 0, flexShrink: 0, backgroundColor: C.navy, borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.1)" },
-  tabBarContent: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16 },
-  tabBtn:        { minWidth: 108, height: 43, alignItems: "center", justifyContent: "center", borderBottomWidth: 2.5, borderBottomColor: "transparent", paddingHorizontal: 10 },
+  tabBar:        { flexGrow: 0, flexShrink: 0, height: 46, backgroundColor: C.navy, borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.1)" },
+  tabBarContent: { flexGrow: 0, flexDirection: "row", alignItems: "stretch", paddingHorizontal: 12 },
+  tabBtn:        { width: 116, height: 45, alignItems: "center", justifyContent: "center", borderBottomWidth: 2.5, borderBottomColor: "transparent", paddingHorizontal: 8 },
   tabActive:     { borderBottomColor: C.teal },
-  tabText:       { fontSize: 12, fontWeight: "700", color: "rgba(255,255,255,0.4)" },
+  tabText:       { width: "100%", textAlign: "center", fontSize: 12, fontWeight: "700", color: "rgba(255,255,255,0.4)" },
   tabTextActive: { color: "#fff" },
+  filterScroller:{ flexGrow: 0, flexShrink: 0, height: 56, backgroundColor: C.bg },
+  filterContent: { flexGrow: 0, flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingTop: 8, paddingBottom: 8, gap: 6 },
+  filterContentCompact:{ flexGrow: 0, flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingTop: 8, paddingBottom: 8, gap: 6 },
   ctaCard:       { backgroundColor: "#fff", borderRadius: 16, padding: 18, borderWidth: 1, borderColor: C.gray100, marginTop: 4 },
   ctaTitle:      { fontSize: 16, fontWeight: "700", color: C.navy, marginBottom: 4 },
   ctaSub:        { fontSize: 13, color: C.gray500, lineHeight: 20 },
