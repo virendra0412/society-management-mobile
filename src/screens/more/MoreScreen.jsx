@@ -8,11 +8,13 @@ import { useAuth }     from "../../context/AuthContext";
 import { useLanguage } from "../../context/LanguageContext";
 import { C }           from "../../constants/theme";
 
-// Screens reachable from Moreimport { NoticesScreen }  from "./NoticesScreen";
+// Screens reachable from More
+import { NoticesScreen }  from "./NoticesScreen";
 import { HelpScreen }     from "./HelpScreen";
 import { ContactsScreen } from "./ContactsScreen";
 import { PollsScreen }    from "./PollsScreen";
 import { ProfileScreen }  from "./ProfileScreen";
+import UpgradeScreen      from "./UpgradeScreen";
 
 // Screens that were built but not wired (Events / Parking / Amenity)
 import { EventsScreen }  from "../events/EventsScreen";
@@ -133,7 +135,10 @@ const MoreGrid = () => {
     { id: "Amenity",  icon: "🏊", label: t("nav_amenity", "Amenity"), color: C.teal   },
     { id: "Profile",  icon: "👤", label: t("btn_profile"),  color: C.gray700 },
     // Admin-only: Committee management
-    ...(isAdmin ? [{ id: "Committee", icon: "🛡️", label: "Committee", color: C.purple }] : []),
+    ...(isAdmin ? [
+      { id: "Committee", icon: "🛡️", label: "Committee", color: C.purple },
+      { id: "Upgrade",   icon: "⬆️", label: "Upgrades",  color: C.amber },
+    ] : []),
   ];
 
   return (
@@ -181,5 +186,6 @@ export const MoreScreen = () => (
     <Stack.Screen name="Amenity"    component={AmenityScreen} />
     <Stack.Screen name="Profile"    component={ProfileScreen} />
     <Stack.Screen name="Committee"  component={AdminScreen} />
+    <Stack.Screen name="Upgrade"    component={UpgradeScreen} />
   </Stack.Navigator>
 );

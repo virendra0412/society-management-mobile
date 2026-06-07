@@ -282,6 +282,19 @@ const SASocieties = ({ navigation }) => {
               />
             </View>
 
+            <TouchableOpacity
+              style={styles.modulesButton}
+              onPress={() => {
+                const societyId = selectedSociety?._id || selectedSociety?.id;
+                setShowDetailsModal(false);
+                setSelectedSociety(null);
+                navigation.navigate("SAModules", { societyId });
+              }}
+              disabled={actionLoading}
+            >
+              <Text style={styles.modulesButtonText}>Manage Modules</Text>
+            </TouchableOpacity>
+
             {selectedSociety?.status?.toLowerCase() === "suspended" ? (
               <TouchableOpacity
                 style={styles.reactivateButton}
@@ -549,6 +562,18 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   suspendButtonText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  modulesButton: {
+    backgroundColor: COLORS.primary,
+    borderRadius: 8,
+    paddingVertical: SPACING.lg,
+    alignItems: "center",
+    marginBottom: SPACING.md,
+  },
+  modulesButtonText: {
     color: "#fff",
     fontSize: 14,
     fontWeight: "600",

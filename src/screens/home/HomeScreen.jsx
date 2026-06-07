@@ -316,10 +316,17 @@ export const HomeScreen = () => {
             <LanguageDropdown />
           </View>
           <Text style={styles.heroName}>{user?.name || "—"}</Text>
-          <Text style={styles.heroSub}>
-            {user?.society?.name || "No society"}
-            {user?.flat ? ` · Flat ${user.flat}` : ""}
-          </Text>
+          <TouchableOpacity
+            onPress={() => goMore("Profile")}
+            activeOpacity={0.75}
+            style={styles.heroSocietyButton}
+          >
+            <Text style={styles.heroSub} numberOfLines={1}>
+              {user?.society?.name || user?.activeSocietyId?.name || "No society"}
+              {user?.flat ? ` · Flat ${user.flat}` : ""}
+            </Text>
+            <Ionicons name="chevron-down" size={14} color="rgba(255,255,255,0.55)" />
+          </TouchableOpacity>
 
           {/* Stats row */}
           <View style={styles.statsRow}>
@@ -448,7 +455,8 @@ const styles = StyleSheet.create({
   heroTopRow:  { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 4 },
   heroEyebrow: { fontSize: 12, color: "rgba(255,255,255,0.5)", fontWeight: "600", letterSpacing: 0.6 },
   heroName:    { fontSize: 24, fontWeight: "800", color: "#fff", marginBottom: 2 },
-  heroSub:     { fontSize: 13, color: "rgba(255,255,255,0.55)", marginBottom: 20 },
+  heroSocietyButton: { alignSelf: "flex-start", flexDirection: "row", alignItems: "center", gap: 4, maxWidth: "100%", marginBottom: 20 },
+  heroSub:     { fontSize: 13, color: "rgba(255,255,255,0.55)", flexShrink: 1 },
   statsRow:    { flexDirection: "row", gap: 10 },
   statBox:     { flex: 1, backgroundColor: "rgba(255,255,255,0.08)", borderRadius: 10, padding: 12, alignItems: "center" },
   statIcon:    { fontSize: 18, marginBottom: 4 },

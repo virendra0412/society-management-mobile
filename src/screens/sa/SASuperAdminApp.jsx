@@ -14,6 +14,7 @@ import SADashboard from "./SADashboard";
 import SAApplications from "./SAApplications";
 import SASocieties from "./SASocieties";
 import SAAnalytics from "./SAAnalytics";
+import SAModules from "./SAModules";
 import { useSAAuth } from "../../context/SAAuthContext";
 import { COLORS } from "../../constants/theme";
 
@@ -87,6 +88,13 @@ const SASuperAdminApp = () => {
             component={SAAnalytics}
             options={{
               title: "Platform Analytics",
+            }}
+          />
+          <Stack.Screen
+            name="SAModules"
+            component={SAModules}
+            options={{
+              title: "Module Manager",
             }}
           />
         </>
