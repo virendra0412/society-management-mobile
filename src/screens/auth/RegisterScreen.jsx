@@ -8,7 +8,7 @@
 import { useState } from "react";
 import {
   View, Text, StyleSheet, TouchableOpacity,
-  KeyboardAvoidingView, Platform, ScrollView,
+  KeyboardAvoidingView, Platform, ScrollView, TextInput
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as Linking      from "expo-linking";
@@ -32,7 +32,7 @@ export const RegisterScreen = ({ navigation, route }) => {
   });
   const [errors,  setErrors]  = useState({});
   const [loading, setLoading] = useState(false);
-
+  const [showPass,   setShowPass]   = useState(false);
   const set = (key) => (val) => {
     setForm((p) => ({ ...p, [key]: val }));
     setErrors((p) => ({ ...p, [key]: undefined }));
