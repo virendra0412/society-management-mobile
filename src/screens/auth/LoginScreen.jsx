@@ -14,6 +14,7 @@ import { useAuth }      from "../../context/AuthContext";
 import { useLanguage }  from "../../context/LanguageContext";
 import { useToast }     from "../../context/ToastContext";
 import { Input, Btn }   from "../../components/ui";
+import { AppLogo }      from "../../components/ui/AppLogo";
 import { C }            from "../../constants/theme";
 
 export const LoginScreen = ({ navigation }) => {
@@ -64,10 +65,7 @@ export const LoginScreen = ({ navigation }) => {
           showsVerticalScrollIndicator={false}
         >
           {/* Logo */}
-          <View style={styles.logoWrap}>
-            <Text style={styles.logoEmoji}>🏘️</Text>
-            <Text style={styles.appName}>{t("app_name")}</Text>
-          </View>
+          <AppLogo size="md" dark={false} tagline style={{ marginBottom: 32 }} />
 
           {/* Card */}
           <View style={styles.card}>
@@ -145,9 +143,7 @@ const styles = StyleSheet.create({
   safe:       { flex: 1, backgroundColor: C.navy },
   kav:        { flex: 1 },
   scroll:     { flexGrow: 1, justifyContent: "center", padding: 24 },
-  logoWrap:   { alignItems: "center", marginBottom: 32 },
-  logoEmoji:  { fontSize: 52, marginBottom: 8 },
-  appName:    { fontSize: 24, fontWeight: "800", color: "#fff" },
+  
   card:       { backgroundColor: "#fff", borderRadius: 20, padding: 24 },
   title:      { fontSize: 20, fontWeight: "800", color: C.navy, marginBottom: 4 },
   subtitle:   { fontSize: 13, color: C.gray500, marginBottom: 22 },

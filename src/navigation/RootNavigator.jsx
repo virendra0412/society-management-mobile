@@ -15,6 +15,7 @@ import { AuthStack }        from "./AuthStack";
 import { AppTabs }          from "./AppTabs";
 import SALoginScreen        from "../screens/sa/SALoginScreen";
 import SASuperAdminApp      from "../screens/sa/SASuperAdminApp";
+import { AppLogo }          from "../components/ui/AppLogo";
 
 const NavTheme = {
   ...DefaultTheme,
@@ -24,9 +25,8 @@ const NavTheme = {
 // ─── Loading screen ───────────────────────────────────────────────────────────
 const LoadingScreen = () => (
   <View style={styles.center}>
-    <Text style={styles.logo}>🏘️</Text>
-    <Text style={styles.appName}>SocietyApp</Text>
-    <ActivityIndicator color={C.teal} style={{ marginTop: 24 }} />
+    <AppLogo size="lg" dark={false} tagline />
+    <ActivityIndicator color={C.teal} style={{ marginTop: 32 }} />
   </View>
 );
 
@@ -109,8 +109,6 @@ export const RootNavigator = () => {
 
 const styles = StyleSheet.create({
   center:       { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: C.navy },
-  logo:         { fontSize: 60, marginBottom: 12 },
-  appName:      { fontSize: 26, fontWeight: "800", color: "#fff" },
   pendingTitle: { fontSize: 22, fontWeight: "800", color: C.navy, marginBottom: 12, textAlign: "center" },
   pendingBody:  { fontSize: 14, color: C.gray500, textAlign: "center", lineHeight: 22, marginBottom: 20 },
   pendingTip:   { backgroundColor: "#FEF3C7", borderRadius: 12, padding: 14, marginBottom: 28, width: "100%" },

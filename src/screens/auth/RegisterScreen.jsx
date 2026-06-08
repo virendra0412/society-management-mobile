@@ -2,7 +2,7 @@
  * screens/auth/RegisterScreen.jsx
  * Fully functional register screen.
  *
- * Deep link: societyapp://join/CODE → RegisterScreen with joinCode pre-filled.
+ * Deep link: mysociety://join/CODE → RegisterScreen with joinCode pre-filled.
  * Calls: POST /auth/register via AuthContext.register()
  */
 import { useState } from "react";
@@ -16,6 +16,7 @@ import { useAuth }      from "../../context/AuthContext";
 import { useLanguage }  from "../../context/LanguageContext";
 import { useToast }     from "../../context/ToastContext";
 import { Input, Btn }   from "../../components/ui";
+import { AppLogo }      from "../../components/ui/AppLogo";
 import { C }            from "../../constants/theme";
 
 export const RegisterScreen = ({ navigation, route }) => {
@@ -99,6 +100,7 @@ export const RegisterScreen = ({ navigation, route }) => {
             <Text style={styles.backText}>← {t("btn_back")}</Text>
           </TouchableOpacity>
 
+          <AppLogo size="sm" dark style={{ marginBottom: 16, marginTop: 8 }} />
           <Text style={styles.title}>{t("reg_title")}</Text>
           <Text style={styles.subtitle}>{t("reg_subtitle")}</Text>
 
