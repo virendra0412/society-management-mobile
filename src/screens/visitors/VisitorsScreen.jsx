@@ -164,12 +164,17 @@ const OTPModal = ({ otp, visitor, onClose }) => (
 );
 
 // ─── Visitor Card (Flows A, B, D) ────────────────────────────────────────────
-const VisitorCard = ({ v, isAdmin, onApprove, onReject, onVerifyOTP, onMarkExit, onCancelInvite, busy }) => {
+const VisitorCard = ({ v, isAdmin, myFlat, onApprove, onReject, onVerifyOTP, onMarkExit, onCancelInvite, busy }) => {
   const purposeIcon = VISITOR_PURPOSE_ICON[v.purpose] || "🚶";
   const isBusy      = busy === v._id;
   const sc          = VISITOR_STATUS_COLOR[v.status] || VISITOR_STATUS_COLOR.exited;
   const expiry      = v.status === "invited" ? otpExpiryLabel(v.entryOTPExpires) : null;
   const isDelivery  = v.purpose === "Delivery";
+
+  // Admin can only approve/reject walk-ins for their own flat.
+  // For other flats they can still verify OTP and mark exit (gate operations).
+  const isOwnFlat   = !v.hostFlat || !myFlat || v.hostFlat === myFlat;
+  const canApproveReject = !isAdmin || isOwnFlat;
 
   return (
     <Card style={{ marginBottom: 10 }}>
@@ -242,10 +247,17 @@ const VisitorCard = ({ v, isAdmin, onApprove, onReject, onVerifyOTP, onMarkExit,
           🔑 Verify OTP & Grant Entry
         </Btn>
       )}
-      {isAdmin && v.status === "pending" && (
+      {isAdmin && v.status === "pending" && canApproveReject && (
         <View style={{ flexDirection: "row", gap: 8 }}>
           <Btn small variant="primary" onPress={() => onApprove(v._id)} loading={isBusy} style={{ flex: 1 }}>✓ Approve Entry</Btn>
           <Btn small variant="danger"  onPress={() => onReject(v._id)}  loading={isBusy} style={{ flex: 1 }}>✕ Reject</Btn>
+        </View>
+      )}
+      {isAdmin && v.status === "pending" && !canApproveReject && (
+        <View style={{ padding: 8, backgroundColor: C.gray50, borderRadius: 8 }}>
+          <Text style={{ fontSize: 11, color: C.gray500, textAlign: "center" }}>
+            Awaiting approval from Flat {v.hostFlat} resident
+          </Text>
         </View>
       )}
       {isAdmin && v.status === "approved" && (
@@ -682,7 +694,11 @@ const TrustedTab = ({ user }) => {
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 export const VisitorsScreen = () => {
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, activeSocietyId, memberships } = useAuth();
+  const activeMembership = memberships?.find(
+    (m) => m.society?._id?.toString() === activeSocietyId || m.society?.toString() === activeSocietyId
+  );
+  const myFlat = activeMembership?.flat || user?.flat || null;
   const toast = useToast();
 
   // Residents see two tabs; guards see single list
@@ -846,6 +862,7 @@ export const VisitorsScreen = () => {
                 <VisitorCard
                   v={item}
                   isAdmin={isAdmin}
+                  myFlat={myFlat}
                   busy={busy}
                   onApprove={handleApprove}
                   onReject={handleReject}

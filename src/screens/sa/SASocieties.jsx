@@ -41,11 +41,14 @@ const SASocieties = ({ navigation }) => {
   const fetchSocieties = async () => {
     try {
       const params = {};
-      if (statusFilter !== "all") {
-        params.status = statusFilter;
-      }
+      if (statusFilter === "active")    params.isActive = true;
+      if (statusFilter === "suspended") params.isActive = false;
       const res = await saSocietiesApi.getAll(params);
-      setSocieties(res.data?.societies || []);
+      let list = res.data?.societies || [];
+      if (statusFilter === "trial") {
+        list = list.filter((s) => s.subscription?.plan === "trial");
+      }
+      setSocieties(list);
     } catch (error) {
       console.error("Failed to fetch societies:", error);
       Alert.alert("Error", "Failed to load societies");

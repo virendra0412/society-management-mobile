@@ -941,6 +941,29 @@ const MaintenanceDashboard = ({ isAdmin, onOpenBill, onOpenMyPayments, onOpenDef
   const [showCreate,   setShowCreate]   = useState(false);
   const [editBill,     setEditBill]     = useState(null);
 
+  const handleDeleteBill = useCallback((billId) => {
+    Alert.alert(
+      "Delete Draft Bill",
+      "This draft bill will be permanently deleted. This cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await maintenanceApi.deleteBill(billId);
+              setBills((prev) => prev.filter((b) => b._id !== billId));
+              toast.success("Draft bill deleted.");
+            } catch (e) {
+              toast.error(e?.response?.data?.message || "Delete failed.");
+            }
+          },
+        },
+      ]
+    );
+  }, [toast]);
+
   const loadBills = useCallback(async () => {
     setLoading(true); setError(null);
     try {
@@ -1047,6 +1070,7 @@ const MaintenanceDashboard = ({ isAdmin, onOpenBill, onOpenMyPayments, onOpenDef
           const summary     = bill.collectionSummary || {};
           const overdueBool = isOverdue(bill);
           const paidPct     = summary.total > 0 ? Math.round((summary.collected / summary.total) * 100) : 0;
+          const isDraft     = !bill.isPublished && !bill.isClosed;
 
           return (
             <Card key={bill._id} onPress={() => onOpenBill(bill._id)}>
@@ -1076,6 +1100,26 @@ const MaintenanceDashboard = ({ isAdmin, onOpenBill, onOpenMyPayments, onOpenDef
                     <Text style={[S.billFooterText, { color: C.teal, fontWeight: "700" }]}>{paidPct}% collected</Text>
                   </View>
                 </>
+              )}
+
+              {/* Draft actions — Edit & Delete */}
+              {isAdmin && isDraft && (
+                <View style={{ flexDirection: "row", gap: 8, marginTop: 10 }}>
+                  <TouchableOpacity
+                    onPress={(e) => { e.stopPropagation?.(); setEditBill(bill); }}
+                    style={[S.draftActionBtn, { borderColor: C.amber + "50", backgroundColor: C.amber + "12" }]}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[S.draftActionText, { color: C.amber }]}>✏️ Edit Draft</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={(e) => { e.stopPropagation?.(); handleDeleteBill(bill._id); }}
+                    style={[S.draftActionBtn, { borderColor: C.red + "40", backgroundColor: C.red + "10" }]}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[S.draftActionText, { color: C.red }]}>🗑 Delete</Text>
+                  </TouchableOpacity>
+                </View>
               )}
             </Card>
           );
@@ -1165,6 +1209,8 @@ const S = StyleSheet.create({
   billCardAmount:   { fontSize: 15, fontWeight: "800", color: C.navy },
   billCardFooter:   { flexDirection: "row", gap: 12, marginTop: 6 },
   billFooterText:   { fontSize: 11, color: C.gray500 },
+  draftActionBtn:   { flex: 1, paddingVertical: 7, borderRadius: 8, borderWidth: 1.5, alignItems: "center" },
+  draftActionText:  { fontSize: 12, fontWeight: "700" },
 
   // Progress
   progressTrack:    { height: 5, backgroundColor: C.gray100, borderRadius: 3, overflow: "hidden", marginVertical: 6 },

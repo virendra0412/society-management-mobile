@@ -585,6 +585,7 @@ const TypePickerRow = ({ value, onChange }) => (
 const CreateSlotModal = ({ open, onClose, onCreated }) => {
   const toast   = useToast();
   const [mode, setMode] = useState("single");
+  const [modalError, setModalError] = useState("");
 
   // Single mode state
   const [single, setSingle] = useState({ slotNumber: "", zone: "", type: "4W" });
@@ -600,6 +601,7 @@ const CreateSlotModal = ({ open, onClose, onCreated }) => {
     setSingle({ slotNumber: "", zone: "", type: "4W" });
     setBulk({ type: "4W", prefix: "", from: "1", to: "10", padDigits: "2", zone: "" });
     setMode("single");
+    setModalError("");
     onClose();
   };
 

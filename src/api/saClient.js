@@ -10,9 +10,13 @@
 
 import axios from "axios";
 import * as SecureStore from "expo-secure-store";
-import Constants from "expo-constants";
 
-const BASE_URL = Constants.expoConfig?.extra?.apiBaseUrl || "https://society-management-system-clou.onrender.com/api/v1";
+// ─── Base URL ─────────────────────────────────────────────────────────────────
+// Must match client.js exactly — use the same EXPO_PUBLIC_ env var so both
+// clients always hit the same server. Constants.expoConfig?.extra?.apiBaseUrl
+// was used before but that key doesn't exist in app.json, so it resolved to
+// undefined and fell back to a stale hardcoded URL.
+import { BASE_URL } from "./client";
 
 
 // ─── SA Token Storage (with SecureStore) ─────────────────────────────────────
@@ -192,7 +196,7 @@ saClient.interceptors.response.use(
       try {
         const { data } = await axios.post(`${BASE_URL}/superadmin/auth/refresh`, {
           refreshToken: refresh,
-        });
+        }, { timeout: 15_000 });
 
         const newAccess = data.data?.accessToken ?? data.accessToken;
         const newRefresh = data.data?.refreshToken ?? data.refreshToken;

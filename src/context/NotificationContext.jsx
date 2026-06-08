@@ -76,7 +76,8 @@ export const NotificationProvider = ({ children }) => {
     const expoPushToken  = tokenData.data;
 
     try {
-      await authApi.updateProfile({ fcmToken: expoPushToken });
+      // Use the dedicated FCM token endpoint, not updateProfile
+      await authApi.updateFcmToken(expoPushToken);
       console.log("[Notifications] Token registered:", expoPushToken);
     } catch (e) {
       console.warn("[Notifications] Failed to register token:", e.message);

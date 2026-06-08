@@ -8,6 +8,7 @@
  *   memberships              — convenience derived from user.memberships
  */
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
+import { AppState } from "react-native";
 import { authApi }      from "../api/auth.api";
 import { tokenStorage } from "../utils/storage";
 import { authEvents }   from "../api/client";
@@ -20,6 +21,7 @@ export const AuthProvider = ({ children }) => {
 
   // Holds the registerForPushNotifications fn injected by NotificationContext.
   const registerPushRef = useRef(null);
+  const appStateRef     = useRef(AppState.currentState);
 
   // ── Restore session on app launch ─────────────────────────────────────────
   useEffect(() => {
@@ -109,6 +111,25 @@ export const AuthProvider = ({ children }) => {
     await tokenStorage.setUser(fresh);
     return fresh;
   }, []);
+
+  // ── Issue 8: Reload user when app comes back from background ──────────────
+  useEffect(() => {
+    const sub = AppState.addEventListener("change", async (nextState) => {
+      if (
+        appStateRef.current.match(/inactive|background/) &&
+        nextState === "active"
+      ) {
+        // App came to foreground — silently re-fetch user so all data is fresh
+        try {
+          await refreshUser();
+        } catch {
+          // Token may have expired — client interceptor will handle refresh
+        }
+      }
+      appStateRef.current = nextState;
+    });
+    return () => sub.remove();
+  }, [refreshUser]);
 
   // ── Multi-society actions ──────────────────────────────────────────────────
 

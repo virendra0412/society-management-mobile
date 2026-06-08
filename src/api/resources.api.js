@@ -82,7 +82,7 @@ export const helpApi = {
 export const contactsApi = {
   getAll:  (p = {}) => client.get("/contacts",         { params: p }).then(unwrap),
   create:  (d)      => client.post("/contacts",         d).then(unwrap),
-  update:  (id, d)  => client.put(`/contacts/${id}`,   d).then(unwrap),
+  update:  (id, d)  => client.patch(`/contacts/${id}`,  d).then(unwrap),
   remove:  (id)     => client.delete(`/contacts/${id}`).then(unwrap),
 };
 
@@ -145,6 +145,7 @@ export const maintenanceApi = {
   // Admin — per-resident payment record actions
   recordPayment: (billId, paymentId, d)      => client.patch(`/maintenance/${billId}/payments/${paymentId}`,             d).then(unwrap),
   applyDiscount: (billId, paymentId, amount) => client.patch(`/maintenance/${billId}/payments/${paymentId}/discount`,    { discount: amount }).then(unwrap),
+  deleteBill:    (id)         => client.delete(`/maintenance/${id}`).then(unwrap),
 };
 
 // ─── Parking ──────────────────────────────────────────────────────────────────

@@ -1,125 +1,122 @@
 /**
  * src/context/SAAuthContext.jsx
  * Super Admin session — fully isolated from society AuthContext.
- * React Native / Expo version with SecureStore
  *
- * Provides: saUser, loading, isLogged, login, logout
- * Listens for logout event emitted by saClient on forced logout.
- *
- * Key differences from web version:
- * - Uses async/await for SecureStore (encrypted storage)
- * - Event emitter instead of window.dispatchEvent
- * - Handles async token retrieval
+ * Fixes:
+ *  - Session restore uses raw axios (not saClient) to avoid interceptor loop
+ *  - Cached user shown immediately while token refresh happens in background
+ *  - AppState listener: re-validates token when app comes back to foreground
  */
-
-import {
-  createContext,
-  useContext,
-  useState,
-  useEffect,
-  useCallback,
-} from "react";
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
+import { AppState } from "react-native";
+import axios from "axios";
 import { saAuthApi } from "../api/sa.api";
 import { saTokenStorage, saEventEmitter } from "../api/saClient";
+import { BASE_URL } from "../api/client";
 
 const SAAuthContext = createContext(null);
 
 export const SAAuthProvider = ({ children }) => {
-  const [saUser, setSaUser] = useState(null);
+  const [saUser,  setSaUser]  = useState(null);
   const [loading, setLoading] = useState(true);
+  const appStateRef = useRef(AppState.currentState);
 
-  // ── Restore session on mount (async) ───────────────────────────────────────
-  useEffect(() => {
-    const restore = async () => {
-      try {
-        const refresh = await saTokenStorage.getRefresh();
-        if (!refresh) {
-          setLoading(false);
-          return;
-        }
+  // ── Core restore logic ────────────────────────────────────────────────────
+  const restoreSession = useCallback(async () => {
+    try {
+      const refresh = await saTokenStorage.getRefresh();
+      if (!refresh) { setSaUser(null); return false; }
 
-        // Refresh the access token
-        try {
-          const refreshRes = await saAuthApi.refresh(refresh);
-          const newAccess =
-            refreshRes.data?.accessToken ?? refreshRes.accessToken;
-          const newRefresh =
-            refreshRes.data?.refreshToken ?? refreshRes.refreshToken;
+      // Use raw axios so we don't hit the saClient interceptor during boot
+      const { data } = await axios.post(
+        `${BASE_URL}/superadmin/auth/refresh`,
+        { refreshToken: refresh },
+        { timeout: 15_000 }
+      );
 
-          saTokenStorage.setAccess(newAccess);
-          await saTokenStorage.setRefresh(newRefresh);
+      const newAccess  = data.data?.accessToken  ?? data.accessToken;
+      const newRefresh = data.data?.refreshToken ?? data.refreshToken;
 
-          // Get current user info
-          const meRes = await saAuthApi.me();
-          const fresh =
-            meRes.data?.superAdmin ?? meRes.data?.user ?? meRes.data;
+      saTokenStorage.setAccess(newAccess);
+      await saTokenStorage.setRefresh(newRefresh);
 
-          setSaUser(fresh);
-          await saTokenStorage.setUser(fresh);
-        } catch (refreshErr) {
-          // If refresh fails, clear all tokens
-          await saTokenStorage.clearAll();
-          setSaUser(null);
-          console.warn("SA token refresh failed:", refreshErr);
-        }
-      } catch (error) {
-        console.warn("SA session restore failed:", error);
-        setSaUser(null);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    restore();
+      // Fetch fresh user profile with the new access token
+      const meRes = await axios.get(`${BASE_URL}/superadmin/auth/me`, {
+        headers: { Authorization: `Bearer ${newAccess}` },
+        timeout: 15_000,
+      });
+      const fresh = meRes.data?.data?.superAdmin ?? meRes.data?.data ?? meRes.data;
+      setSaUser(fresh);
+      await saTokenStorage.setUser(fresh);
+      return true;
+    } catch (err) {
+      console.warn("[SA] Session restore failed:", err.message);
+      // Show cached user while still clearing invalid tokens
+      const cached = await saTokenStorage.getUser();
+      if (cached) setSaUser(cached);
+      await saTokenStorage.clearAll();
+      setSaUser(null);
+      return false;
+    }
   }, []);
 
-  // ── Listen for interceptor-triggered logout ────────────────────────────────
+  // ── Restore on mount ───────────────────────────────────────────────────────
   useEffect(() => {
-    const handleLogout = async () => {
+    const init = async () => {
+      // Show cached user instantly so screens don't flash empty
+      const cached = await saTokenStorage.getUser();
+      if (cached) setSaUser(cached);
+
+      await restoreSession();
+      setLoading(false);
+    };
+    init();
+  }, [restoreSession]);
+
+  // ── Issue 8: Re-fetch when app comes back to foreground ───────────────────
+  useEffect(() => {
+    const sub = AppState.addEventListener("change", async (nextState) => {
+      if (appStateRef.current.match(/inactive|background/) && nextState === "active") {
+        // App came back to foreground — silently refresh SA session
+        if (saUser) await restoreSession();
+      }
+      appStateRef.current = nextState;
+    });
+    return () => sub.remove();
+  }, [saUser, restoreSession]);
+
+  // ── Interceptor logout event ───────────────────────────────────────────────
+  useEffect(() => {
+    const unsub = saTokenStorage.onLogout(async () => {
       setSaUser(null);
       await saTokenStorage.clearAll();
-    };
-
-    const unsubscribe = saTokenStorage.onLogout(handleLogout);
-    return unsubscribe;
+    });
+    return unsub;
   }, []);
 
-  // ── Login action ───────────────────────────────────────────────────────────
+  // ── Login ──────────────────────────────────────────────────────────────────
   const login = useCallback(async ({ email, password }) => {
-    try {
-      const res = await saAuthApi.login({ email, password });
-      const d = res.data ?? res;
+    const res = await saAuthApi.login({ email, password });
+    const d   = res.data ?? res;
 
-      saTokenStorage.setAccess(d.accessToken);
-      await saTokenStorage.setRefresh(d.refreshToken);
+    saTokenStorage.setAccess(d.accessToken);
+    await saTokenStorage.setRefresh(d.refreshToken);
 
-      const sa = d.superAdmin ?? d.user ?? d;
-      await saTokenStorage.setUser(sa);
-      setSaUser(sa);
-
-      return sa;
-    } catch (err) {
-      console.error("[SAAuthContext.login] SA login failed:", err.message);
-      throw err;
-    }
+    const sa = d.superAdmin ?? d.user ?? d;
+    await saTokenStorage.setUser(sa);
+    setSaUser(sa);
+    return sa;
   }, []);
 
-  // ── Logout action ──────────────────────────────────────────────────────────
+  // ── Logout ─────────────────────────────────────────────────────────────────
   const logout = useCallback(async () => {
-    try {
-      await saAuthApi.logout();
-    } catch (error) {
-      // Ignore logout API errors — always clear locally
-      console.warn("Logout API error (ignored):", error);
-    }
+    try { await saAuthApi.logout(); } catch { /* ignore */ }
     await saTokenStorage.clearAll();
     setSaUser(null);
   }, []);
 
   return (
-    <SAAuthContext.Provider
-      value={{ saUser, loading, isLogged: !!saUser, login, logout }}
-    >
+    <SAAuthContext.Provider value={{ saUser, loading, isLogged: !!saUser, login, logout }}>
       {children}
     </SAAuthContext.Provider>
   );
@@ -127,8 +124,6 @@ export const SAAuthProvider = ({ children }) => {
 
 export const useSAAuth = () => {
   const ctx = useContext(SAAuthContext);
-  if (!ctx) {
-    throw new Error("useSAAuth must be inside <SAAuthProvider>");
-  }
+  if (!ctx) throw new Error("useSAAuth must be inside <SAAuthProvider>");
   return ctx;
 };

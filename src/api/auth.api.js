@@ -21,6 +21,7 @@ export const authApi = {
   logout:       ()             => client.post("/auth/logout").then(unwrap),
   getMe:        ()             => client.get("/auth/me").then(unwrap),
   updateProfile:(payload)      => client.patch("/users/profile",      payload).then(unwrap),
+  updateFcmToken:(token)       => client.patch("/users/fcm-token",    { fcmToken: token }).then(unwrap),
 
   // ── Multi-society ────────────────────────────────────────────────────────────
   /**
