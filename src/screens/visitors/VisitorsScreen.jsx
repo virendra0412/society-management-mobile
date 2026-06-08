@@ -340,12 +340,17 @@ const TrustedCard = ({ pass, isAdmin, onRevoke, onEntry, busy }) => {
 const CreateInviteModal = ({ open, onClose, onCreated }) => {
   const toast = useToast();
   const [form, setForm]       = useState({ name: "", phone: "", purpose: "Guest", vehicleNumber: "", note: "" });
+  const [errors, setErrors]   = useState({});
+  const [apiError, setApiError] = useState("");
   const [submitting, setSub]  = useState(false);
-  const reset = () => setForm({ name: "", phone: "", purpose: "Guest", vehicleNumber: "", note: "" });
-  const set = (k) => (v) => setForm((p) => ({ ...p, [k]: v }));
+  const reset = () => { setForm({ name: "", phone: "", purpose: "Guest", vehicleNumber: "", note: "" }); setErrors({}); setApiError(""); };
+  const set = (k) => (v) => { setForm((p) => ({ ...p, [k]: v })); setErrors((p) => ({ ...p, [k]: undefined })); };
 
   const handleSubmit = async () => {
-    if (!form.name.trim()) return toast.error("Visitor name is required.");
+    const e = {};
+    if (!form.name.trim()) e.name = "Visitor name is required.";
+    if (Object.keys(e).length) { setErrors(e); return; }
+    setErrors({}); setApiError("");
     setSub(true);
     try {
       const payload = { ...form };
@@ -356,13 +361,13 @@ const CreateInviteModal = ({ open, onClose, onCreated }) => {
       onCreated(res.data.visitor, res.data.otp);
       reset(); onClose();
     } catch (e) {
-      toast.error(e.response?.data?.message || "Failed to create invite.");
+      setApiError(e.response?.data?.message || "Failed to create invite.");
     } finally { setSub(false); }
   };
 
   return (
-    <Modal open={open} onClose={() => { onClose(); reset(); }} title="Invite a Visitor">
-      <Input label="Visitor Name *"         value={form.name}          onChangeText={set("name")}          placeholder="e.g. Amit Shah" />
+    <Modal open={open} onClose={() => { onClose(); reset(); }} onOpen={reset} apiError={apiError} title="Invite a Visitor">
+      <Input label="Visitor Name *"         value={form.name}          onChangeText={set("name")}          placeholder="e.g. Amit Shah" error={errors.name} />
       <Input label="Phone (optional)"       value={form.phone}         onChangeText={set("phone")}         placeholder="9876543210" keyboardType="phone-pad" />
       <PillSelect label="Purpose"           value={form.purpose}       options={VISIT_PURPOSES}             onSelect={set("purpose")} />
       <Input label="Vehicle No. (optional)" value={form.vehicleNumber} onChangeText={set("vehicleNumber")} placeholder="GJ01AB1234" />
@@ -376,12 +381,17 @@ const CreateInviteModal = ({ open, onClose, onCreated }) => {
 const LogWalkInModal = ({ open, onClose, onLogged }) => {
   const toast = useToast();
   const [form, setForm]       = useState({ name: "", phone: "", purpose: "Guest", vehicleNumber: "", note: "", hostFlat: "" });
+  const [errors, setErrors]   = useState({});
+  const [apiError, setApiError] = useState("");
   const [submitting, setSub]  = useState(false);
-  const reset = () => setForm({ name: "", phone: "", purpose: "Guest", vehicleNumber: "", note: "", hostFlat: "" });
-  const set = (k) => (v) => setForm((p) => ({ ...p, [k]: v }));
+  const reset = () => { setForm({ name: "", phone: "", purpose: "Guest", vehicleNumber: "", note: "", hostFlat: "" }); setErrors({}); setApiError(""); };
+  const set = (k) => (v) => { setForm((p) => ({ ...p, [k]: v })); setErrors((p) => ({ ...p, [k]: undefined })); };
 
   const handleSubmit = async () => {
-    if (!form.name.trim()) return toast.error("Visitor name is required.");
+    const e = {};
+    if (!form.name.trim()) e.name = "Visitor name is required.";
+    if (Object.keys(e).length) { setErrors(e); return; }
+    setErrors({}); setApiError("");
     setSub(true);
     try {
       const payload = { ...form };
@@ -394,13 +404,13 @@ const LogWalkInModal = ({ open, onClose, onLogged }) => {
       onLogged(res.data.visitor);
       reset(); onClose();
     } catch (e) {
-      toast.error(e.response?.data?.message || "Failed to log walk-in.");
+      setApiError(e.response?.data?.message || "Failed to log walk-in.");
     } finally { setSub(false); }
   };
 
   return (
-    <Modal open={open} onClose={() => { onClose(); reset(); }} title="Log Walk-in Visitor">
-      <Input label="Visitor Name *"            value={form.name}          onChangeText={set("name")}          placeholder="e.g. Delivery Person" />
+    <Modal open={open} onClose={() => { onClose(); reset(); }} onOpen={reset} apiError={apiError} title="Log Walk-in Visitor">
+      <Input label="Visitor Name *"            value={form.name}          onChangeText={set("name")}          placeholder="e.g. Delivery Person" error={errors.name} />
       <Input label="Phone (optional)"          value={form.phone}         onChangeText={set("phone")}         placeholder="9876543210" keyboardType="phone-pad" />
       <PillSelect label="Purpose"              value={form.purpose}       options={VISIT_PURPOSES}             onSelect={set("purpose")} />
       <Input label="Vehicle No. (optional)"    value={form.vehicleNumber} onChangeText={set("vehicleNumber")} placeholder="GJ01AB1234" />
@@ -417,24 +427,27 @@ const LogWalkInModal = ({ open, onClose, onLogged }) => {
 // ─── Verify OTP Modal (Flow A, guard) ────────────────────────────────────────
 const VerifyOTPModal = ({ open, visitor, onClose, onVerified }) => {
   const toast = useToast();
-  const [otp, setOtp]       = useState("");
-  const [verifying, setVer] = useState(false);
-  useEffect(() => { if (open) setOtp(""); }, [open]);
+  const [otp, setOtp]         = useState("");
+  const [otpError, setOtpError] = useState("");
+  const [apiError, setApiError] = useState("");
+  const [verifying, setVer]   = useState(false);
+  useEffect(() => { if (open) { setOtp(""); setOtpError(""); setApiError(""); } }, [open]);
 
   const handleVerify = async () => {
-    if (otp.length !== 6) return toast.error("Enter the 6-digit OTP.");
+    if (otp.length !== 6) { setOtpError("Enter the 6-digit OTP."); return; }
+    setOtpError(""); setApiError("");
     setVer(true);
     try {
       const res = await visitorApi.verifyOTP(visitor._id, otp);
       toast.success("OTP verified. Entry granted!");
       onVerified(res.data.visitor); onClose();
     } catch (e) {
-      toast.error(e.response?.data?.message || "Invalid or expired OTP.");
+      setApiError(e.response?.data?.message || "Invalid or expired OTP.");
     } finally { setVer(false); }
   };
 
   return (
-    <Modal open={open} onClose={onClose} title="Verify Entry OTP">
+    <Modal open={open} onClose={onClose} apiError={apiError} title="Verify Entry OTP">
       {visitor && (
         <View>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 12,
@@ -448,9 +461,10 @@ const VerifyOTPModal = ({ open, visitor, onClose, onVerified }) => {
           <Input
             label="6-digit OTP *"
             value={otp}
-            onChangeText={(v) => setOtp(v.replace(/\D/g, "").slice(0, 6))}
+            onChangeText={(v) => { setOtp(v.replace(/\D/g, "").slice(0, 6)); setOtpError(""); setApiError(""); }}
             placeholder="Enter OTP from visitor"
             keyboardType="numeric"
+            error={otpError}
           />
           <Btn onPress={handleVerify} loading={verifying} style={{ width: "100%", backgroundColor: C.blue }}>
             ✓ Verify & Grant Entry
@@ -475,9 +489,16 @@ const RegisterTrustedModal = ({ open, onClose, onRegistered }) => {
   const setSchedule = (k) => (v) =>
     setForm((p) => ({ ...p, accessSchedule: { ...p.accessSchedule, [k]: v } }));
 
+  const [errors, setErrors]     = useState({});
+  const [apiError, setApiError] = useState("");
+  const resetAll = () => { setErrors({}); setApiError(""); };
+
   const handleSubmit = async () => {
-    if (!form.name.trim()) return toast.error("Name is required.");
-    if (!form.category)    return toast.error("Category is required.");
+    const e = {};
+    if (!form.name.trim()) e.name = "Name is required.";
+    if (!form.category)    e.category = "Category is required.";
+    if (Object.keys(e).length) { setErrors(e); return; }
+    setErrors({}); setApiError("");
     setSub(true);
     try {
       const payload = { ...form };
@@ -489,13 +510,13 @@ const RegisterTrustedModal = ({ open, onClose, onRegistered }) => {
       onRegistered(res.data.visitor);
       setForm(INIT); onClose();
     } catch (e) {
-      toast.error(e.response?.data?.message || "Failed to register.");
+      setApiError(e.response?.data?.message || "Failed to register.");
     } finally { setSub(false); }
   };
 
   return (
-    <Modal open={open} onClose={() => { onClose(); setForm(INIT); }} title="Register Trusted Visitor">
-      <Input label="Name *"                value={form.name}          onChangeText={set("name")}          placeholder="e.g. Sunita Devi" />
+    <Modal open={open} onClose={() => { onClose(); setForm(INIT); resetAll(); }} onOpen={resetAll} apiError={apiError} title="Register Trusted Visitor">
+      <Input label="Name *"                value={form.name}          onChangeText={set("name")}          placeholder="e.g. Sunita Devi" error={errors.name} />
       <Input label="Phone (optional)"      value={form.phone}         onChangeText={set("phone")}         placeholder="9876543210" keyboardType="phone-pad" />
       <PillSelect label="Category *"       value={form.category}      options={TRUSTED_CATEGORIES}         onSelect={set("category")} />
       <PillSelect label="Pass Validity"    value={form.passType}      options={PASS_TYPES}                 onSelect={set("passType")} labelMap={PASS_TYPE_LABELS} />
@@ -533,34 +554,38 @@ const TrustedLookupModal = ({ open, onClose, societyId, onEntryRecorded }) => {
   const [searching, setSrch]  = useState(false);
   const [busy, setBusy]       = useState(null);
 
+  const [searchError, setSearchError] = useState("");
+  const [entryError, setEntryError]   = useState("");
+
   const search = async () => {
     if (!query.trim()) return;
-    setSrch(true);
+    setSrch(true); setSearchError("");
     try {
       const isPhone = /^\d+$/.test(query.trim());
       const params  = isPhone ? { phone: query.trim() } : { name: query.trim() };
       const res     = await visitorApi.lookupTrusted(params);
       setResults(res.data.visitors || []);
-      if ((res.data.visitors || []).length === 0) toast.error("No matching trusted visitor found.");
+      if ((res.data.visitors || []).length === 0) setSearchError("No matching trusted visitor found.");
     } catch (e) {
-      toast.error(e.response?.data?.message || "Lookup failed.");
+      setSearchError(e.response?.data?.message || "Lookup failed.");
     } finally { setSrch(false); }
   };
 
   const handleEntry = async (id) => {
-    setBusy(id);
+    setBusy(id); setEntryError("");
     try {
       const res = await visitorApi.trustedEntry(id);
       toast.success("Entry recorded.");
       onEntryRecorded(res.data.visitor);
       setResults((p) => p.map((v) => v._id === id ? res.data.visitor : v));
     } catch (e) {
-      toast.error(e.response?.data?.message || "Entry failed.");
+      setEntryError(e.response?.data?.message || "Entry failed.");
     } finally { setBusy(null); }
   };
 
   return (
-    <Modal open={open} onClose={() => { onClose(); setQuery(""); setResults([]); }} title="Trusted Visitor Lookup">
+    <Modal open={open} onClose={() => { onClose(); setQuery(""); setResults([]); setSearchError(""); setEntryError(""); }}
+      apiError={searchError || entryError} title="Trusted Visitor Lookup">
       <View style={{ flexDirection: "row", gap: 8, marginBottom: 12 }}>
         <View style={{ flex: 1 }}>
           <Input
@@ -694,7 +719,7 @@ const TrustedTab = ({ user }) => {
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 export const VisitorsScreen = () => {
-  const { user, isAdmin, activeSocietyId, memberships } = useAuth();
+  const { user, isAdmin, activeSocietyId, memberships, dataVersion } = useAuth(); // BUG-3
   const activeMembership = memberships?.find(
     (m) => m.society?._id?.toString() === activeSocietyId || m.society?.toString() === activeSocietyId
   );
@@ -738,7 +763,7 @@ export const VisitorsScreen = () => {
     } finally { setLoading(false); }
   }, [isAdmin, statusFilter]);
 
-  useEffect(() => { fetchVisitors(); }, [fetchVisitors]);
+  useEffect(() => { fetchVisitors(); }, [fetchVisitors, dataVersion]); // BUG-3: re-fetch on resume
 
   const patchVisitor = (updated) =>
     setVisitors((p) => p.map((v) => v._id === updated._id ? updated : v));

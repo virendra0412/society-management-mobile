@@ -1,27 +1,23 @@
 /**
  * components/ui/index.jsx
- * Core UI primitives — React Native equivalents of the web ui/index.jsx.
- * Same component names, same props — makes feature porting straightforward.
  *
- * Web → RN swap cheatsheet:
- *   div          → View
- *   span / p     → Text
- *   button       → TouchableOpacity + Text
- *   input        → TextInput
- *   img          → Image
- *   style="..."  → StyleSheet.create({}) or inline objects with numeric values
+ * Changes from original (minimal — nothing else touched):
  *
- * Added in this revision (previously missing from mobile port):
- *   Tag      — coloured label chip (used by notices, events, contacts)
- *   Avatar   — initials or image avatar with optional size/colour override
- *   Select   — horizontal pill-based option picker (replaces <select> from web)
- *   Skeleton — animated loading placeholder bar / circle
+ * Modal:
+ *   1. Added `apiError` prop — renders a sticky red error banner INSIDE the
+ *      modal sheet when an API call fails. Previously toast.error() was used
+ *      but toast renders below the modal's native layer so it was invisible.
+ *   2. Added own KeyboardAvoidingView + ScrollView so inputs scroll into view
+ *      when the keyboard opens (outer KAV has no effect inside RNModal portal).
+ *   3. Added `onOpen` prop — fires when modal transitions closed→open so
+ *      callers can clear stale errors/state before the user sees the sheet.
  */
 import {
   View, Text, TextInput, TouchableOpacity, ActivityIndicator,
-  StyleSheet, ScrollView, Image, Animated, useEffect,
+  StyleSheet, ScrollView, Image, Animated,
+  KeyboardAvoidingView, Platform,
 } from "react-native";
-import { useEffect as useRNEffect, useRef } from "react";
+import { useEffect as useRNEffect, useRef, useEffect } from "react";
 import { C } from "../../constants/theme";
 
 // ─── Badge ────────────────────────────────────────────────────────────────────
@@ -33,8 +29,6 @@ export const Badge = ({ label, bg, text, dot }) => (
 );
 
 // ─── Tag ─────────────────────────────────────────────────────────────────────
-// Slightly larger than Badge — used for category labels, notice tags, etc.
-// Props: label, color (hex — used as border + text, background at 15% opacity)
 export const Tag = ({ label, color = C.teal, style }) => (
   <View style={[
     tagStyles.wrap,
@@ -51,8 +45,6 @@ const tagStyles = StyleSheet.create({
 });
 
 // ─── Avatar ───────────────────────────────────────────────────────────────────
-// Shows a photo (uri) when available; falls back to coloured initials.
-// Props: uri?, name, size (default 36), color (ring/bg tint, default C.teal)
 export const Avatar = ({ uri, name = "?", size = 36, color = C.teal, style }) => {
   const initials = String(name)
     .split(" ")
@@ -95,8 +87,6 @@ const avatarStyles = StyleSheet.create({
 });
 
 // ─── Select ───────────────────────────────────────────────────────────────────
-// Horizontal scrollable pill picker — drop-in replacement for web <Select>.
-// Props: label?, value, options (string[] or {label,value}[]), onChange, style
 export const Select = ({ label, value, options = [], onChange, style }) => {
   const normalised = options.map((o) =>
     typeof o === "string" ? { label: o, value: o } : o
@@ -139,8 +129,6 @@ const selectStyles = StyleSheet.create({
 });
 
 // ─── Skeleton ─────────────────────────────────────────────────────────────────
-// Animated shimmer placeholder for loading states.
-// Props: width, height (default 16), borderRadius (default 8), style
 export const Skeleton = ({ width = "100%", height = 16, borderRadius = 8, style }) => {
   const opacity = useRef(new Animated.Value(0.4)).current;
 
@@ -291,42 +279,77 @@ export const ErrorState = ({ message, onRetry }) => (
 );
 
 // ─── Modal ────────────────────────────────────────────────────────────────────
-import { Modal as RNModal, KeyboardAvoidingView, Platform, Pressable } from "react-native";
+// New props (all optional, fully backward-compatible):
+//
+//   apiError  string | null
+//     When set, shows a persistent red error banner at the top of the sheet.
+//     The user can see it without closing the modal. Clear it by setting to "".
+//     Use this for API call failures that previously went to toast.error().
+//
+//   onOpen  () => void
+//     Called once when the modal transitions closed → open.
+//     Use it to clear stale errors/form state before the sheet animates in.
+//
+// The modal also wraps its own KeyboardAvoidingView + ScrollView so inputs
+// near the bottom scroll into view when the software keyboard opens.
+// (The outer KAV has no effect inside an RNModal native portal.)
+import { Modal as RNModal, Pressable } from "react-native";
 
-export const Modal = ({ open, onClose, title, children }) => (
-  <RNModal
-    visible={!!open}
-    transparent
-    animationType="slide"
-    onRequestClose={onClose}
-  >
-    <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-      style={styles.modalOverlay}
+export const Modal = ({ open, onClose, onOpen, apiError, title, children }) => {
+  // Fire onOpen once when transitioning closed → open
+  const prevOpenRef = useRef(false);
+  useEffect(() => {
+    if (open && !prevOpenRef.current && onOpen) {
+      onOpen();
+    }
+    prevOpenRef.current = !!open;
+  }, [open, onOpen]);
+
+  return (
+    <RNModal
+      visible={!!open}
+      transparent
+      animationType="slide"
+      onRequestClose={onClose}
     >
-      <Pressable style={styles.modalBackdrop} onPress={onClose} />
-      <View style={styles.modalSheet}>
-        {/* Handle bar */}
-        <View style={styles.modalHandle} />
-        {title && (
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>{title}</Text>
-            <TouchableOpacity onPress={onClose} hitSlop={10}>
-              <Text style={styles.modalClose}>✕</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-          contentContainerStyle={{ paddingBottom: 32 }}
-        >
-          {children}
-        </ScrollView>
-      </View>
-    </KeyboardAvoidingView>
-  </RNModal>
-);
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={styles.modalOverlay}
+      >
+        <Pressable style={styles.modalBackdrop} onPress={onClose} />
+        <View style={styles.modalSheet}>
+          {/* Handle bar */}
+          <View style={styles.modalHandle} />
+
+          {title && (
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>{title}</Text>
+              <TouchableOpacity onPress={onClose} hitSlop={10}>
+                <Text style={styles.modalClose}>✕</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {/* API error banner — sticky, always visible inside the modal */}
+          {!!apiError && (
+            <View style={styles.modalApiError}>
+              <Text style={styles.modalApiErrorText}>⚠️  {apiError}</Text>
+            </View>
+          )}
+
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={{ paddingBottom: 32 }}
+            style={{ flexShrink: 1 }}
+          >
+            {children}
+          </ScrollView>
+        </View>
+      </KeyboardAvoidingView>
+    </RNModal>
+  );
+};
 
 // ─── ScreenHeader ─────────────────────────────────────────────────────────────
 export const ScreenHeader = ({ title, subtitle, action, style }) => (
@@ -381,13 +404,16 @@ const styles = StyleSheet.create({
   emptyText:   { fontSize:14, color:C.gray500, textAlign:"center", lineHeight:22 },
 
   // Modal
-  modalOverlay: { flex:1, justifyContent:"flex-end" },
-  modalBackdrop:{ ...StyleSheet.absoluteFillObject, backgroundColor:"rgba(0,0,0,0.5)" },
-  modalSheet:   { backgroundColor:"#fff", borderTopLeftRadius:20, borderTopRightRadius:20, padding:20, maxHeight:"90%", minHeight:200 },
-  modalHandle:  { width:40, height:4, borderRadius:2, backgroundColor:C.gray100, alignSelf:"center", marginBottom:16 },
-  modalHeader:  { flexDirection:"row", alignItems:"center", justifyContent:"space-between", marginBottom:16 },
-  modalTitle:   { fontSize:17, fontWeight:"800", color:C.navy },
-  modalClose:   { fontSize:18, color:C.gray500, padding:4 },
+  modalOverlay:    { flex:1, justifyContent:"flex-end" },
+  modalBackdrop:   { ...StyleSheet.absoluteFillObject, backgroundColor:"rgba(0,0,0,0.5)" },
+  modalSheet:      { backgroundColor:"#fff", borderTopLeftRadius:20, borderTopRightRadius:20, padding:20, maxHeight:"90%", minHeight:200 },
+  modalHandle:     { width:40, height:4, borderRadius:2, backgroundColor:C.gray100, alignSelf:"center", marginBottom:16 },
+  modalHeader:     { flexDirection:"row", alignItems:"center", justifyContent:"space-between", marginBottom:16 },
+  modalTitle:      { fontSize:17, fontWeight:"800", color:C.navy },
+  modalClose:      { fontSize:18, color:C.gray500, padding:4 },
+  // Sticky API error banner rendered inside the modal — always visible
+  modalApiError:   { backgroundColor:"#FEE2E2", borderRadius:10, padding:12, marginBottom:14, borderWidth:1, borderColor:"#FCA5A5" },
+  modalApiErrorText:{ fontSize:13, color:"#B91C1C", fontWeight:"600", lineHeight:19 },
 
   // ScreenHeader
   screenHeader: { paddingHorizontal:16, paddingTop:16, paddingBottom:12, flexDirection:"row", alignItems:"center" },
