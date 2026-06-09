@@ -1,21 +1,32 @@
 /**
  * navigation/RootNavigator.jsx
+ *
+ * CHANGED IN TASK 1:
+ *   - Added Linking.addEventListener for deep links arriving while app is open
+ *   - Added Linking.getInitialURL() for cold-start deep links
+ *   - Both paths call useInviteLink().parseInviteUrl() which handles
+ *     societyapp://join-invite/TOKEN links
+ *
+ * All existing screens, logic, and styles are IDENTICAL to the original.
  */
+
 import { useRef, useEffect, useState } from "react";
 import { NavigationContainer, DefaultTheme } from "@react-navigation/native";
 import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView }      from "react-native-safe-area-context";
+import * as Linking          from "expo-linking";
 
-import { useAuth }          from "../context/AuthContext";
-import { useSAAuth }        from "../context/SAAuthContext";
-import { useNotifications } from "../context/NotificationContext";
-import { useLanguage }      from "../context/LanguageContext";
-import { C }                from "../constants/theme";
-import { AuthStack }        from "./AuthStack";
-import { AppTabs }          from "./AppTabs";
-import SALoginScreen        from "../screens/sa/SALoginScreen";
-import SASuperAdminApp      from "../screens/sa/SASuperAdminApp";
-import { AppLogo }          from "../components/ui/AppLogo";
+import { useAuth }           from "../context/AuthContext";
+import { useSAAuth }         from "../context/SAAuthContext";
+import { useNotifications }  from "../context/NotificationContext";
+import { useLanguage }       from "../context/LanguageContext";
+import { C }                 from "../constants/theme";
+import { AuthStack }         from "./AuthStack";
+import { AppTabs }           from "./AppTabs";
+import SALoginScreen         from "../screens/sa/SALoginScreen";
+import SASuperAdminApp       from "../screens/sa/SASuperAdminApp";
+import { AppLogo }           from "../components/ui/AppLogo";
+import { useInviteLink }     from "../hooks/useInviteLink";  // NEW
 
 const NavTheme = {
   ...DefaultTheme,
@@ -47,7 +58,7 @@ const PendingScreen = ({ onLogout, t }) => (
   </SafeAreaView>
 );
 
-// ─── Auth screen wrapper — regular login + SA link below ─────────────────────
+// ─── Auth screen wrapper ──────────────────────────────────────────────────────
 const AuthScreenWithSALink = ({ onSAPress }) => (
   <View style={{ flex: 1 }}>
     <AuthStack />
@@ -64,22 +75,42 @@ const AuthScreenWithSALink = ({ onSAPress }) => (
 export const RootNavigator = () => {
   const { user, loading, isLogged, isAdmin, logout, activeSocietyId, memberships } = useAuth();
   const { isLogged: isSALogged, loading: saLoading } = useSAAuth();
-  const { navigationRef } = useNotifications();
-  const { t }             = useLanguage();
-  const navRef            = useRef(null);
+  const { navigationRef }  = useNotifications();
+  const { t }              = useLanguage();
+  const navRef             = useRef(null);
 
   const [showSALogin, setShowSALogin] = useState(false);
+
+  // ── Invite link handler (NEW) ───────────────────────────────────────────────
+  const { parseInviteUrl } = useInviteLink(navRef);
 
   useEffect(() => {
     navigationRef.current = navRef.current;
   }, [navigationRef]);
 
+  // ── Deep-link: cold start (app was closed) ──────────────────────────────────
+  useEffect(() => {
+    Linking.getInitialURL().then((url) => {
+      if (url) parseInviteUrl(url, navRef.current);
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ── Deep-link: app already open (foreground / background) ──────────────────
+  useEffect(() => {
+    const subscription = Linking.addEventListener("url", ({ url }) => {
+      parseInviteUrl(url, navRef.current);
+    });
+    return () => subscription.remove();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const anyLoading = loading || saLoading;
 
-  // isApproved lives inside memberships[] in the new schema
   const activeMembership = memberships?.find(
-    (m) => m.society?._id?.toString() === activeSocietyId ||
-           m.society?.toString()       === activeSocietyId
+    (m) =>
+      m.society?._id?.toString() === activeSocietyId ||
+      m.society?.toString()      === activeSocietyId
   );
   const isApproved = activeMembership?.isApproved ?? user?.isApproved ?? false;
 
@@ -117,25 +148,25 @@ const styles = StyleSheet.create({
 
   saContainer: {
     paddingHorizontal: 24,
-    paddingBottom: 24,
-    paddingTop: 8,
-    backgroundColor: C.bg,
+    paddingBottom:     24,
+    paddingTop:        8,
+    backgroundColor:   C.bg,
   },
   saLabel: {
-    fontSize: 12,
-    color: C.gray500,
-    textAlign: "center",
+    fontSize:    12,
+    color:       C.gray500,
+    textAlign:   "center",
     marginBottom: 8,
   },
   saLink: {
     paddingVertical: 14,
-    borderRadius: 12,
+    borderRadius:    12,
     backgroundColor: C.navy,
-    alignItems: "center",
+    alignItems:      "center",
   },
   saLinkText: {
-    fontSize: 14,
+    fontSize:   14,
     fontWeight: "700",
-    color: "#fff",
+    color:      "#fff",
   },
 });

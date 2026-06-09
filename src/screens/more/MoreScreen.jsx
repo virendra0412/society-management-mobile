@@ -21,6 +21,8 @@ import { EventsScreen }  from "../events/EventsScreen";
 import { ParkingScreen } from "../parking/ParkingScreen";
 import { AmenityScreen } from "../amenity/AmenityScreen";
 import { AdminScreen }   from "./AdminScreen";
+import { PrivacyPolicyScreen } from "../legal/PrivacyPolicyScreen";
+import { TermsScreen }         from "../legal/TermsScreen";
 
 const { width } = Dimensions.get("window");
 const TILE_SIZE = (width - 56) / 3;
@@ -134,6 +136,9 @@ const MoreGrid = () => {
     { id: "Parking",  icon: "🚗", label: t("nav_parking", "Parking"), color: C.navy   },
     { id: "Amenity",  icon: "🏊", label: t("nav_amenity", "Amenity"), color: C.teal   },
     { id: "Profile",  icon: "👤", label: t("btn_profile"),  color: C.gray700 },
+    // Legal — always visible
+    { id: "PrivacyPolicy", icon: "🔒", label: "Privacy Policy", color: C.gray700 },
+    { id: "Terms",         icon: "📄", label: "Terms & Conditions", color: C.gray700 },
     // Admin-only: Committee management
     ...(isAdmin ? [
       { id: "Committee", icon: "🛡️", label: "Committee", color: C.purple },
@@ -187,5 +192,7 @@ export const MoreScreen = () => (
     <Stack.Screen name="Profile"    component={ProfileScreen} />
     <Stack.Screen name="Committee"  component={AdminScreen} />
     <Stack.Screen name="Upgrade"    component={UpgradeScreen} />
+    <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} />
+    <Stack.Screen name="Terms"         component={TermsScreen} />
   </Stack.Navigator>
 );

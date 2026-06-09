@@ -1,6 +1,6 @@
 /**
  * api/auth.api.js
- */
+*/
 import client, { unwrap } from "./client";
 
 export const authApi = {
@@ -23,16 +23,21 @@ export const authApi = {
   updateProfile:(payload)      => client.patch("/users/profile",      payload).then(unwrap),
   updateFcmToken:(token)       => client.patch("/users/fcm-token",    { fcmToken: token }).then(unwrap),
 
-  // ── Multi-society ────────────────────────────────────────────────────────────
-  /**
+  // ── Multi-society ─────────────────────────────────────────────────────────
+/**
    * Switch the active society context.
    * Returns new { user, accessToken, refreshToken } with updated JWT.
    */
-  switchSociety: (societyId)  => client.post("/auth/switch-society", { societyId }).then(unwrap),
+    switchSociety: (societyId)  => client.post("/auth/switch-society", { societyId }).then(unwrap),
 
   /**
    * Join a second (or subsequent) society using a join code.
    * Returns { user, society, pendingApproval }.
-   */
+    */
   joinSociety:  (payload)     => client.post("/auth/join-society",   payload).then(unwrap),
+
+  // ── NEW: Invite link token pre-verify ─────────────────────────────────────
+  // Called by useInviteLink before navigating to Register screen.
+  // GET /invite-link/verify?token=TOKEN  (public, no auth header needed)
+  verifyInviteToken: (token)  => client.get("/invite-link/verify", { params: { token } }).then(unwrap),
 };

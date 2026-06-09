@@ -180,6 +180,8 @@ export const userApi = {
   getCommitteeMembers: ()         => client.get("/users/committee").then(unwrap),
   assignCommitteeRole: (id, d)    => client.post(`/users/${id}/committee`, d).then(unwrap),
   removeCommitteeRole: (id)       => client.delete(`/users/${id}/committee`).then(unwrap),
+  // Admin — invite link + QR
+  generateInviteLink:  (societyId) => client.post(`/society/${societyId}/invite-link`).then(unwrap),
 };
 
 export const modulesApi = {
