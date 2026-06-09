@@ -21,6 +21,8 @@ import { EventsScreen }  from "../events/EventsScreen";
 import { ParkingScreen } from "../parking/ParkingScreen";
 import { AmenityScreen } from "../amenity/AmenityScreen";
 import { AdminScreen }   from "./AdminScreen";
+import { PrivacyPolicyScreen } from "../legal/PrivacyPolicyScreen";
+import { TermsScreen }         from "../legal/TermsScreen";
 
 const { width } = Dimensions.get("window");
 const TILE_SIZE = (width - 56) / 3;
@@ -187,5 +189,7 @@ export const MoreScreen = () => (
     <Stack.Screen name="Profile"    component={ProfileScreen} />
     <Stack.Screen name="Committee"  component={AdminScreen} />
     <Stack.Screen name="Upgrade"    component={UpgradeScreen} />
+    <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} />
+    <Stack.Screen name="Terms"         component={TermsScreen} />
   </Stack.Navigator>
 );

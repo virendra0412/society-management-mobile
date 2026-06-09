@@ -235,6 +235,25 @@ export const RegisterScreen = ({ navigation, route }) => {
               {t("reg_btn")}
             </Btn>
 
+            {/* Legal consent notice — required for Play Store */}
+            <Text style={styles.legalNotice}>
+              By registering, you agree to our{" "}
+              <Text
+                style={styles.legalLink}
+                onPress={() => navigation.navigate("Terms")}
+              >
+                Terms & Conditions
+              </Text>
+              {" "}and{" "}
+              <Text
+                style={styles.legalLink}
+                onPress={() => navigation.navigate("PrivacyPolicy")}
+              >
+                Privacy Policy
+              </Text>
+              .
+            </Text>
+
             <View style={styles.switchRow}>
               <Text style={styles.switchText}>{t("reg_has_account")} </Text>
               <TouchableOpacity onPress={() => navigation.navigate("Login")}>
@@ -258,6 +277,18 @@ const styles = StyleSheet.create({
   card:       { backgroundColor: "#fff", borderRadius: 20, padding: 20, borderWidth: 1, borderColor: C.gray100 },
   row:        { flexDirection: "row" },
   switchRow:  { flexDirection: "row", justifyContent: "center", marginTop: 16, flexWrap: "wrap" },
+  legalNotice: {
+    fontSize:   12,
+    color:      "#8C8680",
+    textAlign:  "center",
+    marginTop:  12,
+    lineHeight: 18,
+    paddingHorizontal: 8,
+  },
+  legalLink: {
+    color:               "#0D7377",
+    textDecorationLine:  "underline",
+  },
   switchText: { fontSize: 13, color: C.gray500 },
   switchLink: { fontSize: 13, color: C.teal, fontWeight: "700" },
 
