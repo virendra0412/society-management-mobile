@@ -37,9 +37,21 @@ export const AuthProvider = ({ children }) => {
         const fresh = meRes.data.user;
         setUser(fresh);
         await tokenStorage.setUser(fresh);
-      } catch {
-        await tokenStorage.clearAll();
-        setUser(null);
+      } catch (err) {
+        // Only wipe tokens on a real auth rejection (401/403).
+        // Network errors (no internet, timeout, server cold-start) must NOT
+        // clear the refresh token - fall back to cached user instead.
+        const status = err?.response?.status;
+        const isAuthError = status === 401 || status === 403;
+
+        if (isAuthError) {
+          await tokenStorage.clearAll();
+          setUser(null);
+        } else {
+          // Restore from cache so the UI stays populated offline
+          const cached = await tokenStorage.getUser();
+          setUser(cached || null);
+        }
       } finally {
         setLoading(false);
       }
