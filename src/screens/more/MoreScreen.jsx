@@ -136,6 +136,9 @@ const MoreGrid = () => {
     { id: "Parking",  icon: "🚗", label: t("nav_parking", "Parking"), color: C.navy   },
     { id: "Amenity",  icon: "🏊", label: t("nav_amenity", "Amenity"), color: C.teal   },
     { id: "Profile",  icon: "👤", label: t("btn_profile"),  color: C.gray700 },
+    // Legal — always visible
+    { id: "PrivacyPolicy", icon: "🔒", label: "Privacy Policy", color: C.gray700 },
+    { id: "Terms",         icon: "📄", label: "Terms & Conditions", color: C.gray700 },
     // Admin-only: Committee management
     ...(isAdmin ? [
       { id: "Committee", icon: "🛡️", label: "Committee", color: C.purple },

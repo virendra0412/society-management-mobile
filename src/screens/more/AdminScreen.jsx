@@ -527,7 +527,78 @@ const CommitteeTab = ({ activeSocietyId }) => {
   );
 };
 
-// ─── Main Screen ──────────────────────────────────────────────────────────────
+// ─── Invite Tab ───────────────────────────────────────────────────────────────
+const InviteTab = ({ activeSocietyId }) => {
+  const toast = useToast();
+  const [loading, setLoading] = useState(false);
+  const [invite,  setInvite]  = useState(null);   // { token, expiresAt, inviteUrl, qrData, societyName }
+
+  const generate = async () => {
+    if (!activeSocietyId) { toast.error("Society not loaded yet."); return; }
+    setLoading(true);
+    try {
+      const res = await userApi.generateInviteLink(activeSocietyId);
+      setInvite(res.data);
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to generate invite link.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const expiryLabel = invite
+    ? `Expires ${new Date(invite.expiresAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}`
+    : null;
+
+  return (
+    <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
+      <Text style={{ fontSize: 13, color: C.gray500, marginBottom: 16, lineHeight: 20 }}>
+        Generate a QR code or shareable link. Anyone who scans it will land on the
+        registration screen with your society pre-filled. Valid for 7 days.
+      </Text>
+
+      <Btn onPress={generate} loading={loading} variant="primary">
+        {invite ? "🔄 Regenerate Invite Link" : "🔗 Generate Invite Link"}
+      </Btn>
+
+      {invite && (
+        <Card style={{ marginTop: 20, alignItems: "center" }}>
+          {/* QR code — rendered as a bordered placeholder using ASCII art since
+              react-native-qrcode-svg is not yet installed. Replace the View below
+              with <QRCode value={invite.qrData} size={200} /> once you run:
+              npx expo install react-native-qrcode-svg  */}
+          <View style={invStyles.qrPlaceholder}>
+            <Text style={invStyles.qrIcon}>📷</Text>
+            <Text style={invStyles.qrHint}>Install react-native-qrcode-svg</Text>
+            <Text style={invStyles.qrHint}>to render QR code here</Text>
+          </View>
+
+          <Text style={invStyles.expiry}>{expiryLabel}</Text>
+
+          <View style={invStyles.linkBox}>
+            <Text style={invStyles.linkText} numberOfLines={2} selectable>
+              {invite.inviteUrl}
+            </Text>
+          </View>
+          <Text style={{ fontSize: 11, color: C.gray500, marginTop: 8, textAlign: "center" }}>
+            Tap and hold the link above to copy it
+          </Text>
+        </Card>
+      )}
+    </ScrollView>
+  );
+};
+
+const invStyles = StyleSheet.create({
+  qrPlaceholder: { width: 200, height: 200, borderWidth: 1.5, borderColor: C.gray300, borderRadius: 12, alignItems: "center", justifyContent: "center", marginBottom: 12, backgroundColor: C.gray50 },
+  qrIcon:        { fontSize: 40, marginBottom: 8 },
+  qrHint:        { fontSize: 11, color: C.gray500, textAlign: "center" },
+  expiry:        { fontSize: 12, color: C.gray500, marginBottom: 12 },
+  linkBox:       { backgroundColor: C.gray50, borderRadius: 10, borderWidth: 1, borderColor: C.gray100, padding: 12, width: "100%" },
+  linkText:      { fontSize: 12, color: C.teal, fontFamily: "monospace" },
+});
+
+
 export const AdminScreen = () => {
   const [activeTab, setActiveTab]   = useState("approvals");
   // We need activeSocietyId for the committee tab — read from context via prop drilling
@@ -572,12 +643,22 @@ export const AdminScreen = () => {
               🛡️ Committee
             </Text>
           </TouchableOpacity>
+          <TouchableOpacity
+            style={[s.tabBtn, activeTab === "invite" && s.tabBtnActive]}
+            onPress={() => setActiveTab("invite")}
+          >
+            <Text style={[s.tabBtnText, activeTab === "invite" && s.tabBtnTextActive]}>
+              🔗 Invite
+            </Text>
+          </TouchableOpacity>
         </View>
       </View>
 
       {activeTab === "approvals"
         ? <ApprovalsTab />
-        : <CommitteeTab activeSocietyId={activeSocietyId} />
+        : activeTab === "invite"
+          ? <InviteTab activeSocietyId={activeSocietyId} />
+          : <CommitteeTab activeSocietyId={activeSocietyId} />
       }
     </SafeAreaView>
   );
