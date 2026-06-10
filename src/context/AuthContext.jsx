@@ -152,7 +152,10 @@ export const AuthProvider = ({ children }) => {
    */
   const switchSociety = useCallback(async (societyId) => {
     const { data } = await authApi.switchSociety(societyId);
-    // Replace tokens — new JWT carries the new societyId
+    // Store tokens and update React state atomically so no in-flight request
+    // can carry the new access token while the UI still reflects the old society.
+    // setUser() triggers a re-render; background list refreshes that fire after
+    // this point will read the already-updated user object from the closure.
     tokenStorage.setAccess(data.accessToken);
     await tokenStorage.setRefresh(data.refreshToken);
     await tokenStorage.setUser(data.user);
