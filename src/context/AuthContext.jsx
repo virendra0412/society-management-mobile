@@ -11,7 +11,7 @@ import { createContext, useContext, useState, useEffect, useCallback, useRef } f
 import { AppState } from "react-native";
 import { authApi }      from "../api/auth.api";
 import { tokenStorage } from "../utils/storage";
-import { authEvents }   from "../api/client";
+import { authEvents, holdRequests, releaseRequests } from "../api/client";
 
 const AuthContext = createContext(null);
 
@@ -22,6 +22,7 @@ export const AuthProvider = ({ children }) => {
   // Holds the registerForPushNotifications fn injected by NotificationContext.
   const registerPushRef = useRef(null);
   const appStateRef     = useRef(AppState.currentState);
+  const switchQueueRef  = useRef(Promise.resolve());
 
   // ── Restore session on app launch ─────────────────────────────────────────
   useEffect(() => {
@@ -151,16 +152,26 @@ export const AuthProvider = ({ children }) => {
    * After this call, all subsequent API requests use the new society context.
    */
   const switchSociety = useCallback(async (societyId) => {
-    const { data } = await authApi.switchSociety(societyId);
-    // Store tokens and update React state atomically so no in-flight request
-    // can carry the new access token while the UI still reflects the old society.
-    // setUser() triggers a re-render; background list refreshes that fire after
-    // this point will read the already-updated user object from the closure.
-    tokenStorage.setAccess(data.accessToken);
-    await tokenStorage.setRefresh(data.refreshToken);
-    await tokenStorage.setUser(data.user);
-    setUser(data.user);
-    return data.user;
+    const runSwitch = async () => {
+      let releaseHold;
+      const hold = new Promise((resolve) => { releaseHold = resolve; });
+      holdRequests(hold);
+      try {
+        const { data } = await authApi.switchSociety(societyId);
+        tokenStorage.setAccess(data.accessToken);
+        await tokenStorage.setRefresh(data.refreshToken);
+        await tokenStorage.setUser(data.user);
+        setUser(data.user);
+        return data.user;
+      } finally {
+        releaseHold();
+        releaseRequests();
+      }
+    };
+
+    const next = switchQueueRef.current.then(runSwitch, runSwitch);
+    switchQueueRef.current = next.catch(() => {});
+    return next;
   }, []);
 
   /**

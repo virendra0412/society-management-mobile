@@ -154,7 +154,7 @@ export const parkingApi = {
   getSlots:       (p = {})   => client.get("/parking/slots",          { params: p }).then(unwrap),
   createSlot:     (d)        => client.post("/parking/slots",          d).then(unwrap),
   bulkCreateSlots:(d)        => client.post("/parking/slots/bulk",     d).then(unwrap),
-  releaseSlot:    (id)       => client.patch(`/parking/slots/${id}/release`).then(unwrap),
+  releaseSlot:    (id)       => client.patch(`/parking/slots/${id}/release`, null, { params: { confirm: true } }).then(unwrap),
   submitRequest:  (d)        => client.post("/parking/requests",       d).then(unwrap),
   getMyRequests:  (p = {})   => client.get("/parking/requests/mine",   { params: p }).then(unwrap),
   cancelRequest:  (id)       => client.patch(`/parking/requests/${id}/cancel`).then(unwrap),
