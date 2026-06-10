@@ -298,6 +298,19 @@ const SASocieties = ({ navigation }) => {
               <Text style={styles.modulesButtonText}>Manage Modules</Text>
             </TouchableOpacity>
 
+            <TouchableOpacity
+              style={styles.analyticsButton}
+              onPress={() => {
+                const societyId = selectedSociety?._id || selectedSociety?.id;
+                setShowDetailsModal(false);
+                setSelectedSociety(null);
+                navigation.navigate("SAAnalytics", { societyId });
+              }}
+              disabled={actionLoading}
+            >
+              <Text style={styles.analyticsButtonText}>View Analytics</Text>
+            </TouchableOpacity>
+
             {selectedSociety?.status?.toLowerCase() === "suspended" ? (
               <TouchableOpacity
                 style={styles.reactivateButton}
@@ -577,6 +590,18 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.md,
   },
   modulesButtonText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  analyticsButton: {
+    backgroundColor: COLORS.info,
+    borderRadius: 8,
+    paddingVertical: SPACING.lg,
+    alignItems: "center",
+    marginBottom: SPACING.md,
+  },
+  analyticsButtonText: {
     color: "#fff",
     fontSize: 14,
     fontWeight: "600",

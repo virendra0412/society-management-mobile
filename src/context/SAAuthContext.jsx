@@ -51,9 +51,8 @@ export const SAAuthProvider = ({ children }) => {
       return true;
     } catch (err) {
       console.warn("[SA] Session restore failed:", err.message);
-      // Show cached user while still clearing invalid tokens
-      const cached = await saTokenStorage.getUser();
-      if (cached) setSaUser(cached);
+      // Clear invalid tokens; the init() useEffect already showed cached user
+      // before calling restoreSession(), so don't overwrite saUser here.
       await saTokenStorage.clearAll();
       setSaUser(null);
       return false;

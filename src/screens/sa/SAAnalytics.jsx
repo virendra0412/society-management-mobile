@@ -19,7 +19,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { saAnalyticsApi } from "../../api/sa.api";
 import { COLORS, SPACING } from "../../constants/theme";
 
-const SAAnalytics = () => {
+const SAAnalytics = ({ route }) => {
+  const societyId = route?.params?.societyId || null;
   const [analytics, setAnalytics] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -37,8 +38,14 @@ const SAAnalytics = () => {
 
   const fetchAnalytics = async () => {
     try {
-      const res = await saAnalyticsApi.overview({ period });
-      setAnalytics(res.data?.analytics || res.data);
+      let res;
+      if (societyId) {
+        res = await saAnalyticsApi.societyDetail(societyId);
+        setAnalytics(res.data?.analytics || res.data);
+      } else {
+        res = await saAnalyticsApi.overview({ period });
+        setAnalytics(res.data?.analytics || res.data);
+      }
     } catch (error) {
       console.error("Failed to fetch analytics:", error);
       Alert.alert("Error", "Failed to load analytics data");
