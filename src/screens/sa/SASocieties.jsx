@@ -32,6 +32,15 @@ const SASocieties = ({ navigation }) => {
   const [actionLoading, setActionLoading] = useState(false);
   const [suspendNote, setSuspendNote] = useState("");
 
+  // Transfer Admin
+  const [showTransferModal, setShowTransferModal]   = useState(false);
+  const [transferEmail, setTransferEmail]           = useState("");
+  const [transferLoading, setTransferLoading]       = useState(false);
+
+  // Reset Admin Password
+  const [resetLoading, setResetLoading]             = useState(false);
+  const [resetResult, setResetResult]               = useState(null); // { adminEmail, tempPassword }
+
   const statusOptions = ["all", "active", "suspended", "trial"];
 
   useEffect(() => {
@@ -109,9 +118,64 @@ const SASocieties = ({ navigation }) => {
     );
   };
 
-  const filteredSocieties = societies.filter((s) =>
-    s.name.toLowerCase().includes(searchText.toLowerCase())
-  );
+  const handleTransferAdmin = async () => {
+    const email = transferEmail.trim();
+    if (!email) {
+      Alert.alert("Error", "Please enter the new admin's email address.");
+      return;
+    }
+    const societyId = selectedSociety?._id || selectedSociety?.id;
+    setTransferLoading(true);
+    try {
+      // Backend expects newAdminUserId; we pass email and let the SA look up
+      // the user. If your backend validator accepts email, swap field name here.
+      await saSocietiesApi.transferAdmin(societyId, { newAdminEmail: email });
+      Alert.alert("Success", "Admin ownership transferred successfully.");
+      setShowTransferModal(false);
+      setTransferEmail("");
+      setShowDetailsModal(false);
+      setSelectedSociety(null);
+      fetchSocieties();
+    } catch (error) {
+      Alert.alert("Error", error.response?.data?.message || "Failed to transfer admin.");
+    } finally {
+      setTransferLoading(false);
+    }
+  };
+
+  const handleResetPassword = async () => {
+    const societyId = selectedSociety?._id || selectedSociety?.id;
+    Alert.alert(
+      "Reset Admin Password",
+      `Generate a new temporary password for ${selectedSociety?.name}'s admin?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Reset",
+          style: "destructive",
+          onPress: async () => {
+            setResetLoading(true);
+            try {
+              const res = await saSocietiesApi.resetAdminPass(societyId);
+              const data = res.data || res;
+              setResetResult({
+                adminEmail:   data.adminEmail   || "—",
+                tempPassword: data.tempPassword || "(not returned in production)",
+              });
+            } catch (error) {
+              Alert.alert("Error", error.response?.data?.message || "Failed to reset password.");
+            } finally {
+              setResetLoading(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+
+  //   s.name.toLowerCase().includes(searchText.toLowerCase())
+  // );
 
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
@@ -311,6 +375,28 @@ const SASocieties = ({ navigation }) => {
               <Text style={styles.analyticsButtonText}>View Analytics</Text>
             </TouchableOpacity>
 
+            {/* ── Transfer Admin ─────────────────────────────────────── */}
+            <TouchableOpacity
+              style={styles.transferButton}
+              onPress={() => setShowTransferModal(true)}
+              disabled={actionLoading || resetLoading}
+            >
+              <Text style={styles.transferButtonText}>Transfer Admin</Text>
+            </TouchableOpacity>
+
+            {/* ── Reset Admin Password ───────────────────────────────── */}
+            <TouchableOpacity
+              style={styles.resetButton}
+              onPress={handleResetPassword}
+              disabled={actionLoading || resetLoading}
+            >
+              {resetLoading ? (
+                <ActivityIndicator color="#fff" size="small" />
+              ) : (
+                <Text style={styles.resetButtonText}>Reset Admin Password</Text>
+              )}
+            </TouchableOpacity>
+
             {selectedSociety?.status?.toLowerCase() === "suspended" ? (
               <TouchableOpacity
                 style={styles.reactivateButton}
@@ -362,6 +448,89 @@ const SASocieties = ({ navigation }) => {
           </View>
         </SafeAreaView>
       </Modal>
+
+      {/* ── Transfer Admin Modal ───────────────────────────────────────── */}
+      <Modal
+        visible={showTransferModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => { setShowTransferModal(false); setTransferEmail(""); }}
+      >
+        <View style={styles.overlayBg}>
+          <View style={styles.alertBox}>
+            <Text style={styles.alertTitle}>Transfer Admin</Text>
+            <Text style={styles.alertBody}>
+              Enter the email address of an existing approved member of{" "}
+              <Text style={{ fontWeight: "700" }}>{selectedSociety?.name}</Text>.
+            </Text>
+            <TextInput
+              style={styles.alertInput}
+              placeholder="member@email.com"
+              placeholderTextColor={COLORS.placeholder}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              value={transferEmail}
+              onChangeText={setTransferEmail}
+              editable={!transferLoading}
+            />
+            <View style={styles.alertActions}>
+              <TouchableOpacity
+                style={styles.alertCancel}
+                onPress={() => { setShowTransferModal(false); setTransferEmail(""); }}
+                disabled={transferLoading}
+              >
+                <Text style={styles.alertCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.alertConfirm}
+                onPress={handleTransferAdmin}
+                disabled={transferLoading}
+              >
+                {transferLoading
+                  ? <ActivityIndicator color="#fff" size="small" />
+                  : <Text style={styles.alertConfirmText}>Transfer</Text>}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ── Reset Password Result Modal ────────────────────────────────── */}
+      <Modal
+        visible={!!resetResult}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setResetResult(null)}
+      >
+        <View style={styles.overlayBg}>
+          <View style={styles.alertBox}>
+            <Text style={styles.alertTitle}>Temporary Password Generated</Text>
+            <Text style={styles.alertBody}>
+              Send these credentials to the society admin securely.
+            </Text>
+            <View style={styles.resultRow}>
+              <Text style={styles.resultLabel}>Admin email</Text>
+              <Text style={styles.resultValue} selectable>{resetResult?.adminEmail}</Text>
+            </View>
+            <View style={styles.resultRow}>
+              <Text style={styles.resultLabel}>Temp password</Text>
+              <Text style={[styles.resultValue, styles.resultPassword]} selectable>
+                {resetResult?.tempPassword}
+              </Text>
+            </View>
+            <Text style={styles.resultNote}>
+              The admin must change this password on next login.
+            </Text>
+            <TouchableOpacity
+              style={[styles.alertConfirm, { marginTop: 16 }]}
+              onPress={() => setResetResult(null)}
+            >
+              <Text style={styles.alertConfirmText}>Done</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
     </SafeAreaView>
   );
 };
@@ -616,6 +785,125 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 14,
     fontWeight: "600",
+  },
+  transferButton: {
+    backgroundColor: COLORS.warning,
+    borderRadius: 8,
+    paddingVertical: SPACING.lg,
+    alignItems: "center",
+    marginBottom: SPACING.md,
+  },
+  transferButtonText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  resetButton: {
+    backgroundColor: "#6B7280",
+    borderRadius: 8,
+    paddingVertical: SPACING.lg,
+    alignItems: "center",
+    marginBottom: SPACING.md,
+  },
+  resetButtonText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  overlayBg: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.55)",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: SPACING.lg,
+  },
+  alertBox: {
+    backgroundColor: COLORS.surface,
+    borderRadius: 14,
+    padding: SPACING.lg,
+    width: "100%",
+  },
+  alertTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: COLORS.text,
+    marginBottom: SPACING.sm,
+  },
+  alertBody: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
+    marginBottom: SPACING.md,
+    lineHeight: 19,
+  },
+  alertInput: {
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 8,
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.md,
+    fontSize: 14,
+    color: COLORS.text,
+    marginBottom: SPACING.md,
+  },
+  alertActions: {
+    flexDirection: "row",
+    gap: SPACING.sm,
+  },
+  alertCancel: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 8,
+    paddingVertical: SPACING.md,
+    alignItems: "center",
+  },
+  alertCancelText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: COLORS.textSecondary,
+  },
+  alertConfirm: {
+    flex: 1,
+    backgroundColor: COLORS.primary,
+    borderRadius: 8,
+    paddingVertical: SPACING.md,
+    alignItems: "center",
+  },
+  alertConfirmText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#fff",
+  },
+  resultRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: SPACING.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  resultLabel: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+    fontWeight: "600",
+  },
+  resultValue: {
+    fontSize: 13,
+    color: COLORS.text,
+    fontWeight: "500",
+    maxWidth: "60%",
+    textAlign: "right",
+  },
+  resultPassword: {
+    fontFamily: "monospace",
+    color: COLORS.error,
+    fontWeight: "700",
+  },
+  resultNote: {
+    fontSize: 11,
+    color: COLORS.textSecondary,
+    marginTop: SPACING.sm,
+    fontStyle: "italic",
   },
 });
 

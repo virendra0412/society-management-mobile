@@ -12,7 +12,7 @@
 
 import { useRef, useEffect, useState } from "react";
 import { NavigationContainer, DefaultTheme } from "@react-navigation/native";
-import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, ScrollView } from "react-native";
 import { SafeAreaView }      from "react-native-safe-area-context";
 import * as Linking          from "expo-linking";
 
@@ -58,6 +58,57 @@ const PendingScreen = ({ onLogout, t }) => (
   </SafeAreaView>
 );
 
+// ─── Multi-society selector (shown once after login when user has 2+ societies) ─
+const SocietySelectorScreen = ({ memberships, activeSocietyId, onSelect, onContinue, loading }) => (
+  <SafeAreaView style={[styles.center, { backgroundColor: C.bg, paddingHorizontal: 24 }]}>
+    <Text style={{ fontSize: 32, marginBottom: 12 }}>🏘️</Text>
+    <Text style={styles.selectorTitle}>Choose your society</Text>
+    <Text style={styles.selectorSubtitle}>
+      You are a member of multiple societies. Pick one to continue.
+    </Text>
+    <ScrollView style={{ width: "100%", marginBottom: 16 }} showsVerticalScrollIndicator={false}>
+      {memberships.map((m) => {
+        const sid    = m.society?._id?.toString() || m.society?.toString();
+        const name   = m.society?.name  || "Unknown Society";
+        const flat   = m.flat  ? `Flat ${m.flat}` : "";
+        const wing   = m.wing  ? `, Wing ${m.wing}` : "";
+        const active = sid === activeSocietyId;
+        return (
+          <TouchableOpacity
+            key={sid}
+            style={[styles.selectorCard, active && styles.selectorCardActive]}
+            onPress={() => onSelect(sid)}
+            activeOpacity={0.75}
+            disabled={loading}
+          >
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.selectorName, active && styles.selectorNameActive]}>{name}</Text>
+              {(flat || wing) ? (
+                <Text style={styles.selectorFlat}>{flat}{wing}</Text>
+              ) : null}
+            </View>
+            {active && (
+              <View style={styles.selectorCheck}>
+                <Text style={{ color: "#fff", fontSize: 13, fontWeight: "700" }}>✓</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+        );
+      })}
+    </ScrollView>
+    <TouchableOpacity
+      style={[styles.selectorContinue, loading && { opacity: 0.6 }]}
+      onPress={onContinue}
+      disabled={loading}
+      activeOpacity={0.85}
+    >
+      {loading
+        ? <ActivityIndicator color="#fff" />
+        : <Text style={styles.selectorContinueText}>Continue →</Text>}
+    </TouchableOpacity>
+  </SafeAreaView>
+);
+
 // ─── Auth screen wrapper ──────────────────────────────────────────────────────
 const AuthScreenWithSALink = ({ onSAPress }) => (
   <View style={{ flex: 1 }}>
@@ -73,16 +124,39 @@ const AuthScreenWithSALink = ({ onSAPress }) => (
 
 // ─── Root ─────────────────────────────────────────────────────────────────────
 export const RootNavigator = () => {
-  const { user, loading, isLogged, isAdmin, logout, activeSocietyId, memberships } = useAuth();
+  const { user, loading, isLogged, isAdmin, logout, activeSocietyId, memberships, switchSociety } = useAuth();
   const { isLogged: isSALogged, loading: saLoading } = useSAAuth();
   const { navigationRef }  = useNotifications();
   const { t }              = useLanguage();
   const navRef             = useRef(null);
 
-  const [showSALogin, setShowSALogin] = useState(false);
+  const [showSALogin, setShowSALogin]             = useState(false);
+  // TC-MS-001: show society picker on first login when user has 2+ societies
+  const [showSocietySelector, setShowSocietySelector] = useState(false);
+  const [selectorSwitching, setSelectorSwitching]     = useState(false);
+  const selectorShownRef = useRef(false);
 
   // ── Invite link handler (NEW) ───────────────────────────────────────────────
   const { parseInviteUrl } = useInviteLink(navRef);
+
+  // ── TC-MS-001: Show society selector once after login for multi-society users ─
+  useEffect(() => {
+    if (
+      isLogged &&
+      !loading &&
+      !selectorShownRef.current &&
+      memberships &&
+      memberships.filter((m) => m.isApproved).length > 1
+    ) {
+      selectorShownRef.current = true;
+      setShowSocietySelector(true);
+    }
+    // Reset when user logs out so next login shows picker again
+    if (!isLogged) {
+      selectorShownRef.current = false;
+      setShowSocietySelector(false);
+    }
+  }, [isLogged, loading, memberships]);
 
   useEffect(() => {
     navigationRef.current = navRef.current;
@@ -131,6 +205,20 @@ export const RootNavigator = () => {
       ) : (!isApproved && !isAdmin) ? (
         <PendingScreen onLogout={logout} t={t} />
 
+      ) : (showSocietySelector && memberships?.filter((m) => m.isApproved).length > 1) ? (
+        <SocietySelectorScreen
+          memberships={memberships.filter((m) => m.isApproved)}
+          activeSocietyId={activeSocietyId}
+          loading={selectorSwitching}
+          onSelect={async (sid) => {
+            if (sid === activeSocietyId) return;
+            setSelectorSwitching(true);
+            try { await switchSociety(sid); } catch { /* silent — user can retry */ }
+            finally { setSelectorSwitching(false); }
+          }}
+          onContinue={() => setShowSocietySelector(false)}
+        />
+
       ) : (
         <AppTabs />
       )}
@@ -145,6 +233,17 @@ const styles = StyleSheet.create({
   pendingTip:   { backgroundColor: "#FEF3C7", borderRadius: 12, padding: 14, marginBottom: 28, width: "100%" },
   signOutBtn:   { backgroundColor: C.gray100, borderRadius: 10, paddingVertical: 10, paddingHorizontal: 24 },
   signOutText:  { fontSize: 13, fontWeight: "700", color: C.gray700 },
+
+  selectorTitle:        { fontSize: 22, fontWeight: "800", color: C.navy, marginBottom: 6, textAlign: "center" },
+  selectorSubtitle:     { fontSize: 13, color: C.gray500, textAlign: "center", lineHeight: 19, marginBottom: 20 },
+  selectorCard:         { flexDirection: "row", alignItems: "center", backgroundColor: "#fff", borderRadius: 12, padding: 16, marginBottom: 10, borderWidth: 1.5, borderColor: C.gray100 },
+  selectorCardActive:   { borderColor: C.teal, backgroundColor: "#E6F9F6" },
+  selectorName:         { fontSize: 15, fontWeight: "700", color: C.navy },
+  selectorNameActive:   { color: C.teal },
+  selectorFlat:         { fontSize: 12, color: C.gray500, marginTop: 3 },
+  selectorCheck:        { width: 26, height: 26, borderRadius: 13, backgroundColor: C.teal, alignItems: "center", justifyContent: "center", marginLeft: 10 },
+  selectorContinue:     { backgroundColor: C.navy, borderRadius: 12, paddingVertical: 14, paddingHorizontal: 32, alignItems: "center", width: "100%" },
+  selectorContinueText: { fontSize: 15, fontWeight: "700", color: "#fff" },
 
   saContainer: {
     paddingHorizontal: 24,
