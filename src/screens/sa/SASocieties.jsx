@@ -127,8 +127,6 @@ const SASocieties = ({ navigation }) => {
     const societyId = selectedSociety?._id || selectedSociety?.id;
     setTransferLoading(true);
     try {
-      // Backend expects newAdminUserId; we pass email and let the SA look up
-      // the user. If your backend validator accepts email, swap field name here.
       await saSocietiesApi.transferAdmin(societyId, { newAdminEmail: email });
       Alert.alert("Success", "Admin ownership transferred successfully.");
       setShowTransferModal(false);

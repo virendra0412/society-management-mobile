@@ -104,7 +104,7 @@ export const saSocietiesApi = {
       .patch(`/superadmin/societies/${id}/reactivate`)
       .then(unwrapSA),
 
-  /** PATCH /superadmin/societies/:id/transfer-admin  { newAdminEmail } */
+  /** PATCH /superadmin/societies/:id/transfer-admin  { newAdminUserId } or { newAdminEmail } */
   transferAdmin: (id, payload) =>
     saClient
       .patch(`/superadmin/societies/${id}/transfer-admin`, payload)
