@@ -109,6 +109,18 @@ export const NotificationProvider = ({ children }) => {
       }
     );
 
+    // ── EDGE-02: Cold-start tap handling ──────────────────────────────────
+    // addNotificationResponseReceivedListener only fires when the app is
+    // already running.  When the app is fully killed and the user taps a
+    // notification from the OS tray, we must call
+    // getLastNotificationResponseAsync() once on mount to catch that tap.
+    Notifications.getLastNotificationResponseAsync().then((response) => {
+      if (response) {
+        const data = response.notification.request.content.data;
+        handleNotificationNavigation(data);
+      }
+    });
+
     return () => {
       notifListener.current?.remove?.();
       responseListener.current?.remove?.();
@@ -130,17 +142,25 @@ export const NotificationProvider = ({ children }) => {
     // ── Auto-switch society if the notification is from a different one ────
     if (data.societyId) {
       const currentUser = userRef.current;
-      const currentId   =
-        currentUser?.activeSocietyId?._id?.toString() ||
-        currentUser?.activeSocietyId?.toString();
+      // Safely resolve activeSocietyId whether it is a populated object or a
+      // raw ObjectId string — ._id is undefined on a plain string, so fall back
+      // to toString() directly.  Without this guard the comparison silently
+      // fails on unpopulated refs and the auto-switch is skipped. (TC-PN-004)
+      const currentId =
+        (typeof currentUser?.activeSocietyId === "object" && currentUser?.activeSocietyId !== null
+          ? currentUser.activeSocietyId._id?.toString()
+          : currentUser?.activeSocietyId?.toString()) || null;
 
       if (currentId && data.societyId !== currentId) {
         try {
           await switchSocietyRef.current(data.societyId);
           console.log("[Notifications] Auto-switched to society:", data.societyId);
         } catch (e) {
-          // Switch failed — still navigate, the screen will show correct data
-          // once the user manually switches from Profile.
+          // 401 = access token expired while app was backgrounded 30+ min.
+          // The 401-interceptor in client.js will attempt a silent refresh; if
+          // that also fails it fires authEvents.logout().  Either way we still
+          // navigate — the screen will show the correct data once the user
+          // manually re-authenticates or the token refresh succeeds.
           console.warn("[Notifications] Auto-switch failed:", e?.message);
         }
       }

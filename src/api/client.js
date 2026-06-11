@@ -37,9 +37,22 @@ const client = axios.create({
   headers: { "Content-Type": "application/json" },
 });
 
+let _requestHold = null;
+
+export const holdRequests = (promise) => {
+  _requestHold = promise;
+};
+
+export const releaseRequests = () => {
+  _requestHold = null;
+};
+
 // Attach access token
 client.interceptors.request.use(
-  (config) => {
+  async (config) => {
+    if (_requestHold && !config._skipRequestHold) {
+      await _requestHold.catch(() => {});
+    }
     const token = tokenStorage.getAccess();
     if (token) config.headers.Authorization = `Bearer ${token}`;
     

@@ -18,6 +18,8 @@ export const authApi = {
     });
   },
   refreshToken: (refreshToken) => client.post("/auth/refresh-token", { refreshToken }).then(unwrap),
+  forgotPassword:(payload)     => client.post("/auth/forgot-password", payload).then(unwrap),
+  resetPassword: (payload)     => client.post("/auth/reset-password", payload).then(unwrap),
   logout:       ()             => client.post("/auth/logout").then(unwrap),
   getMe:        ()             => client.get("/auth/me").then(unwrap),
   updateProfile:(payload)      => client.patch("/users/profile",      payload).then(unwrap),
@@ -28,7 +30,7 @@ export const authApi = {
    * Switch the active society context.
    * Returns new { user, accessToken, refreshToken } with updated JWT.
    */
-    switchSociety: (societyId)  => client.post("/auth/switch-society", { societyId }).then(unwrap),
+    switchSociety: (societyId)  => client.post("/auth/switch-society", { societyId }, { _skipRequestHold: true }).then(unwrap),
 
   /**
    * Join a second (or subsequent) society using a join code.

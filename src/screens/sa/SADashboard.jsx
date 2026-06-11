@@ -186,6 +186,14 @@ const SADashboard = ({ navigation }) => {
         </View>
 
         <TouchableOpacity
+          style={styles.changePasswordButton}
+          onPress={() => navigation.navigate("SAChangePassword")}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.changePasswordButtonText}>🔑 Change Password</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
           style={styles.logoutButton}
           onPress={handleLogout}
           activeOpacity={0.7}
@@ -297,6 +305,20 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: COLORS.textSecondary,
     marginLeft: SPACING.sm,
+  },
+  changePasswordButton: {
+    borderWidth: 1,
+    borderColor: COLORS.primary,
+    borderRadius: 8,
+    paddingVertical: SPACING.md,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: SPACING.lg,
+  },
+  changePasswordButtonText: {
+    color: COLORS.primary,
+    fontSize: 14,
+    fontWeight: "600",
   },
   logoutButton: {
     borderWidth: 1,

@@ -126,6 +126,10 @@ export const LoginScreen = ({ navigation }) => {
               {t("login_btn")}
             </Btn>
 
+            <TouchableOpacity onPress={() => navigation.navigate("ForgotPassword")} style={styles.forgotBtn}>
+              <Text style={styles.forgotText}>Forgot password?</Text>
+            </TouchableOpacity>
+
             <View style={styles.switchRow}>
               <Text style={styles.switchText}>{t("login_no_account")} </Text>
               <TouchableOpacity onPress={() => navigation.navigate("Register")}>
@@ -148,6 +152,8 @@ const styles = StyleSheet.create({
   title:      { fontSize: 20, fontWeight: "800", color: C.navy, marginBottom: 4 },
   subtitle:   { fontSize: 13, color: C.gray500, marginBottom: 22 },
   loginBtn:   { marginTop: 4, marginBottom: 16 },
+  forgotBtn:  { alignItems: "center", marginBottom: 14 },
+  forgotText: { fontSize: 13, color: C.teal, fontWeight: "700" },
   switchRow:  { flexDirection: "row", justifyContent: "center", flexWrap: "wrap" },
   switchText: { fontSize: 13, color: C.gray500 },
   switchLink: { fontSize: 13, color: C.teal, fontWeight: "700" },

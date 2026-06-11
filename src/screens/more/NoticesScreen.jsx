@@ -53,7 +53,7 @@ const PillSelect = ({ label, value, options, onSelect }) => (
 );
 
 // ─── Notice Card ──────────────────────────────────────────────────────────────
-const NoticeCard = ({ notice, isAdmin, onTogglePin, onDelete, onEdit, pinBusy, delBusy }) => {
+const NoticeCard = ({ notice, canWrite, onTogglePin, onDelete, onEdit, pinBusy, delBusy }) => {
   const tagColor = NOTICE_TAG_COLOR[notice.tag] || C.teal;
   const icon     = NOTICE_TAG_ICON[notice.tag]  || "📋";
 
@@ -86,12 +86,12 @@ const NoticeCard = ({ notice, isAdmin, onTogglePin, onDelete, onEdit, pinBusy, d
           </View>
 
           <Text style={{ fontSize: 12, color: C.gray500, lineHeight: 18, marginBottom: 6 }}>{notice.body}</Text>
-          <Text style={{ fontSize: 11, color: C.gray300, marginBottom: isAdmin ? 10 : 0 }}>
+          <Text style={{ fontSize: 11, color: C.gray300, marginBottom: canWrite ? 10 : 0 }}>
             Posted by {notice.postedBy?.name || "Admin"} · {timeAgo(notice.createdAt)}
           </Text>
 
           {/* Admin actions */}
-          {isAdmin && (
+          {canWrite && (
             <View style={{ flexDirection: "row", gap: 6, flexWrap: "wrap" }}>
               {/* ── Pin / Unpin ── */}
               <TouchableOpacity
@@ -137,7 +137,8 @@ const BLANK_FORM = { title: "", body: "", tag: "Notice" };
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 export const NoticesScreen = ({ navigation }) => {
-  const { isAdmin } = useAuth();
+  const { isAdmin, hasPermission } = useAuth();
+  const canWrite = isAdmin || hasPermission("notices", "write");
   const toast = useToast();
 
   const [notices,    setNotices]    = useState([]);
@@ -250,7 +251,7 @@ export const NoticesScreen = ({ navigation }) => {
     <SafeAreaView style={s.safe} edges={["top"]}>
       <ScreenHeader
         title="Notices"
-        action={isAdmin && (
+        action={canWrite && (
           <TouchableOpacity onPress={openCreate} style={s.headerBtn}>
             <Text style={s.headerBtnText}>+ Post</Text>
           </TouchableOpacity>
@@ -272,7 +273,7 @@ export const NoticesScreen = ({ navigation }) => {
           renderItem={({ item }) => (
             <NoticeCard
               notice={item}
-              isAdmin={isAdmin}
+              canWrite={canWrite}
               pinBusy={pinBusy[item._id]}
               delBusy={delBusy[item._id]}
               onTogglePin={handleTogglePin}

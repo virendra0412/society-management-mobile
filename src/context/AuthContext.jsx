@@ -11,7 +11,7 @@ import { createContext, useContext, useState, useEffect, useCallback, useRef } f
 import { AppState } from "react-native";
 import { authApi }      from "../api/auth.api";
 import { tokenStorage } from "../utils/storage";
-import { authEvents }   from "../api/client";
+import { authEvents, holdRequests, releaseRequests } from "../api/client";
 
 const AuthContext = createContext(null);
 
@@ -22,6 +22,7 @@ export const AuthProvider = ({ children }) => {
   // Holds the registerForPushNotifications fn injected by NotificationContext.
   const registerPushRef = useRef(null);
   const appStateRef     = useRef(AppState.currentState);
+  const switchQueueRef  = useRef(Promise.resolve());
 
   // ── Restore session on app launch ─────────────────────────────────────────
   useEffect(() => {
@@ -37,9 +38,21 @@ export const AuthProvider = ({ children }) => {
         const fresh = meRes.data.user;
         setUser(fresh);
         await tokenStorage.setUser(fresh);
-      } catch {
-        await tokenStorage.clearAll();
-        setUser(null);
+      } catch (err) {
+        // Only wipe tokens on a real auth rejection (401/403).
+        // Network errors (no internet, timeout, server cold-start) must NOT
+        // clear the refresh token - fall back to cached user instead.
+        const status = err?.response?.status;
+        const isAuthError = status === 401 || status === 403;
+
+        if (isAuthError) {
+          await tokenStorage.clearAll();
+          setUser(null);
+        } else {
+          // Restore from cache so the UI stays populated offline
+          const cached = await tokenStorage.getUser();
+          setUser(cached || null);
+        }
       } finally {
         setLoading(false);
       }
@@ -139,13 +152,26 @@ export const AuthProvider = ({ children }) => {
    * After this call, all subsequent API requests use the new society context.
    */
   const switchSociety = useCallback(async (societyId) => {
-    const { data } = await authApi.switchSociety(societyId);
-    // Replace tokens — new JWT carries the new societyId
-    tokenStorage.setAccess(data.accessToken);
-    await tokenStorage.setRefresh(data.refreshToken);
-    await tokenStorage.setUser(data.user);
-    setUser(data.user);
-    return data.user;
+    const runSwitch = async () => {
+      let releaseHold;
+      const hold = new Promise((resolve) => { releaseHold = resolve; });
+      holdRequests(hold);
+      try {
+        const { data } = await authApi.switchSociety(societyId);
+        tokenStorage.setAccess(data.accessToken);
+        await tokenStorage.setRefresh(data.refreshToken);
+        await tokenStorage.setUser(data.user);
+        setUser(data.user);
+        return data.user;
+      } finally {
+        releaseHold();
+        releaseRequests();
+      }
+    };
+
+    const next = switchQueueRef.current.then(runSwitch, runSwitch);
+    switchQueueRef.current = next.catch(() => {});
+    return next;
   }, []);
 
   /**

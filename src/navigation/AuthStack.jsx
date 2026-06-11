@@ -9,6 +9,7 @@
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { LoginScreen }          from "../screens/auth/LoginScreen";
 import { RegisterScreen }       from "../screens/auth/RegisterScreen";
+import { ForgotPasswordScreen } from "../screens/auth/ForgotPasswordScreen";
 import { PrivacyPolicyScreen }  from "../screens/legal/PrivacyPolicyScreen";
 import { TermsScreen }          from "../screens/legal/TermsScreen";
 
@@ -18,6 +19,7 @@ export const AuthStack = () => (
   <Stack.Navigator screenOptions={{ headerShown: false, animation: "fade" }}>
     <Stack.Screen name="Login"         component={LoginScreen}         />
     <Stack.Screen name="Register"      component={RegisterScreen}      />
+    <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
     <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} />
     <Stack.Screen name="Terms"         component={TermsScreen}         />
   </Stack.Navigator>
