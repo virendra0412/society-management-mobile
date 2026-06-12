@@ -29,9 +29,10 @@ import { useNavigation } from "@react-navigation/native";
 import { C } from "../../constants/theme";
 
 const CONTACT_EMAIL   = "privacy@societyapp.in";
-const LAST_UPDATED    = "June 2025";
+const LAST_UPDATED    = "June 2026";
 const APP_NAME        = "SocietyApp";
 const COMPANY_NAME    = "SocietyApp Technologies Pvt. Ltd.";
+const REGISTERED_ADDRESS = "Ahmedabad, Gujarat, India";
 
 // ─── Section component ────────────────────────────────────────────────────────
 const Section = ({ title, children }) => (
@@ -251,6 +252,7 @@ export const PrivacyPolicyScreen = () => {
           <P style={{ marginTop: 8 }}>
             <Text style={{ fontWeight: "600" }}>Data Protection Officer{"\n"}</Text>
             {COMPANY_NAME}{"\n"}
+            Registered Office: {REGISTERED_ADDRESS}{"\n"}
             Email: <Text style={styles.link}>{CONTACT_EMAIL}</Text>
           </P>
           <P style={{ marginTop: 8 }}>

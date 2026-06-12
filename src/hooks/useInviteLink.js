@@ -16,9 +16,11 @@
  */
 
 import { useCallback }           from "react";
+import { Alert }                 from "react-native";
 import * as Linking              from "expo-linking";
 import { useToast }              from "../context/ToastContext";
 import client, { unwrap }        from "../api/client";
+import { useAuth }               from "../context/AuthContext";
 
 // ─── Token pre-check API call ─────────────────────────────────────────────────
 // GET /api/v1/invite-link/verify?token=TOKEN
@@ -31,6 +33,7 @@ const verifyInviteToken = async (token) => {
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 export const useInviteLink = (navigationRef) => {
   const toast = useToast();
+  const { isLogged, joinSociety } = useAuth();
 
   /**
    * Parse a raw URL string and, if it matches the invite scheme,
@@ -64,6 +67,35 @@ export const useInviteLink = (navigationRef) => {
         const result = await verifyInviteToken(token);
         const { societyId, societyName } = result.data;
 
+        if (isLogged) {
+          Alert.alert(
+            "Join Society",
+            `Join ${societyName}?`,
+            [
+              { text: "Cancel", style: "cancel" },
+              {
+                text: "Join",
+                onPress: async () => {
+                  try {
+                    const joined = await joinSociety({ inviteToken: token });
+                    toast.success(
+                      joined.pendingApproval
+                        ? `Join request sent for ${societyName}.`
+                        : `Successfully joined ${societyName}.`
+                    );
+                  } catch (err) {
+                    const msg =
+                      err.response?.data?.message ||
+                      "Could not join this society. Please try again.";
+                    toast.error(msg);
+                  }
+                },
+              },
+            ]
+          );
+          return;
+        }
+
         // Navigate to Register, passing invite context as route params.
         // RegisterScreen reads these and pre-fills / locks the relevant fields.
         if (navigationRef?.current) {
@@ -89,7 +121,7 @@ export const useInviteLink = (navigationRef) => {
         toast.error(msg);
       }
     },
-    [toast, navigationRef]
+    [toast, navigationRef, isLogged, joinSociety]
   );
 
   return { parseInviteUrl };
