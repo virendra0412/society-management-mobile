@@ -83,6 +83,10 @@ const hi = {
   reg_wing:            "विंग / ब्लॉक",
   reg_wing_ph:         "जैसे B",
   reg_btn:             "खाता बनाएं",
+  reg_legal_prefix:    "मैं सहमत हूं",
+  reg_terms:           "नियम और शर्तों",
+  reg_legal_and:       "और",
+  reg_privacy:         "गोपनीयता नीति",
   reg_has_account:     "पहले से खाता है?",
   reg_login_link:      "साइन इन करें",
   reg_success_pending: "रजिस्ट्रेशन हो गया! एडमिन की मंजूरी का इंतजार है।",
@@ -93,6 +97,7 @@ const hi = {
   err_email_req:       "ईमेल आवश्यक है",
   err_pass_min8:       "पासवर्ड कम से कम 8 अक्षरों का होना चाहिए",
   err_pass_complexity: "बड़े, छोटे अक्षर और एक अंक होना चाहिए",
+  err_legal_accept:    "कृपया नियम और शर्तें तथा गोपनीयता नीति स्वीकार करें",
 
   // ── Pending Approval ─────────────────────────────────────────────────────────
   pending_title:    "अनुमोदन की प्रतीक्षा में",

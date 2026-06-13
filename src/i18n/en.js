@@ -84,6 +84,10 @@ const en = {
   reg_wing:            "Wing / Block",
   reg_wing_ph:         "e.g. B",
   reg_btn:             "Create Account",
+  reg_legal_prefix:    "I agree to the",
+  reg_terms:           "Terms & Conditions",
+  reg_legal_and:       "and",
+  reg_privacy:         "Privacy Policy",
   reg_has_account:     "Already have an account?",
   reg_login_link:      "Sign in",
   reg_success_pending: "Registered! Waiting for admin approval to join the society.",
@@ -94,6 +98,7 @@ const en = {
   err_email_req:       "Email is required",
   err_pass_min8:       "Password must be at least 8 characters",
   err_pass_complexity: "Must include uppercase, lowercase & a number",
+  err_legal_accept:    "Please accept the Terms & Conditions and Privacy Policy",
 
   // ── Pending Approval ─────────────────────────────────────────────────────────
   pending_title:    "Awaiting Approval",

@@ -53,6 +53,7 @@ export const RegisterScreen = ({ navigation, route }) => {
   const [errors,   setErrors]   = useState({});
   const [loading,  setLoading]  = useState(false);
   const [showPass, setShowPass] = useState(false);
+  const [acceptedLegal, setAcceptedLegal] = useState(false);
 
   const set = (key) => (val) => {
     setForm((p) => ({ ...p, [key]: val }));
@@ -67,6 +68,7 @@ export const RegisterScreen = ({ navigation, route }) => {
     if (!/[A-Z]/.test(form.password) ||
         !/[a-z]/.test(form.password) ||
         !/[0-9]/.test(form.password)) e.password = t("err_pass_complexity");
+    if (!acceptedLegal)               e.legal    = t("err_legal_accept");
     return e;
   };
 
@@ -83,6 +85,9 @@ export const RegisterScreen = ({ navigation, route }) => {
         ...(form.phone && { phone: form.phone.trim() }),
         ...(form.flat  && { flat:  form.flat.trim()  }),
         ...(form.wing  && { wing:  form.wing.trim()  }),
+        termsAccepted: true,
+        privacyAccepted: true,
+        legalAcceptedAt: new Date().toISOString(),
 
         // ── Invite-link flow: send token, NOT joinCode ───────────────────────
         ...(isInviteFlow
@@ -231,28 +236,46 @@ export const RegisterScreen = ({ navigation, route }) => {
               />
             )}
 
-            <Btn onPress={handleRegister} loading={loading} style={{ marginTop: 4 }}>
-              {t("reg_btn")}
-            </Btn>
-
             {/* Legal consent notice — required for Play Store */}
-            <Text style={styles.legalNotice}>
-              By registering, you agree to our{" "}
+            <TouchableOpacity
+              onPress={() => {
+                setAcceptedLegal((v) => !v);
+                setErrors((p) => ({ ...p, legal: undefined }));
+              }}
+              activeOpacity={0.75}
+              style={styles.legalConsentRow}
+            >
+              <View style={[styles.checkbox, acceptedLegal && styles.checkboxChecked]}>
+                {acceptedLegal ? <Text style={styles.checkboxMark}>✓</Text> : null}
+              </View>
+              <Text style={styles.legalConsentText}>
+              {t("reg_legal_prefix")}{" "}
               <Text
                 style={styles.legalLink}
                 onPress={() => navigation.navigate("Terms")}
               >
-                Terms & Conditions
+                {t("reg_terms")}
               </Text>
-              {" "}and{" "}
+              {" "}{t("reg_legal_and")}{" "}
               <Text
                 style={styles.legalLink}
                 onPress={() => navigation.navigate("PrivacyPolicy")}
               >
-                Privacy Policy
+                {t("reg_privacy")}
               </Text>
               .
-            </Text>
+              </Text>
+            </TouchableOpacity>
+            {!!errors.legal && <Text style={styles.legalError}>{errors.legal}</Text>}
+
+            <Btn
+              onPress={handleRegister}
+              loading={loading}
+              disabled={!acceptedLegal}
+              style={{ marginTop: 12 }}
+            >
+              {t("reg_btn")}
+            </Btn>
 
             <View style={styles.switchRow}>
               <Text style={styles.switchText}>{t("reg_has_account")} </Text>
@@ -277,17 +300,51 @@ const styles = StyleSheet.create({
   card:       { backgroundColor: "#fff", borderRadius: 20, padding: 20, borderWidth: 1, borderColor: C.gray100 },
   row:        { flexDirection: "row" },
   switchRow:  { flexDirection: "row", justifyContent: "center", marginTop: 16, flexWrap: "wrap" },
-  legalNotice: {
+  legalConsentRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    marginTop: 6,
+    paddingVertical: 8,
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 5,
+    borderWidth: 1.5,
+    borderColor: C.gray300,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 10,
+    marginTop: 1,
+    backgroundColor: "#fff",
+  },
+  checkboxChecked: {
+    borderColor: C.teal,
+    backgroundColor: C.teal,
+  },
+  checkboxMark: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "800",
+    lineHeight: 16,
+  },
+  legalConsentText: {
+    flex: 1,
     fontSize:   12,
     color:      "#8C8680",
-    textAlign:  "center",
-    marginTop:  12,
     lineHeight: 18,
-    paddingHorizontal: 8,
   },
   legalLink: {
     color:               "#0D7377",
     textDecorationLine:  "underline",
+    fontWeight:          "700",
+  },
+  legalError: {
+    fontSize: 11,
+    color: C.red,
+    marginTop: -2,
+    marginBottom: 2,
+    marginLeft: 30,
   },
   switchText: { fontSize: 13, color: C.gray500 },
   switchLink: { fontSize: 13, color: C.teal, fontWeight: "700" },

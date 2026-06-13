@@ -83,6 +83,10 @@ const gu = {
   reg_wing:            "વિંગ / બ્લૉક",
   reg_wing_ph:         "દા.ત. B",
   reg_btn:             "ખાતું બનાવો",
+  reg_legal_prefix:    "હું સંમત છું",
+  reg_terms:           "નિયમો અને શરતો",
+  reg_legal_and:       "અને",
+  reg_privacy:         "ગોપનીયતા નીતિ",
   reg_has_account:     "પહેલેથી ખાતું છે?",
   reg_login_link:      "સાઇન ઇન કરો",
   reg_success_pending: "નોંધણી થઈ! એડમિનની મંજૂરીની રાહ જુઓ.",
@@ -93,6 +97,7 @@ const gu = {
   err_email_req:       "ઇમેઇલ જરૂરી છે",
   err_pass_min8:       "પાસવર્ડ ઓછામાં ઓછા 8 અક્ષરનો હોવો જોઈએ",
   err_pass_complexity: "મોટા, નાના અક્ષર અને એક અંક હોવા જોઈએ",
+  err_legal_accept:    "કૃપા કરીને નિયમો અને શરતો તથા ગોપનીયતા નીતિ સ્વીકારો",
 
   // ── Pending Approval ─────────────────────────────────────────────────────────
   pending_title:    "મંજૂરીની રાહ",
