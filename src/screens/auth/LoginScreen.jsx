@@ -136,6 +136,14 @@ export const LoginScreen = ({ navigation }) => {
                 <Text style={styles.switchLink}>{t("login_register_link")}</Text>
               </TouchableOpacity>
             </View>
+
+            {/* Entry point for prospective admins with no invite/join code */}
+            <View style={styles.registerSocietyBox}>
+              <Text style={styles.registerSocietyText}>{t("reg_society_prompt")}</Text>
+              <TouchableOpacity onPress={() => navigation.navigate("RegisterSociety")} activeOpacity={0.85}>
+                <Text style={styles.registerSocietyLink}>{t("reg_society_link")}</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -157,4 +165,11 @@ const styles = StyleSheet.create({
   switchRow:  { flexDirection: "row", justifyContent: "center", flexWrap: "wrap" },
   switchText: { fontSize: 13, color: C.gray500 },
   switchLink: { fontSize: 13, color: C.teal, fontWeight: "700" },
+
+  registerSocietyBox: {
+    marginTop: 18, paddingTop: 16, borderTopWidth: 1, borderTopColor: C.gray100,
+    alignItems: "center",
+  },
+  registerSocietyText: { fontSize: 12, color: C.gray500, marginBottom: 4 },
+  registerSocietyLink: { fontSize: 13, color: C.navy, fontWeight: "800" },
 });

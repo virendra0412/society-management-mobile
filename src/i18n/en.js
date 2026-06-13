@@ -84,10 +84,6 @@ const en = {
   reg_wing:            "Wing / Block",
   reg_wing_ph:         "e.g. B",
   reg_btn:             "Create Account",
-  reg_legal_prefix:    "I agree to the",
-  reg_terms:           "Terms & Conditions",
-  reg_legal_and:       "and",
-  reg_privacy:         "Privacy Policy",
   reg_has_account:     "Already have an account?",
   reg_login_link:      "Sign in",
   reg_success_pending: "Registered! Waiting for admin approval to join the society.",
@@ -98,7 +94,53 @@ const en = {
   err_email_req:       "Email is required",
   err_pass_min8:       "Password must be at least 8 characters",
   err_pass_complexity: "Must include uppercase, lowercase & a number",
-  err_legal_accept:    "Please accept the Terms & Conditions and Privacy Policy",
+
+  // ── Register Society (new society onboarding application) ─────────────────
+  reg_society_prompt:  "Manage a society?",
+  reg_society_link:    "Register your society here",
+  reg_society_title:   "Register Your Society",
+  reg_society_subtitle: "Tell us about your society. Our team will review your application and set you up with a free 30-day trial — full access, up to 50 units, no card required.",
+
+  reg_society_section_society: "Society Details",
+  reg_society_section_admin:   "Your Details (Admin)",
+
+  reg_society_name:        "Society Name",
+  reg_society_name_ph:     "e.g. Sunrise Apartments",
+  reg_society_address:     "Address",
+  reg_society_address_ph:  "Street, area, landmark",
+  reg_society_city:        "City",
+  reg_society_city_ph:     "e.g. Mumbai",
+  reg_society_state:       "State",
+  reg_society_state_ph:    "e.g. Maharashtra",
+  reg_society_units:       "Total Flats / Units",
+  reg_society_units_ph:    "e.g. 48",
+  reg_society_description: "About your society (optional)",
+  reg_society_description_ph: "Anything else we should know?",
+
+  reg_society_admin_name:        "Your Name",
+  reg_society_admin_name_ph:     "Full name",
+  reg_society_admin_email:       "Your Email",
+  reg_society_admin_email_ph:    "you@example.com",
+  reg_society_admin_phone:       "Your Phone Number",
+  reg_society_admin_phone_ph:    "10-digit mobile number",
+
+  reg_society_submit:      "Submit Application",
+  reg_society_back_login:  "Back to Login",
+  reg_society_duplicate:   "An application with this email is already pending review. We'll be in touch soon.",
+
+  reg_society_success_title: "Application Submitted!",
+  reg_society_success_body:  "Thanks! Our team will review your application and email your login details to the address you provided once approved — usually within 1-2 business days.",
+  reg_society_success_tip:   "💡 Tip: Check your spam folder for the approval email, and make sure the email address you entered is correct — that's where your admin login details will be sent.",
+
+  err_society_name:  "Society name must be at least 3 characters",
+  err_address:       "Address must be at least 5 characters",
+  err_city:          "City is required",
+  err_state:         "State is required",
+  err_units:         "Enter a valid number of units (1–5000)",
+  err_admin_name:    "Name must be at least 2 characters",
+  err_admin_email:   "A valid email is required",
+  err_admin_phone:   "Enter a valid phone number",
+
 
   // ── Pending Approval ─────────────────────────────────────────────────────────
   pending_title:    "Awaiting Approval",
