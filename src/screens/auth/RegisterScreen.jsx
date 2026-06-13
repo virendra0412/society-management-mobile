@@ -23,6 +23,7 @@ import { useLanguage }       from "../../context/LanguageContext";
 import { useToast }          from "../../context/ToastContext";
 import { Input, Btn }        from "../../components/ui";
 import { AppLogo }           from "../../components/ui/AppLogo";
+import LanguageDropdown from "../../components/ui/LanguageDropdown";
 import { C }                 from "../../constants/theme";
 
 export const RegisterScreen = ({ navigation, route }) => {
@@ -116,6 +117,9 @@ export const RegisterScreen = ({ navigation, route }) => {
 
   return (
     <SafeAreaView style={styles.safe}>
+      <View style={styles.langDropdownContainer}>
+        <LanguageDropdown />
+      </View>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={{ flex: 1 }}
@@ -292,6 +296,7 @@ export const RegisterScreen = ({ navigation, route }) => {
 
 const styles = StyleSheet.create({
   safe:       { flex: 1, backgroundColor: C.bg },
+  langDropdownContainer: { paddingHorizontal: 24, paddingVertical: 12, alignItems: "flex-end" },
   scroll:     { flexGrow: 1, padding: 20, paddingBottom: 40 },
   back:       { marginBottom: 16 },
   backText:   { fontSize: 13, color: C.teal, fontWeight: "600" },

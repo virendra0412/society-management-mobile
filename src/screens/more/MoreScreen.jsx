@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, Modal } from "react-native";
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from "react-native";
 import { SafeAreaView }   from "react-native-safe-area-context";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { useNavigation }  from "@react-navigation/native";
 
 import { useAuth }     from "../../context/AuthContext";
 import { useLanguage } from "../../context/LanguageContext";
+import LanguageDropdown from "../../components/ui/LanguageDropdown";
 import { C }           from "../../constants/theme";
 
 // Screens reachable from More
@@ -27,85 +28,7 @@ import { TermsScreen }         from "../legal/TermsScreen";
 const { width } = Dimensions.get("window");
 const TILE_SIZE = (width - 56) / 3;
 
-// ─── Language options ─────────────────────────────────────────────────────────
-const LOCALES = [
-  { code: "en", native: "English",  label: "English"  },
-  { code: "hi", native: "हिंदी",    label: "Hindi"    },
-  { code: "gu", native: "ગુજરાતી", label: "Gujarati" },
-];
-
-// ─── Language Dropdown ────────────────────────────────────────────────────────
-// Tapping the pill opens a bottom-sheet with all 3 options visible at once.
-const LanguageDropdown = () => {
-  const { locale, changeLocale } = useLanguage();
-  const [open, setOpen] = useState(false);
-  const current = LOCALES.find((l) => l.code === locale) || LOCALES[0];
-
-  return (
-    <>
-      {/* Trigger pill */}
-      <TouchableOpacity
-        onPress={() => setOpen(true)}
-        activeOpacity={0.75}
-        style={dropStyles.pill}
-      >
-        <Text style={dropStyles.pillText}>🌐 {current.native}</Text>
-        <Text style={dropStyles.arrow}>▾</Text>
-      </TouchableOpacity>
-
-      {/* Bottom-sheet modal */}
-      <Modal
-        visible={open}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setOpen(false)}
-      >
-        <TouchableOpacity
-          style={dropStyles.backdrop}
-          activeOpacity={1}
-          onPress={() => setOpen(false)}
-        >
-          <View style={dropStyles.sheet}>
-            <Text style={dropStyles.sheetTitle}>Select Language</Text>
-            {LOCALES.map((loc) => {
-              const active = locale === loc.code;
-              return (
-                <TouchableOpacity
-                  key={loc.code}
-                  onPress={() => { changeLocale(loc.code); setOpen(false); }}
-                  activeOpacity={0.75}
-                  style={[dropStyles.option, active && dropStyles.optionActive]}
-                >
-                  <View style={{ flex: 1 }}>
-                    <Text style={[dropStyles.optionNative, active && { color: C.teal }]}>
-                      {loc.native}
-                    </Text>
-                    <Text style={dropStyles.optionLabel}>{loc.label}</Text>
-                  </View>
-                  {active && <Text style={dropStyles.check}>✓</Text>}
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        </TouchableOpacity>
-      </Modal>
-    </>
-  );
-};
-
-const dropStyles = StyleSheet.create({
-  pill:         { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: C.teal + "15", borderWidth: 1.5, borderColor: C.teal + "40", borderRadius: 20, paddingHorizontal: 10, paddingVertical: 5 },
-  pillText:     { fontSize: 12, fontWeight: "700", color: C.teal },
-  arrow:        { fontSize: 9, color: C.teal, marginTop: 1 },
-  backdrop:     { flex: 1, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "flex-end" },
-  sheet:        { backgroundColor: "#fff", borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, paddingBottom: 36 },
-  sheetTitle:   { fontSize: 13, fontWeight: "700", color: C.gray500, textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 14 },
-  option:       { flexDirection: "row", alignItems: "center", paddingVertical: 14, paddingHorizontal: 12, borderRadius: 12, marginBottom: 4 },
-  optionActive: { backgroundColor: C.teal + "12" },
-  optionNative: { fontSize: 17, fontWeight: "700", color: C.navy },
-  optionLabel:  { fontSize: 12, color: C.gray500, marginTop: 2 },
-  check:        { fontSize: 16, color: C.teal, fontWeight: "700" },
-});
+// ─── MoreScreen ───────────────────────────────────────────────────────────────
 
 // ─── Module tile ──────────────────────────────────────────────────────────────
 const ModuleTile = ({ icon, label, color, onPress }) => (

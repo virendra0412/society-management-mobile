@@ -12,8 +12,10 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { authApi } from "../../api/auth.api";
 import { AppLogo } from "../../components/ui/AppLogo";
 import { Btn, Input } from "../../components/ui";
+import LanguageDropdown from "../../components/ui/LanguageDropdown";
 import { C } from "../../constants/theme";
 import { useToast } from "../../context/ToastContext";
+import { useLanguage } from "../../context/LanguageContext";
 
 export const ForgotPasswordScreen = ({ navigation }) => {
   const toast = useToast();
@@ -76,6 +78,9 @@ export const ForgotPasswordScreen = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.safe}>
+      <View style={styles.langDropdownContainer}>
+        <LanguageDropdown />
+      </View>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={styles.kav}
@@ -154,6 +159,7 @@ export const ForgotPasswordScreen = ({ navigation }) => {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.navy },
+  langDropdownContainer: { paddingHorizontal: 24, paddingVertical: 12, alignItems: "flex-end" },
   kav: { flex: 1 },
   scroll: { flexGrow: 1, justifyContent: "center", padding: 24 },
   card: { backgroundColor: "#fff", borderRadius: 20, padding: 24 },

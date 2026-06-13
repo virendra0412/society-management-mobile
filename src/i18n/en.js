@@ -130,7 +130,7 @@ const en = {
 
   reg_society_success_title: "Application Submitted!",
   reg_society_success_body:  "Thanks! Our team will review your application and email your login details to the address you provided once approved — usually within 1-2 business days.",
-  reg_society_success_tip:   "💡 Tip: Check your spam folder for the approval email, and make sure the email address you entered is correct — that's where your admin login details will be sent.",
+  reg_society_success_tip:   "🎉 Your application will be reviewed within 24 hours. Once approved, you'll receive login credentials by email.\n\nYou'll start with a 30-day FREE trial — every feature unlocked. After 30 days, core features stay free forever. Upgrade anytime to unlock maintenance billing and more.",
 
   err_society_name:  "Society name must be at least 3 characters",
   err_address:       "Address must be at least 5 characters",
@@ -162,6 +162,8 @@ const en = {
   home_community:     "Community Help",
   home_no_issues:     "No issues yet.",
   home_no_help:       "No help posts yet.",
+  home_trial_warning: "Free trial",
+  home_trial_days_left: "days remaining",
 
   // ── Profile ──────────────────────────────────────────────────────────────────
   profile_edit:        "Edit Profile",

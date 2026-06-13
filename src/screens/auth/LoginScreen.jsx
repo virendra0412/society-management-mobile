@@ -15,6 +15,7 @@ import { useLanguage }  from "../../context/LanguageContext";
 import { useToast }     from "../../context/ToastContext";
 import { Input, Btn }   from "../../components/ui";
 import { AppLogo }      from "../../components/ui/AppLogo";
+import LanguageDropdown from "../../components/ui/LanguageDropdown";
 import { C }            from "../../constants/theme";
 
 export const LoginScreen = ({ navigation }) => {
@@ -55,6 +56,9 @@ export const LoginScreen = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.safe}>
+      <View style={styles.langDropdownContainer}>
+        <LanguageDropdown />
+      </View>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={styles.kav}
@@ -153,6 +157,7 @@ export const LoginScreen = ({ navigation }) => {
 
 const styles = StyleSheet.create({
   safe:       { flex: 1, backgroundColor: C.navy },
+  langDropdownContainer: { paddingHorizontal: 24, paddingVertical: 12, alignItems: "flex-end" },
   kav:        { flex: 1 },
   scroll:     { flexGrow: 1, justifyContent: "center", padding: 24 },
   

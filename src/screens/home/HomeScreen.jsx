@@ -20,7 +20,7 @@
 import { useState, useEffect } from "react";
 import {
   View, Text, StyleSheet, ScrollView,
-  TouchableOpacity, Dimensions, Modal,
+  TouchableOpacity, Dimensions,
 } from "react-native";
 import { SafeAreaView }  from "react-native-safe-area-context";
 import { Ionicons }      from "@expo/vector-icons";
@@ -32,6 +32,7 @@ import { issuesApi, helpApi, noticesApi, maintenanceApi } from "../../api/resour
 import {
   Badge, Card, Spinner, EmptyState,
 } from "../../components/ui";
+import LanguageDropdown from "../../components/ui/LanguageDropdown";
 import {
   C, STATUS_COLOR, CATEGORY_ICON, NOTICE_TAG_COLOR,
 } from "../../constants/theme";
@@ -163,81 +164,39 @@ const DueBillBanner = ({ dueBills, onPress }) => {
   );
 };
 
-// ─── Language options (shared with MoreScreen) ────────────────────────────────
-const LOCALES = [
-  { code: "en", native: "English",  label: "English"  },
-  { code: "hi", native: "हिंदी",    label: "Hindi"    },
-  { code: "gu", native: "ગુજરાતી", label: "Gujarati" },
-];
-
-// ─── Language Dropdown ────────────────────────────────────────────────────────
-const LanguageDropdown = () => {
-  const { locale, changeLocale } = useLanguage();
-  const [open, setOpen] = useState(false);
-  const current = LOCALES.find((l) => l.code === locale) || LOCALES[0];
+// ─── Trial Countdown Banner ───────────────────────────────────────────────────
+// Shows orange warning when trial has ≤ 7 days remaining.
+// Hides after trial expires (plan becomes "free").
+const TrialBanner = ({ plan, daysLeft, onPress, t }) => {
+  // Only show if plan is "trial" and <= 7 days left
+  if (plan !== "trial" || !daysLeft || daysLeft > 7) return null;
 
   return (
-    <>
-      <TouchableOpacity
-        onPress={() => setOpen(true)}
-        activeOpacity={0.75}
-        style={langStyles.pill}
-      >
-        <Text style={langStyles.pillText}>🌐 {current.native}</Text>
-        <Text style={langStyles.arrow}>▾</Text>
-      </TouchableOpacity>
-
-      <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
-        <TouchableOpacity
-          style={langStyles.backdrop}
-          activeOpacity={1}
-          onPress={() => setOpen(false)}
-        >
-          <View style={langStyles.sheet}>
-            <Text style={langStyles.sheetTitle}>Select Language</Text>
-            {LOCALES.map((loc) => {
-              const active = locale === loc.code;
-              return (
-                <TouchableOpacity
-                  key={loc.code}
-                  onPress={() => { changeLocale(loc.code); setOpen(false); }}
-                  activeOpacity={0.75}
-                  style={[langStyles.option, active && langStyles.optionActive]}
-                >
-                  <View style={{ flex: 1 }}>
-                    <Text style={[langStyles.optionNative, active && { color: C.teal }]}>
-                      {loc.native}
-                    </Text>
-                    <Text style={langStyles.optionLabel}>{loc.label}</Text>
-                  </View>
-                  {active && <Text style={langStyles.check}>✓</Text>}
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        </TouchableOpacity>
-      </Modal>
-    </>
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.85}
+      style={[styles.trialBanner, { borderColor: C.amber + "40", backgroundColor: C.amber + "0C" }]}
+    >
+      <View style={[styles.trialIconBox, { backgroundColor: C.amber + "20" }]}>
+        <Text style={{ fontSize: 22 }}>⏳</Text>
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text style={[styles.trialEyebrow, { color: C.amber }]}>⏰  {t("home_trial_warning")}</Text>
+        <Text style={styles.trialTitle}>
+          {daysLeft} {daysLeft === 1 ? "day" : "days"} {t("home_trial_days_left")}
+        </Text>
+        <Text style={[styles.trialSub, { color: C.amber }]}>
+          {daysLeft <= 3 ? "Upgrade now to avoid losing access to premium features" : "Tap to see what's included after trial"}
+        </Text>
+      </View>
+      <Ionicons name="chevron-forward" size={18} color={C.amber} />
+    </TouchableOpacity>
   );
 };
 
-const langStyles = StyleSheet.create({
-  pill:         { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "rgba(255,255,255,0.15)", borderWidth: 1.5, borderColor: "rgba(255,255,255,0.25)", borderRadius: 20, paddingHorizontal: 10, paddingVertical: 5 },
-  pillText:     { fontSize: 12, fontWeight: "700", color: "#fff" },
-  arrow:        { fontSize: 9, color: "rgba(255,255,255,0.7)", marginTop: 1 },
-  backdrop:     { flex: 1, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "flex-end" },
-  sheet:        { backgroundColor: "#fff", borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, paddingBottom: 36 },
-  sheetTitle:   { fontSize: 13, fontWeight: "700", color: C.gray500, textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 14 },
-  option:       { flexDirection: "row", alignItems: "center", paddingVertical: 14, paddingHorizontal: 12, borderRadius: 12, marginBottom: 4 },
-  optionActive: { backgroundColor: C.teal + "12" },
-  optionNative: { fontSize: 17, fontWeight: "700", color: C.navy },
-  optionLabel:  { fontSize: 12, color: C.gray500, marginTop: 2 },
-  check:        { fontSize: 16, color: C.teal, fontWeight: "700" },
-});
-
 // ─── HomeScreen ───────────────────────────────────────────────────────────────
 export const HomeScreen = () => {
-  const { user, isAdmin, hasPermission, committeeTitle, memberships, switchSociety, activeSocietyId } = useAuth();
+  const { user, isAdmin, hasPermission, committeeTitle, memberships, switchSociety, activeSocietyId, plan, trialDaysLeft } = useAuth();
   const { t }             = useLanguage();
   const navigation        = useNavigation();
 
@@ -413,6 +372,16 @@ export const HomeScreen = () => {
             />
           )}
 
+          {/* ── Trial Countdown Banner ── */}
+          {!loading && (
+            <TrialBanner
+              plan={plan}
+              daysLeft={trialDaysLeft}
+              onPress={() => goMore("Upgrade")}
+              t={t}
+            />
+          )}
+
           {/* ── Quick Actions ── */}
           <Text style={[styles.sectionTitle, { marginBottom: 10 }]}>{t("home_quick_actions")}</Text>
           <QuickActionGrid
@@ -557,6 +526,16 @@ const styles = StyleSheet.create({
   dueEyebrow:  { fontSize: 9, fontWeight: "800", letterSpacing: 0.9, marginBottom: 2 },
   dueTitle:    { fontSize: 13, fontWeight: "700", color: C.navy, marginBottom: 2 },
   dueSub:      { fontSize: 12, fontWeight: "600" },
+
+  // Trial countdown banner
+  trialBanner: {
+    flexDirection: "row", alignItems: "center", gap: 12,
+    borderRadius: 14, padding: 13, borderWidth: 1.5, marginBottom: 14,
+  },
+  trialIconBox: { width: 44, height: 44, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  trialEyebrow: { fontSize: 9, fontWeight: "800", letterSpacing: 0.9, marginBottom: 2 },
+  trialTitle:   { fontSize: 13, fontWeight: "700", color: C.navy, marginBottom: 2 },
+  trialSub:     { fontSize: 12, fontWeight: "600" },
 
   // Quick actions
   quickTile: {

@@ -16,6 +16,7 @@ import {
   RefreshControl,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useAuth } from "../../context/AuthContext";
 import { modulesApi } from "../../api/resources.api";
 import { COLORS, SPACING } from "../../constants/theme";
 
@@ -35,6 +36,7 @@ const MODULE_META = {
 };
 
 const UpgradeScreen = () => {
+  const { plan, trialDaysLeft } = useAuth();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -105,6 +107,43 @@ const UpgradeScreen = () => {
         <Text style={styles.pageSub}>
           Manage features for your society. Locked modules show the option to request an upgrade from our team.
         </Text>
+
+        {/* ── Plan Status Card ── */}
+        <View style={[styles.planCard, plan === "trial" ? { borderColor: "#F59E0B", backgroundColor: "#FFFBF0" } : { borderColor: "#E5E7EB", backgroundColor: "#F9FAFB" }]}>
+          <View style={{ marginBottom: 12 }}>
+            {plan === "trial" ? (
+              <>
+                <Text style={{ fontSize: 12, fontWeight: "700", color: "#D97706", marginBottom: 4 }}>🎉 FREE TRIAL</Text>
+                <Text style={{ fontSize: 15, fontWeight: "700", color: "#1F2937", marginBottom: 6 }}>
+                  {trialDaysLeft} {trialDaysLeft === 1 ? "day" : "days"} remaining
+                </Text>
+                <Text style={{ fontSize: 13, color: "#4B5563", lineHeight: 18 }}>
+                  Every feature unlocked. After the trial, core features stay free forever. Upgrade to unlock maintenance billing & more.
+                </Text>
+              </>
+            ) : plan === "free" ? (
+              <>
+                <Text style={{ fontSize: 12, fontWeight: "700", color: "#10B981", marginBottom: 4 }}>✓ FREE PLAN</Text>
+                <Text style={{ fontSize: 15, fontWeight: "700", color: "#1F2937", marginBottom: 6 }}>
+                  Core features, forever
+                </Text>
+                <Text style={{ fontSize: 13, color: "#4B5563", lineHeight: 18 }}>
+                  Notices, polls, contacts, and visitors are always free. Upgrade anytime to unlock billing & amenities.
+                </Text>
+              </>
+            ) : (
+              <>
+                <Text style={{ fontSize: 12, fontWeight: "700", color: "#06B6D4", marginBottom: 4 }}>✓ PREMIUM PLAN</Text>
+                <Text style={{ fontSize: 15, fontWeight: "700", color: "#1F2937", marginBottom: 6 }}>
+                  {plan === "basic" ? "Basic Plan" : "Premium Plan"}
+                </Text>
+                <Text style={{ fontSize: 13, color: "#4B5563", lineHeight: 18 }}>
+                  You have access to all features. Contact support if you need to modify your plan.
+                </Text>
+              </>
+            )}
+          </View>
+        </View>
 
         {/* Active Modules */}
         {enabledPaid.length > 0 && (
@@ -197,6 +236,8 @@ const styles = StyleSheet.create({
 
   pageTitle:    { fontSize: 24, fontWeight: "800", color: "#1E293B", marginBottom: 6 },
   pageSub:      { fontSize: 14, color: "#64748B", lineHeight: 20, marginBottom: 24 },
+
+  planCard:     { borderRadius: 12, borderWidth: 1.5, padding: 14, marginBottom: 20, elevation: 1, shadowColor: "#000", shadowOpacity: 0.05, shadowRadius: 4, shadowOffset: { width: 0, height: 2 } },
 
   sectionTitle: { fontSize: 13, fontWeight: "700", color: "#64748B", letterSpacing: 0.5, textTransform: "uppercase", marginBottom: 10, marginTop: 8 },
 

@@ -99,6 +99,34 @@ const hi = {
   err_pass_complexity: "बड़े, छोटे अक्षर और एक अंक होना चाहिए",
   err_legal_accept:    "कृपया नियम और शर्तें तथा गोपनीयता नीति स्वीकार करें",
 
+  // ── Auth — Register Society ──────────────────────────────────────────────────
+  reg_society_title:         "अपनी सोसायटी रजिस्टर करें",
+  reg_society_subtitle:      "एक नई सोसायटी के लिए आवेदन करें",
+  reg_society_name:          "सोसायटी का नाम *",
+  reg_society_name_ph:       "उदा. ग्रीन पार्क सोसायटी",
+  reg_society_address:       "पता *",
+  reg_society_address_ph:    "पूरा पता दर्ज करें",
+  reg_society_city:          "शहर *",
+  reg_society_city_ph:       "शहर का नाम",
+  reg_society_state:         "राज्य *",
+  reg_society_state_ph:      "राज्य का नाम",
+  reg_society_units:         "कुल यूनिट्स *",
+  reg_society_units_ph:      "उदा. 100",
+  reg_society_description:   "विवरण (वैकल्पिक)",
+  reg_society_description_ph:"अपनी सोसायटी के बारे में बताएं",
+  reg_society_admin_name:    "आपका नाम",
+  reg_society_admin_name_ph: "पूरा नाम",
+  reg_society_admin_email:   "आपका ईमेल",
+  reg_society_admin_email_ph:"you@example.com",
+  reg_society_admin_phone:   "आपका फ़ोन नंबर",
+  reg_society_admin_phone_ph:"10 अंकों का मोबाइल नंबर",
+  reg_society_submit:        "आवेदन जमा करें",
+  reg_society_back_login:    "लॉगिन पर वापस जाएं",
+  reg_society_duplicate:     "इस ईमेल के साथ एक आवेदन पहले से समीक्षाधीन है। हम शीघ्र ही संपर्क करेंगे।",
+  reg_society_success_title: "आवेदन जमा हो गया!",
+  reg_society_success_body:  "धन्यवाद! हमारी टीम आपके आवेदन की समीक्षा करेगी और आपको ईमेल के माध्यम से लॉगिन विवरण भेजेगी — आमतौर पर 1-2 कार्य दिवसों में।",
+  reg_society_success_tip:   "🎉 आपके आवेदन की समीक्षा 24 घंटों में होगी। अनुमोदन के बाद आपको ईमेल के माध्यम से लॉगिन क्रेडेंशियल मिलेंगे।\n\nआप 30 दिन की FREE ट्रायल के साथ शुरुआत करेंगे — हर सुविधा अनलॉक होगी। 30 दिनों के बाद मुख्य सुविधाएं हमेशा के लिए मुफ़्त रहेंगी। रखरखाव बिलिंग और अधिक को अनलॉक करने के लिए कभी भी अपग्रेड करें।",
+
   // ── Pending Approval ─────────────────────────────────────────────────────────
   pending_title:    "अनुमोदन की प्रतीक्षा में",
   pending_body:     "आपका पंजीकरण समीक्षाधीन है। एडमिन जल्द ही आपके खाते को मंजूरी देंगे।",
@@ -119,6 +147,8 @@ const hi = {
   home_community:     "सामुदायिक सहायता",
   home_no_issues:     "अभी कोई शिकायत नहीं।",
   home_no_help:       "अभी कोई पोस्ट नहीं।",
+  home_trial_warning: "मुफ़्त ट्रायल",
+  home_trial_days_left: "दिन शेष हैं",
 
   // ── Profile ──────────────────────────────────────────────────────────────────
   profile_edit:        "प्रोफ़ाइल संपादित करें",

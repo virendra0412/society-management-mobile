@@ -237,6 +237,13 @@ export const AuthProvider = ({ children }) => {
    */
   const isCommittee = ["admin", "committee", "security"].includes(role);
 
+  // ── Subscription/Plan helpers ──────────────────────────────────────────────
+  // Get the current subscription plan from the active society
+  const activeSociety = user?.activeSocietyId;
+  const subscription = activeSociety?.subscription;
+  const plan = subscription?.plan ?? "free";  // Default to free if not set
+  const trialDaysLeft = subscription?.daysRemaining ?? null;
+
   return (
     <AuthContext.Provider
       value={{
@@ -259,6 +266,9 @@ export const AuthProvider = ({ children }) => {
         joinSociety,
         activeSocietyId,
         memberships,
+        // Subscription/Plan
+        plan,
+        trialDaysLeft,
       }}
     >
       {children}
