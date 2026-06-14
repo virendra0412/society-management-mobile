@@ -47,6 +47,12 @@ export const LoginScreen = ({ navigation }) => {
       await login({ email: email.trim().toLowerCase(), password });
       // RootNavigator handles redirect automatically via isLogged state
     } catch (err) {
+      const code = err.response?.data?.code;
+      if (code === "MUST_CHANGE_PASSWORD") {
+        // Navigate to force change password screen with current creds
+        navigation.navigate("ForceChangePassword", { email: email.trim().toLowerCase(), password });
+        return;
+      }
       const msg = err.response?.data?.message || t("login_failed");
       setLoginError(msg);   // issue 22 — show inline below form (persistent, readable)
     } finally {
