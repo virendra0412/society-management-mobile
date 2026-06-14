@@ -46,7 +46,6 @@ export const NotificationProvider = ({ children }) => {
   // ── Register for push notifications ────────────────────────────────────────
   const registerForPushNotifications = useCallback(async () => {
     if (!Device.isDevice) {
-      console.log("[Notifications] Skipping — not a physical device");
       return null;
     }
 
@@ -59,7 +58,6 @@ export const NotificationProvider = ({ children }) => {
     }
 
     if (finalStatus !== "granted") {
-      console.log("[Notifications] Permission denied");
       return null;
     }
 
@@ -78,7 +76,6 @@ export const NotificationProvider = ({ children }) => {
     try {
       // Use the dedicated FCM token endpoint, not updateProfile
       await authApi.updateFcmToken(expoPushToken);
-      console.log("[Notifications] Token registered:", expoPushToken);
     } catch (e) {
       console.warn("[Notifications] Failed to register token:", e.message);
     }
@@ -154,7 +151,6 @@ export const NotificationProvider = ({ children }) => {
       if (currentId && data.societyId !== currentId) {
         try {
           await switchSocietyRef.current(data.societyId);
-          console.log("[Notifications] Auto-switched to society:", data.societyId);
         } catch (e) {
           // 401 = access token expired while app was backgrounded 30+ min.
           // The 401-interceptor in client.js will attempt a silent refresh; if
