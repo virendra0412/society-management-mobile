@@ -16,49 +16,68 @@ import { authEvents, holdRequests, releaseRequests } from "../api/client";
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-  const [user,    setUser]    = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [user,        setUser]        = useState(null);
+  const [loading,     setLoading]     = useState(true);
+  const [dataVersion, setDataVersion] = useState(0);
 
   // Holds the registerForPushNotifications fn injected by NotificationContext.
   const registerPushRef = useRef(null);
   const appStateRef     = useRef(AppState.currentState);
   const switchQueueRef  = useRef(Promise.resolve());
 
+  const bumpDataVersion = useCallback(() => {
+    setDataVersion((v) => v + 1);
+  }, []);
+
+  const restoreSession = useCallback(async () => {
+    const refreshToken = await tokenStorage.getRefresh();
+    if (!refreshToken) {
+      setUser(null);
+      return false;
+    }
+
+    try {
+      const { data } = await authApi.refreshToken(refreshToken);
+      tokenStorage.setAccess(data.accessToken);
+      await tokenStorage.setRefresh(data.refreshToken);
+
+      const meRes = await authApi.getMe();
+      const fresh = meRes.data.user;
+      setUser(fresh);
+      await tokenStorage.setUser(fresh);
+      bumpDataVersion();
+      return true;
+    } catch (err) {
+      const status = err?.response?.status;
+      const isAuthError = status === 401 || status === 403;
+
+      if (isAuthError) {
+        await tokenStorage.clearAll();
+        setUser(null);
+        bumpDataVersion();
+      } else {
+        const cached = await tokenStorage.getUser();
+        setUser(cached || null);
+        if (cached) bumpDataVersion();
+      }
+      return false;
+    }
+  }, [bumpDataVersion]);
+
   // ── Restore session on app launch ─────────────────────────────────────────
   useEffect(() => {
     const restore = async () => {
-      const refreshToken = await tokenStorage.getRefresh();
-      if (!refreshToken) { setLoading(false); return; }
-      try {
-        const { data } = await authApi.refreshToken(refreshToken);
-        tokenStorage.setAccess(data.accessToken);
-        await tokenStorage.setRefresh(data.refreshToken);
-
-        const meRes = await authApi.getMe();
-        const fresh = meRes.data.user;
-        setUser(fresh);
-        await tokenStorage.setUser(fresh);
-      } catch (err) {
-        // Only wipe tokens on a real auth rejection (401/403).
-        // Network errors (no internet, timeout, server cold-start) must NOT
-        // clear the refresh token - fall back to cached user instead.
-        const status = err?.response?.status;
-        const isAuthError = status === 401 || status === 403;
-
-        if (isAuthError) {
-          await tokenStorage.clearAll();
-          setUser(null);
-        } else {
-          // Restore from cache so the UI stays populated offline
-          const cached = await tokenStorage.getUser();
-          setUser(cached || null);
-        }
-      } finally {
-        setLoading(false);
+      const cached = await tokenStorage.getUser();
+      if (cached) {
+        setUser(cached);
+        bumpDataVersion();
       }
+
+      await restoreSession();
+      setLoading(false);
     };
     restore();
-  }, []);
+  }, [bumpDataVersion, restoreSession]);
 
   // ── Listen for forced logout from Axios interceptor ────────────────────────
   useEffect(() => {
@@ -81,6 +100,7 @@ export const AuthProvider = ({ children }) => {
       await tokenStorage.setRefresh(data.refreshToken);
       await tokenStorage.setUser(data.user);
       setUser(data.user);
+      bumpDataVersion();
 
       if (registerPushRef.current) {
         registerPushRef.current().catch((e) =>
@@ -93,7 +113,7 @@ export const AuthProvider = ({ children }) => {
       console.error("[AuthContext.login] Login failed:", err.message);
       throw err;
     }
-  }, []);
+  }, [bumpDataVersion]);
 
   const register = useCallback(async (payload) => {
     const { data } = await authApi.register(payload);
@@ -101,6 +121,7 @@ export const AuthProvider = ({ children }) => {
     await tokenStorage.setRefresh(data.refreshToken);
     await tokenStorage.setUser(data.user);
     setUser(data.user);
+    bumpDataVersion();
 
     if (registerPushRef.current) {
       registerPushRef.current().catch((e) =>
@@ -109,7 +130,7 @@ export const AuthProvider = ({ children }) => {
     }
 
     return data;
-  }, []);
+  }, [bumpDataVersion]);
 
   const logout = useCallback(async () => {
     try { await authApi.logout(); } catch { /* ignore network errors on logout */ }
@@ -122,8 +143,9 @@ export const AuthProvider = ({ children }) => {
     const fresh = data.user;
     setUser(fresh);
     await tokenStorage.setUser(fresh);
+    bumpDataVersion();
     return fresh;
-  }, []);
+  }, [bumpDataVersion]);
 
   // ── Issue 8: Reload user when app comes back from background ──────────────
   useEffect(() => {
@@ -162,6 +184,7 @@ export const AuthProvider = ({ children }) => {
         await tokenStorage.setRefresh(data.refreshToken);
         await tokenStorage.setUser(data.user);
         setUser(data.user);
+        bumpDataVersion();
         return data.user;
       } finally {
         releaseHold();
@@ -172,7 +195,7 @@ export const AuthProvider = ({ children }) => {
     const next = switchQueueRef.current.then(runSwitch, runSwitch);
     switchQueueRef.current = next.catch(() => {});
     return next;
-  }, []);
+  }, [bumpDataVersion]);
 
   /**
    * Join a second (or subsequent) society.
@@ -255,6 +278,7 @@ export const AuthProvider = ({ children }) => {
         role,
         permissions,
         committeeTitle,
+        dataVersion,
         hasPermission,
         login,
         register,
