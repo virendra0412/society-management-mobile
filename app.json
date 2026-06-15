@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "SocietyApp",
-    "slug": "society-management-app",
+    "slug": "soceirty-management-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
