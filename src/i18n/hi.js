@@ -23,6 +23,8 @@ const hi = {
 
   // ── App chrome ───────────────────────────────────────────────────────────────
   app_name:     "सोसायटी ऐप",
+  app_tagline:  "सोसायटी संचालन",
+  lang_select:  "भाषा चुनें",
   btn_sign_out: "साइन आउट",
   btn_profile:  "प्रोफ़ाइल",
   btn_admin:    "एडमिन",
@@ -43,10 +45,12 @@ const hi = {
   login_invalid:       "अमान्य ईमेल या पासवर्ड",
   err_email_required:  "ईमेल आवश्यक है",
   err_pass_required:   "पासवर्ड आवश्यक है",
+  err_legal_accept:    "कृपया नियमों और गोपनीयता नीति को स्वीकार करें",
 
   // ── Auth — Forgot / Reset ────────────────────────────────────────────────────
   forgot_title:      "पासवर्ड भूल गए?",
   forgot_subtitle:   "अपना पंजीकृत ईमेल दर्ज करें। हम एक OTP भेजेंगे।",
+  reset_subtitle:    "OTP दर्ज करें और नया पासवर्ड चुनें।",
   forgot_btn_send:   "OTP भेजें",
   forgot_otp_sent:   "OTP भेजा गया — अपना ईमेल जांचें।",
   forgot_req_failed: "अनुरोध विफल।",
@@ -68,6 +72,7 @@ const hi = {
   // ── Auth — Register ──────────────────────────────────────────────────────────
   reg_title:           "खाता बनाएं",
   reg_subtitle:        "आज अपनी सोसायटी से जुड़ें",
+  reg_invite_banner:   "इनवाइट के माध्यम से जुड़ना",
   reg_name:            "पूरा नाम *",
   reg_name_ph:         "राजेश मेहता",
   reg_email:           "ईमेल *",

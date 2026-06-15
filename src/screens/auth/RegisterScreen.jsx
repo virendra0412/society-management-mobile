@@ -134,7 +134,7 @@ export const RegisterScreen = ({ navigation, route }) => {
             <Text style={styles.backText}>← {t("btn_back")}</Text>
           </TouchableOpacity>
 
-          <AppLogo size="sm" dark style={{ marginBottom: 16, marginTop: 8 }} />
+          <AppLogo size="md" dark={false} tagline taglineText={t("app_tagline")} style={{ marginBottom: 16, marginTop: 8 }} />
           <Text style={styles.title}>{t("reg_title")}</Text>
           <Text style={styles.subtitle}>{t("reg_subtitle")}</Text>
 
@@ -143,7 +143,7 @@ export const RegisterScreen = ({ navigation, route }) => {
             <View style={styles.inviteBanner}>
               <Text style={styles.inviteBannerIcon}>🏢</Text>
               <View style={{ flex: 1 }}>
-                <Text style={styles.inviteBannerLabel}>Joining via invite</Text>
+                <Text style={styles.inviteBannerLabel}>{t("reg_invite_banner")}</Text>
                 <Text style={styles.inviteBannerName}>{societyName}</Text>
               </View>
             </View>
@@ -295,7 +295,7 @@ export const RegisterScreen = ({ navigation, route }) => {
 };
 
 const styles = StyleSheet.create({
-  safe:       { flex: 1, backgroundColor: C.bg },
+  safe:       { flex: 1, backgroundColor: C.navy },
   langDropdownContainer: { paddingHorizontal: 24, paddingVertical: 12, alignItems: "flex-end" },
   scroll:     { flexGrow: 1, padding: 20, paddingBottom: 40 },
   back:       { marginBottom: 16 },

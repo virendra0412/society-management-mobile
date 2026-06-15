@@ -140,9 +140,9 @@ const SAApplications = () => {
       </View>
 
       <View style={styles.cardDetails}>
-        <DetailRow label="Contact" value={item.contactName} />
-        <DetailRow label="Email" value={item.email} />
-        <DetailRow label="Phone" value={item.phone} />
+        <DetailRow label="Contact" value={item.adminName || item.contactName || item.name} />
+        <DetailRow label="Email" value={item.adminEmail || item.email || item.adminEmail} />
+        <DetailRow label="Phone" value={item.adminPhone || item.phone || item.adminPhone} />
         <DetailRow
           label="Units"
           value={`${item.totalUnits || "N/A"} units`}

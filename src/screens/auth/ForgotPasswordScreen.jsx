@@ -19,6 +19,7 @@ import { useLanguage } from "../../context/LanguageContext";
 
 export const ForgotPasswordScreen = ({ navigation }) => {
   const toast = useToast();
+  const { t } = useLanguage();
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -29,7 +30,7 @@ export const ForgotPasswordScreen = ({ navigation }) => {
 
   const requestOtp = async () => {
     if (!email.trim()) {
-      setError("Enter your email address.");
+      setError(t("err_email_required"));
       return;
     }
     setLoading(true);
@@ -42,9 +43,9 @@ export const ForgotPasswordScreen = ({ navigation }) => {
         setOtp(code);
       }
       setStep("reset");
-      toast.success(res.message || "OTP sent if the email exists.");
+      toast.success(res.message || t("forgot_otp_sent"));
     } catch (e) {
-      setError(e?.response?.data?.message || "Could not request OTP.");
+      setError(e?.response?.data?.message || t("forgot_req_failed"));
     } finally {
       setLoading(false);
     }
@@ -52,11 +53,11 @@ export const ForgotPasswordScreen = ({ navigation }) => {
 
   const resetPassword = async () => {
     if (!otp.trim() || otp.trim().length !== 6) {
-      setError("Enter the 6 digit OTP.");
+      setError(t("err_otp_digits"));
       return;
     }
     if (newPassword.length < 8) {
-      setError("Password must be at least 8 characters.");
+      setError(t("err_pass_min"));
       return;
     }
     setLoading(true);
@@ -67,10 +68,10 @@ export const ForgotPasswordScreen = ({ navigation }) => {
         otp: otp.trim(),
         newPassword,
       });
-      toast.success("Password reset. Please log in.");
+      toast.success(t("reset_success"));
       navigation.navigate("Login");
     } catch (e) {
-      setError(e?.response?.data?.message || "Could not reset password.");
+      setError(e?.response?.data?.message || t("reset_failed"));
     } finally {
       setLoading(false);
     }
@@ -90,21 +91,21 @@ export const ForgotPasswordScreen = ({ navigation }) => {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <AppLogo size="md" dark={false} tagline style={{ marginBottom: 32 }} />
+          <AppLogo size="md" dark={false} tagline taglineText={t("app_tagline")} style={{ marginBottom: 32 }} />
 
           <View style={styles.card}>
-            <Text style={styles.title}>Reset password</Text>
+            <Text style={styles.title}>{step === "request" ? t("forgot_title") : t("reset_title")}</Text>
             <Text style={styles.subtitle}>
               {step === "request"
-                ? "Enter your account email to receive a reset OTP."
-                : "Enter the OTP and choose a new password."}
+                ? t("forgot_subtitle")
+                : t("reset_subtitle")}
             </Text>
 
             <Input
-              label="Email"
+              label={t("login_email")}
               value={email}
               onChangeText={setEmail}
-              placeholder="you@example.com"
+              placeholder={t("login_email_ph")}
               keyboardType="email-address"
               editable={step === "request"}
             />
@@ -113,21 +114,21 @@ export const ForgotPasswordScreen = ({ navigation }) => {
               <>
                 {!!devOtp && (
                   <View style={styles.devBox}>
-                    <Text style={styles.devText}>Dev OTP: {devOtp}</Text>
+                    <Text style={styles.devText}>{t("forgot_dev_label")}: {devOtp}</Text>
                   </View>
                 )}
                 <Input
-                  label="OTP"
+                  label={t("reset_otp_label")}
                   value={otp}
                   onChangeText={setOtp}
-                  placeholder="6 digit code"
+                  placeholder={t("reset_otp_ph")}
                   keyboardType="number-pad"
                 />
                 <Input
-                  label="New password"
+                  label={t("reset_pass_label")}
                   value={newPassword}
                   onChangeText={setNewPassword}
-                  placeholder="New password"
+                  placeholder={t("reset_pass_ph")}
                   secureTextEntry
                 />
               </>
@@ -144,11 +145,11 @@ export const ForgotPasswordScreen = ({ navigation }) => {
               loading={loading}
               style={styles.primary}
             >
-              {step === "request" ? "Send OTP" : "Reset Password"}
+              {step === "request" ? t("forgot_btn_send") : t("reset_btn")}
             </Btn>
 
             <TouchableOpacity onPress={() => navigation.navigate("Login")} style={styles.backBtn}>
-              <Text style={styles.backText}>Back to login</Text>
+              <Text style={styles.backText}>{t("btn_back")} {t("login_title")}</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>

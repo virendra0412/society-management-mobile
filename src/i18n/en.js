@@ -24,6 +24,8 @@ const en = {
 
   // ── App chrome ───────────────────────────────────────────────────────────────
   app_name:        "SocietyApp",
+  app_tagline:     "SOCIETY OPERATIONS",
+  lang_select:     "Select Language",
   btn_sign_out:    "Sign out",
   btn_profile:     "Profile",
   btn_admin:       "Admin",
@@ -48,6 +50,7 @@ const en = {
   // ── Auth — Forgot / Reset ────────────────────────────────────────────────────
   forgot_title:        "Forgot password?",
   forgot_subtitle:     "Enter your registered email. We'll send a one-time password.",
+  reset_subtitle:      "Enter the OTP and choose a new password.",
   forgot_btn_send:     "Send OTP",
   forgot_otp_sent:     "OTP sent — check your email.",
   forgot_req_failed:   "Request failed.",
@@ -69,6 +72,7 @@ const en = {
   // ── Auth — Register ──────────────────────────────────────────────────────────
   reg_title:           "Create account",
   reg_subtitle:        "Join your society today",
+  reg_invite_banner:   "Joining via invite",
   reg_name:            "Full Name *",
   reg_name_ph:         "Rajesh Mehta",
   reg_email:           "Email *",
@@ -77,6 +81,10 @@ const en = {
   reg_phone_ph:        "9876543210",
   reg_password:        "Password *",
   reg_password_ph:     "Min 8 chars, A-Z, 0-9",
+  reg_legal_prefix:    "I agree to the",
+  reg_terms:           "Terms and Conditions",
+  reg_legal_and:       "and",
+  reg_privacy:         "Privacy Policy",
   reg_join_code:       "Society Join Code",
   reg_join_code_ph:    "e.g. A3F0B2C1",
   reg_flat:            "Flat Number",
@@ -94,6 +102,7 @@ const en = {
   err_email_req:       "Email is required",
   err_pass_min8:       "Password must be at least 8 characters",
   err_pass_complexity: "Must include uppercase, lowercase & a number",
+  err_legal_accept:    "Please accept the terms and privacy policy",
 
   // ── Register Society (new society onboarding application) ─────────────────
   reg_society_prompt:  "Manage a society?",

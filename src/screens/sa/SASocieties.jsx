@@ -60,7 +60,8 @@ const SASocieties = ({ navigation }) => {
       setSocieties(list);
     } catch (error) {
       console.error("Failed to fetch societies:", error);
-      Alert.alert("Error", "Failed to load societies");
+      const message = error.response?.data?.message || error.message || "Failed to load societies";
+      Alert.alert("Error", message);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -220,15 +221,38 @@ const SASocieties = ({ navigation }) => {
       </View>
 
       <View style={styles.cardStats}>
-        <StatItem label="Units" value={item.totalUnits || 0} />
-        <StatItem
-          label="Users"
-          value={(item.totalUsers || 0).toLocaleString()}
-        />
-        <StatItem label="Plan" value={item.plan || "Free"} />
+            <StatItem label="Units" value={item.totalUnits || 0} />
+            <StatItem
+              label="Users"
+              value={resolveUsersCount(item).toLocaleString()}
+            />
+            <StatItem label="Plan" value={(item.subscription && item.subscription.plan) || item.plan || "Free"} />
       </View>
     </TouchableOpacity>
   );
+
+  // Derived list after search text — keep UI reactive and avoid undefined refs
+  const filteredSocieties = societies.filter((s) => {
+    const name = (s?.name || "").toLowerCase();
+    const q = (searchText || "").trim().toLowerCase();
+    if (!q) return true;
+    return name.includes(q);
+  });
+
+  // Resolve users count with fallbacks when API doesn't provide `totalUsers`.
+  const resolveUsersCount = (s) => {
+    if (!s) return 0;
+    // Prefer explicit fields if present
+    if (typeof s.totalUsers === "number" && s.totalUsers >= 0) return s.totalUsers;
+    if (typeof s.usersCount === "number" && s.usersCount >= 0) return s.usersCount;
+    if (typeof s.totalMembers === "number" && s.totalMembers >= 0) return s.totalMembers;
+    if (s.stats && typeof s.stats.users === "number") return s.stats.users;
+    // Fallback: count members array if available
+    if (Array.isArray(s.members)) return s.members.length;
+    // If admin exists, at least 1 user
+    if (s.admin) return 1;
+    return 0;
+  };
 
   if (loading) {
     return (
@@ -335,7 +359,7 @@ const SASocieties = ({ navigation }) => {
               />
               <DetailItem
                 label="Total Users"
-                value={selectedSociety?.totalUsers || 0}
+                value={resolveUsersCount(selectedSociety) || 0}
               />
               <DetailItem
                 label="Created"
@@ -350,11 +374,11 @@ const SASocieties = ({ navigation }) => {
             <TouchableOpacity
               style={styles.modulesButton}
               onPress={() => {
-                const societyId = selectedSociety?._id || selectedSociety?.id;
-                setShowDetailsModal(false);
-                setSelectedSociety(null);
-                navigation.navigate("SAModules", { societyId });
-              }}
+                  const societyId = selectedSociety?._id || selectedSociety?.id;
+                  setShowDetailsModal(false);
+                  setSelectedSociety(null);
+                  navigation.push("SAModules", { societyId });
+                }}
               disabled={actionLoading}
             >
               <Text style={styles.modulesButtonText}>Manage Modules</Text>
@@ -363,11 +387,11 @@ const SASocieties = ({ navigation }) => {
             <TouchableOpacity
               style={styles.analyticsButton}
               onPress={() => {
-                const societyId = selectedSociety?._id || selectedSociety?.id;
-                setShowDetailsModal(false);
-                setSelectedSociety(null);
-                navigation.navigate("SAAnalytics", { societyId });
-              }}
+                  const societyId = selectedSociety?._id || selectedSociety?.id;
+                  setShowDetailsModal(false);
+                  setSelectedSociety(null);
+                  navigation.push("SAAnalytics", { societyId });
+                }}
               disabled={actionLoading}
             >
               <Text style={styles.analyticsButtonText}>View Analytics</Text>

@@ -23,6 +23,8 @@ const gu = {
 
   // ── App chrome ───────────────────────────────────────────────────────────────
   app_name:     "સોસાયટી એપ",
+  app_tagline:  "સોસાયટી ઓપરેશન્સ",
+  lang_select:  "ભાષા પસંદ કરો",
   btn_sign_out: "સાઇન આઉટ",
   btn_profile:  "પ્રોફાઇલ",
   btn_admin:    "એડમિન",
@@ -43,10 +45,12 @@ const gu = {
   login_invalid:       "અમાન્ય ઇમેઇલ અથવા પાસવર્ડ",
   err_email_required:  "ઇમેઇલ જરૂરી છે",
   err_pass_required:   "પાસવર્ડ જરૂરી છે",
+  err_legal_accept:    "કૃપા કરીને નિયમો અને ગોપનીયતા નીતિ સ્વીકારો",
 
   // ── Auth — Forgot / Reset ────────────────────────────────────────────────────
   forgot_title:      "પાસવર્ડ ભૂલી ગયા?",
   forgot_subtitle:   "તમારો નોંધાયેલ ઇમેઇલ દાખલ કરો. અમે OTP મોકલીશું.",
+  reset_subtitle:    "OTP દાખલ કરો અને નવો પાસવર્ડ પસંદ કરો.",
   forgot_btn_send:   "OTP મોકલો",
   forgot_otp_sent:   "OTP મોકલ્યો — તમારો ઇમેઇલ તપાસો.",
   forgot_req_failed: "વિનંતી નિષ્ફળ.",
@@ -68,6 +72,7 @@ const gu = {
   // ── Auth — Register ──────────────────────────────────────────────────────────
   reg_title:           "ખાતું બનાવો",
   reg_subtitle:        "આજે તમારી સોસાયટી સાથે જોડાઓ",
+  reg_invite_banner:   "ઇન્વાઇટ મારફતે જોડાઈ રહ્યો છે",
   reg_name:            "પૂરું નામ *",
   reg_name_ph:         "રાજેશ મહેતા",
   reg_email:           "ઇમેઇલ *",

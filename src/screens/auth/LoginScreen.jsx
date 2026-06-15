@@ -75,7 +75,7 @@ export const LoginScreen = ({ navigation }) => {
           showsVerticalScrollIndicator={false}
         >
           {/* Logo */}
-          <AppLogo size="md" dark={false} tagline style={{ marginBottom: 32 }} />
+          <AppLogo size="md" dark={false} tagline taglineText={t("app_tagline")} style={{ marginBottom: 32 }} />
 
           {/* Card */}
           <View style={styles.card}>
@@ -137,7 +137,7 @@ export const LoginScreen = ({ navigation }) => {
             </Btn>
 
             <TouchableOpacity onPress={() => navigation.navigate("ForgotPassword")} style={styles.forgotBtn}>
-              <Text style={styles.forgotText}>Forgot password?</Text>
+              <Text style={styles.forgotText}>{t("login_forgot")}</Text>
             </TouchableOpacity>
 
             <View style={styles.switchRow}>
@@ -165,7 +165,7 @@ const styles = StyleSheet.create({
   safe:       { flex: 1, backgroundColor: C.navy },
   langDropdownContainer: { paddingHorizontal: 24, paddingVertical: 12, alignItems: "flex-end" },
   kav:        { flex: 1 },
-  scroll:     { flexGrow: 1, justifyContent: "center", padding: 24 },
+  scroll:     { flexGrow: 1, justifyContent: "flex-start", padding: 24, paddingTop: 40 },
   
   card:       { backgroundColor: "#fff", borderRadius: 20, padding: 24 },
   title:      { fontSize: 20, fontWeight: "800", color: C.navy, marginBottom: 4 },

@@ -20,11 +20,12 @@ const SIZES = {
   lg: { icon: 96,  name: 36, sub: 12, gap: 16 },
 };
 
-export const AppLogo = ({ size = "md", dark = false, tagline = false, style }) => {
+export const AppLogo = ({ size = "md", dark = false, tagline = false, taglineText, style }) => {
   const sz = SIZES[size];
   const nameColor  = dark ? C.navy  : "#FFFFFF";
   const accentColor = C.teal;
   const subColor   = dark ? C.gray500 : "rgba(255,255,255,0.55)";
+  const taglineLabel = taglineText || "SOCIETY OPERATIONS";
 
   return (
     <View style={[s.wrap, style]}>
@@ -46,8 +47,8 @@ export const AppLogo = ({ size = "md", dark = false, tagline = false, style }) =
 
       {/* Optional tagline */}
       {tagline && (
-        <Text style={[s.tagline, { fontSize: sz.sub, color: subColor }]}>
-          SOCIETY OPERATIONS
+        <Text style={[s.tagline, { fontSize: sz.sub, color: subColor }]}> 
+          {taglineLabel}
         </Text>
       )}
     </View>
