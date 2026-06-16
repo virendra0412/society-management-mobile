@@ -63,7 +63,7 @@ const PostCard = ({ item, onPress }) => (
           <Text style={pc.title} numberOfLines={2}>{item.title}</Text>
           {item.isClosed && (
             <View style={pc.closedBadge}>
-              <Text style={pc.closedText}>Closed</Text>
+              <Text style={pc.closedText}>{t("help_closed_badge", "Closed")}</Text>
             </View>
           )}
         </View>
@@ -186,7 +186,7 @@ export const HelpScreen = ({ navigation }) => {
       const res = await helpApi.getAll(params);
       setPosts(res.data?.posts || []);
     } catch (e) {
-      setError(e.response?.data?.message || "Failed to load help posts.");
+      setError(e.response?.data?.message || t("help_load_failed", "Failed to load help posts."));
     } finally {
       setLoading(false);
     }
@@ -212,7 +212,7 @@ export const HelpScreen = ({ navigation }) => {
   };
 
   const handleCreate = async () => {
-    if (!form.title.trim()) return toast.error("Title is required.");
+    if (!form.title.trim()) return toast.error(t("help_title_required", "Title is required."));
     setSubmitting(true);
     try {
       const res = await helpApi.create({ ...form, category: selectedCat });
@@ -220,9 +220,9 @@ export const HelpScreen = ({ navigation }) => {
       setForm({ title: "", description: "", category: "Plumber" });
       setSelectedCat("Plumber");
       setShowNew(false);
-      toast.success("Help request posted.");
+      toast.success(t("help_post_success", "Help request posted."));
     } catch (e) {
-      toast.error(e.response?.data?.message || "Failed to post.");
+      toast.error(e.response?.data?.message || t("help_post_failed", "Failed to post."));
     } finally {
       setSubmitting(false);
     }
@@ -230,7 +230,7 @@ export const HelpScreen = ({ navigation }) => {
 
   const handleReply = async () => {
     if (!replyBody.trim() || !detailPost) return;
-    if (replyIsVendor && !replyVendorPhone.trim()) return toast.error("Enter vendor phone number.");
+    if (replyIsVendor && !replyVendorPhone.trim()) return toast.error(t("help_vendor_phone_required", "Enter vendor phone number."));
     setReplyLoading(true);
     try {
       const payload = { body: replyBody.trim() };
@@ -239,9 +239,9 @@ export const HelpScreen = ({ navigation }) => {
       setDetailPost((p) => ({ ...p, replies: res.data.replies }));
       setReplyBody(""); setReplyIsVendor(false); setReplyVendorPhone("");
       fetchPosts();
-      toast.success("Reply posted.");
+      toast.success(t("help_reply_success", "Reply posted."));
     } catch (e) {
-      toast.error(e.response?.data?.message || "Failed to reply.");
+      toast.error(e.response?.data?.message || t("help_reply_failed", "Failed to reply."));
     } finally {
       setReplyLoading(false);
     }
@@ -275,7 +275,7 @@ export const HelpScreen = ({ navigation }) => {
         };
       });
     } catch (e) {
-      toast.error(e.response?.data?.message || "Failed.");
+      toast.error(e.response?.data?.message || t("help_upvote_failed", "Failed."));
     } finally {
       setUpvoting((u) => ({ ...u, [replyId]: false }));
     }
@@ -288,9 +288,9 @@ export const HelpScreen = ({ navigation }) => {
       await helpApi.close(detailPost._id);
       setDetailPost((p) => ({ ...p, isClosed: true }));
       setPosts((p) => p.map((h) => h._id === detailPost._id ? { ...h, isClosed: true } : h));
-      toast.success("Help post closed.");
+      toast.success(t("help_close_success", "Help post closed."));
     } catch (e) {
-      toast.error(e.response?.data?.message || "Failed.");
+      toast.error(e.response?.data?.message || t("help_close_failed", "Failed."));
     } finally {
       setClosing(false);
     }
@@ -305,8 +305,8 @@ export const HelpScreen = ({ navigation }) => {
             <Text style={s.backTxt}>←</Text>
           </TouchableOpacity>
         )}
-        <Text style={s.headerTitle}>Community Help</Text>
-        <Btn small onPress={() => setShowNew(true)} style={s.askBtn}>+ Ask</Btn>
+        <Text style={s.headerTitle}>{t("help_header_title", "Community Help")}</Text>
+        <Btn small onPress={() => setShowNew(true)} style={s.askBtn}>{t("help_ask_btn", "+ Ask")}</Btn>
       </View>
 
       <CatStrip active={catFilter} onChange={setCatFilter} />
@@ -321,7 +321,7 @@ export const HelpScreen = ({ navigation }) => {
           data={posts}
           keyExtractor={(i) => i._id}
           renderItem={({ item }) => <PostCard item={item} onPress={openDetail} />}
-          ListEmptyComponent={<EmptyState icon="🤝" message="No help posts yet. Be the first to ask!" />}
+          ListEmptyComponent={<EmptyState icon="🤝" message={t("help_empty", "No help posts yet. Be the first to ask!")} />}
           contentContainerStyle={s.list}
           showsVerticalScrollIndicator={false}
         />
@@ -331,7 +331,7 @@ export const HelpScreen = ({ navigation }) => {
       <Modal
         open={!!detailPost}
         onClose={() => { setDetailPost(null); setReplyBody(""); setReplyIsVendor(false); setReplyVendorPhone(""); }}
-        title="Help Post"
+        title={t("help_detail_title", "Help Post")}
       >
         {detailPost && (
           <View>
@@ -344,7 +344,7 @@ export const HelpScreen = ({ navigation }) => {
                 <Text style={d.title}>{detailPost.title}</Text>
                 <Text style={d.meta}>
                   {detailPost.flat || detailPost.author?.flat} · {timeAgo(detailPost.createdAt)}
-                  {detailPost.isClosed ? "  [Closed]" : ""}
+                  {detailPost.isClosed ? `  [${t("help_closed_badge", "Closed")}]` : ""}
                 </Text>
               </View>
             </View>
@@ -364,13 +364,13 @@ export const HelpScreen = ({ navigation }) => {
 
             {/* Replies */}
             <Text style={d.repliesLabel}>
-              {detailLoad ? "Loading replies…" : `Replies (${detailPost.replies?.length ?? 0})`}
+              {detailLoad ? t("help_replies_loading", "Loading replies…") : `${t("help_replies_label", "Replies")} (${detailPost.replies?.length ?? 0})`}
             </Text>
 
             {detailLoad && <View style={{ alignItems: "center", paddingVertical: 16 }}><Spinner /></View>}
 
             {!detailLoad && (detailPost.replies || []).length === 0 && (
-              <Text style={d.noReplies}>No replies yet. Be the first!</Text>
+              <Text style={d.noReplies}>{t("help_no_replies", "No replies yet. Be the first!")}</Text>
             )}
 
             {!detailLoad && (detailPost.replies || []).map((r) => (
@@ -393,7 +393,7 @@ export const HelpScreen = ({ navigation }) => {
                   style={[d.vendorToggle, replyIsVendor && d.vendorToggleOn]}
                 >
                   <Text style={[d.vendorToggleText, replyIsVendor && d.vendorToggleTextOn]}>
-                    📞 {replyIsVendor ? "Vendor contact (on)" : "Add vendor contact?"}
+                    📞 {replyIsVendor ? t("help_vendor_toggle_on", "Vendor contact (on)") : t("help_vendor_toggle_off", "Add vendor contact?")}
                   </Text>
                 </TouchableOpacity>
 
@@ -401,7 +401,7 @@ export const HelpScreen = ({ navigation }) => {
                   <Input
                     value={replyVendorPhone}
                     onChangeText={setReplyVendorPhone}
-                    placeholder="Vendor phone number"
+                    placeholder={t("help_vendor_phone_ph", "Vendor phone number")}
                     keyboardType="phone-pad"
                     style={{ marginBottom: 8 }}
                   />
@@ -411,10 +411,10 @@ export const HelpScreen = ({ navigation }) => {
                   <Input
                     value={replyBody}
                     onChangeText={setReplyBody}
-                    placeholder={replyIsVendor ? "Describe this vendor…" : "Write a reply…"}
+                    placeholder={replyIsVendor ? t("help_reply_ph_vendor", "Describe this vendor…") : t("help_reply_ph", "Write a reply...")}
                     style={{ flex: 1, marginBottom: 0, marginRight: 8 }}
                   />
-                  <Btn small loading={replyLoading} onPress={handleReply}>Reply</Btn>
+                  <Btn small loading={replyLoading} onPress={handleReply}>{t("help_reply_btn", "Reply")}</Btn>
                 </View>
               </View>
             )}
@@ -423,22 +423,22 @@ export const HelpScreen = ({ navigation }) => {
       </Modal>
 
       {/* ── New post modal ──────────────────────────────────────────────────── */}
-      <Modal open={showNew} onClose={() => setShowNew(false)} title="Ask for Help">
+      <Modal open={showNew} onClose={() => setShowNew(false)} title={t("help_new_modal_title", "Ask for Help")}>
         <Input
-          label="What do you need? *"
+          label={t("help_title_label", "What do you need? *")}
           value={form.title}
           onChangeText={(v) => setForm((p) => ({ ...p, title: v }))}
-          placeholder="e.g. Need a good plumber urgently"
+          placeholder={t("help_title_ph", "e.g. Need a good plumber urgently")}
         />
         <Input
-          label="More details"
+          label={t("help_desc_label", "More details")}
           value={form.description}
           onChangeText={(v) => setForm((p) => ({ ...p, description: v }))}
-          placeholder="Describe your requirement…"
+          placeholder={t("help_desc_ph", "Describe your requirement…")}
           multiline
         />
         {/* Category chips */}
-        <Text style={s.chipLabel}>Category</Text>
+        <Text style={s.chipLabel}>{t("help_category_label", "Category")}</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
           {HELP_CATEGORIES.map((c) => (
             <TouchableOpacity
@@ -454,7 +454,7 @@ export const HelpScreen = ({ navigation }) => {
           ))}
         </ScrollView>
         <Btn onPress={handleCreate} loading={submitting} style={{ width: "100%" }}>
-          Post Request
+          {t("help_post_btn", "Post Request")}
         </Btn>
       </Modal>
     </SafeAreaView>

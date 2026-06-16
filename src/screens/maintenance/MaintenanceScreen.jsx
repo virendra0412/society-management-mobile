@@ -259,6 +259,7 @@ const BLANK_BILL = {
 
 const CreateBillModal = ({ open, onClose, bill, onSaved }) => {
   const toast  = useToast();
+  const { t } = useLanguage();
   const isEdit = !!bill;
   const [form,   setForm]   = useState(BLANK_BILL);
   const [saving, setSaving] = useState(false);
@@ -282,11 +283,11 @@ const CreateBillModal = ({ open, onClose, bill, onSaved }) => {
   const set = (k) => (v) => setForm((p) => ({ ...p, [k]: v }));
 
   const handleSave = async () => {
-    if (!form.title.trim())                             return toast.error("Title is required.");
-    if (!form.baseAmount || Number(form.baseAmount) < 1) return toast.error("Amount must be ≥ ₹1.");
-    if (!form.dueDate)                                  return toast.error("Due date is required.");
+    if (!form.title.trim())                             return toast.error(t("payments_title_required", "Title is required."));
+    if (!form.baseAmount || Number(form.baseAmount) < 1) return toast.error(t("payments_amount_min", "Amount must be ≥ ₹1."));
+    if (!form.dueDate)                                  return toast.error(t("payments_due_date_required", "Due date is required."));
     if (form.penaltyEnabled && Number(form.penaltyAmount) < 1)
-      return toast.error("Penalty amount must be ≥ ₹1.");
+      return toast.error(t("payments_penalty_min", "Penalty amount must be ≥ ₹1."));
 
     const payload = {
       title:          form.title.trim(),
@@ -308,46 +309,46 @@ const CreateBillModal = ({ open, onClose, bill, onSaved }) => {
         ? await maintenanceApi.updateBill(bill._id, payload)
         : await maintenanceApi.createBill(payload);
       onSaved(res.data.bill, isEdit ? "update" : "create");
-      toast.success(isEdit ? "Bill updated." : "Draft bill created.");
+      toast.success(isEdit ? t("payments_edit_success", "Bill updated.") : t("payments_create_success", "Draft bill created."));
       onClose();
     } catch (e) {
-      toast.error(e?.response?.data?.message || "Save failed.");
+      toast.error(e?.response?.data?.message || t("payments_save_failed", "Save failed."));
     } finally {
       setSaving(false);
     }
   };
 
   return (
-    <Modal open={open} onClose={onClose} title={isEdit ? "Edit Bill" : "Create Maintenance Bill"}>
-      <Input label="Bill Title *"        value={form.title}       onChangeText={set("title")}       placeholder="e.g. January 2025 Maintenance" />
-      <Input label="Description"         value={form.description} onChangeText={set("description")} placeholder="Any notes for residents…" multiline />
+    <Modal open={open} onClose={onClose} title={isEdit ? t("payments_edit_modal_title","Edit Bill") : t("payments_new_modal_title","Create Maintenance Bill")}>
+      <Input label={t("payments_label_title","Bill Title *")}        value={form.title}       onChangeText={set("title")}       placeholder={t("payments_ph_title","e.g. January 2025 Maintenance")} />
+      <Input label={t("payments_label_description","Description")}         value={form.description} onChangeText={set("description")} placeholder={t("payments_ph_description","Any notes for residents…")} multiline />
       <View style={S.row}>
         <View style={{ flex: 1, marginRight: 8 }}>
-          <Input label="Bill Month (YYYY-MM)" value={form.billMonth}  onChangeText={set("billMonth")}  placeholder="2025-01" />
+          <Input label={t("payments_label_billmonth","Bill Month (YYYY-MM)")} value={form.billMonth}  onChangeText={set("billMonth")}  placeholder={t("payments_ph_billmonth","2025-01")} />
         </View>
         <View style={{ flex: 1 }}>
-          <Input label="Amount (₹) *"    value={form.baseAmount}  onChangeText={set("baseAmount")}  placeholder="2500" keyboardType="numeric" />
+          <Input label={t("payments_label_amount","Amount (₹) *")}    value={form.baseAmount}  onChangeText={set("baseAmount")}  placeholder={t("payments_ph_amount","2500")} keyboardType="numeric" />
         </View>
       </View>
-      <Input label="Due Date (YYYY-MM-DD) *" value={form.dueDate} onChangeText={set("dueDate")} placeholder="2025-01-31" keyboardType="numbers-and-punctuation" />
+      <Input label={t("payments_label_due_date","Due Date (YYYY-MM-DD) *")} value={form.dueDate} onChangeText={set("dueDate")} placeholder={t("payments_ph_due_date","2025-01-31")} keyboardType="numbers-and-punctuation" />
 
-      <Text style={S.inputLabel}>Target</Text>
+      <Text style={S.inputLabel}>{t("payments_label_target","Target")}</Text>
       <TargetPicker value={form.targetMode} onChange={set("targetMode")} />
 
       {form.targetMode === "specific" && (
         <Input
-          label="Flat Numbers (comma-separated)"
+          label={t("payments_label_flat_numbers","Flat Numbers (comma-separated)")}
           value={form.targetFlats}
           onChangeText={set("targetFlats")}
-          placeholder="101, 102, 203A"
+          placeholder={t("payments_ph_flat_numbers","101, 102, 203A")}
         />
       )}
 
       {/* Penalty toggle */}
       <View style={S.toggleRow}>
         <View style={{ flex: 1 }}>
-          <Text style={S.toggleLabel}>Late Penalty</Text>
-          <Text style={S.toggleHint}>Auto-charge overdue flats</Text>
+          <Text style={S.toggleLabel}>{t("payments_penalty_label","Late Penalty")}</Text>
+          <Text style={S.toggleHint}>{t("payments_penalty_hint","Auto-charge overdue flats")}</Text>
         </View>
         <Switch
           value={form.penaltyEnabled}
@@ -358,11 +359,11 @@ const CreateBillModal = ({ open, onClose, bill, onSaved }) => {
       </View>
 
       {form.penaltyEnabled && (
-        <Input label="Penalty Amount (₹) *" value={form.penaltyAmount} onChangeText={set("penaltyAmount")} placeholder="200" keyboardType="numeric" />
+        <Input label={t("payments_label_penalty_amount","Penalty Amount (₹) *")} value={form.penaltyAmount} onChangeText={set("penaltyAmount")} placeholder={t("payments_ph_penalty_amount","200")} keyboardType="numeric" />
       )}
 
       <Btn onPress={handleSave} loading={saving}>
-        {isEdit ? "Save Changes" : "Create Draft Bill"}
+        {isEdit ? t("btn_save_changes","Save Changes") : t("payments_create_draft_btn","Create Draft Bill")}
       </Btn>
     </Modal>
   );
@@ -373,6 +374,7 @@ const CreateBillModal = ({ open, onClose, bill, onSaved }) => {
 // ═══════════════════════════════════════════════════════════════════════════════
 const RecordPaymentModal = ({ open, onClose, paymentRecord, billId, onSaved }) => {
   const toast = useToast();
+  const { t } = useLanguage();
   const [method, setMethod]   = useState("upi");
   const [amount, setAmount]   = useState("");
   const [txnId,  setTxnId]    = useState("");
@@ -397,32 +399,32 @@ const RecordPaymentModal = ({ open, onClose, paymentRecord, billId, onSaved }) =
       };
       const res = await maintenanceApi.recordPayment(billId, paymentRecord._id, payload);
       onSaved(res.data.bill);
-      toast.success("Payment recorded.");
+      toast.success(t("payments_record_success","Payment recorded."));
       onClose();
     } catch (e) {
-      toast.error(e?.response?.data?.message || "Failed to record payment.");
+      toast.error(e?.response?.data?.message || t("payments_record_failed","Failed to record payment."));
     } finally {
       setSaving(false);
     }
   };
 
   return (
-    <Modal open={open} onClose={onClose} title="Record Payment">
+    <Modal open={open} onClose={onClose} title={t("payments_record_modal_title","Record Payment")}>
       {paymentRecord && (
         <View style={S.infoBox}>
           <Text style={S.infoTitle}>Flat {paymentRecord.flat}{paymentRecord.wing ? ` · ${paymentRecord.wing}` : ""}</Text>
           <Text style={S.infoMeta}>
-            Amount Due: {fmt(paymentRecord.totalDue)}
-            {paymentRecord.penalty > 0 ? `  +${fmt(paymentRecord.penalty)} penalty` : ""}
+            {t("payments_amount_due","Amount Due:")} {fmt(paymentRecord.totalDue)}
+            {paymentRecord.penalty > 0 ? `  +${fmt(paymentRecord.penalty)} ${t("payments_penalty_label_short","penalty")}` : ""}
           </Text>
         </View>
       )}
       <Input label="Amount Paid (₹)" value={amount} onChangeText={setAmount} placeholder="Leave blank for full amount" keyboardType="numeric" />
       <Text style={S.inputLabel}>Payment Method *</Text>
       <MethodPicker value={method} onChange={setMethod} />
-      <Input label="Transaction ID / Ref (optional)" value={txnId} onChangeText={setTxnId} placeholder="UPI ref, cheque no., etc." />
-      <Input label="Receipt Note (optional)" value={note} onChangeText={setNote} placeholder="Any note…" multiline />
-      <Btn onPress={handleSave} loading={saving}>Mark as Paid</Btn>
+      <Input label={t("payments_txn_label","Transaction ID / Ref (optional)")} value={txnId} onChangeText={setTxnId} placeholder={t("payments_txn_ph","UPI ref, cheque no., etc.")} />
+      <Input label={t("payments_receipt_note","Receipt Note (optional)")} value={note} onChangeText={setNote} placeholder={t("payments_receipt_note_ph","Any note…")} multiline />
+      <Btn onPress={handleSave} loading={saving}>{t("payments_mark_paid","Mark as Paid")}</Btn>
     </Modal>
   );
 };
@@ -430,6 +432,7 @@ const RecordPaymentModal = ({ open, onClose, paymentRecord, billId, onSaved }) =
 // ─── Discount Modal ────────────────────────────────────────────────────────────
 const DiscountModal = ({ open, onClose, paymentRecord, billId, onSaved }) => {
   const toast = useToast();
+  const { t } = useLanguage();
   const [discount, setDiscount] = useState("");
   const [saving,   setSaving]   = useState(false);
 
@@ -438,30 +441,30 @@ const DiscountModal = ({ open, onClose, paymentRecord, billId, onSaved }) => {
   }, [open, paymentRecord]);
 
   const handleSave = async () => {
-    if (discount === "" || Number(discount) < 0) return toast.error("Discount must be ≥ 0.");
+    if (discount === "" || Number(discount) < 0) return toast.error(t("payments_discount_min","Discount must be ≥ 0."));
     setSaving(true);
     try {
       const res = await maintenanceApi.applyDiscount(billId, paymentRecord._id, Number(discount));
       onSaved(res.data.bill);
-      toast.success("Discount applied.");
+      toast.success(t("payments_discount_applied","Discount applied."));
       onClose();
     } catch (e) {
-      toast.error(e?.response?.data?.message || "Failed.");
+      toast.error(e?.response?.data?.message || t("payments_discount_failed","Failed."));
     } finally {
       setSaving(false);
     }
   };
 
   return (
-    <Modal open={open} onClose={onClose} title="Apply Discount">
+    <Modal open={open} onClose={onClose} title={t("payments_apply_discount_title","Apply Discount")}>
       {paymentRecord && (
         <View style={S.infoBox}>
           <Text style={S.infoTitle}>Flat {paymentRecord.flat}</Text>
           <Text style={S.infoMeta}>Base: {fmt(paymentRecord.amount)}</Text>
         </View>
       )}
-      <Input label="Discount Amount (₹) *" value={discount} onChangeText={setDiscount} placeholder="e.g. 200" keyboardType="numeric" />
-      <Btn onPress={handleSave} loading={saving}>Apply Discount</Btn>
+      <Input label={t("payments_label_discount","Discount Amount (₹) *")} value={discount} onChangeText={setDiscount} placeholder={t("payments_ph_discount","e.g. 200")} keyboardType="numeric" />
+      <Btn onPress={handleSave} loading={saving}>{t("payments_apply_discount_btn","Apply Discount")}</Btn>
     </Modal>
   );
 };
@@ -486,7 +489,8 @@ const BillDetailModal = ({ open, billId, onClose, isAdmin }) => {
       const res = await maintenanceApi.getBillById(billId);
       setBill(res.data.bill);
     } catch {
-      toast.error("Failed to load bill.");
+      const { t } = useLanguage();
+      toast.error(t("payments_load_failed", "Failed to load bill."));
     } finally {
       setLoading(false);
     }
@@ -498,17 +502,18 @@ const BillDetailModal = ({ open, billId, onClose, isAdmin }) => {
   }, [open, billId]);
 
   const doAction = (action, label, fn) => {
-    Alert.alert(label, "This cannot be undone.", [
-      { text: "Cancel", style: "cancel" },
-      { text: "Confirm", style: action === "close" ? "destructive" : "default",
+    const { t } = useLanguage();
+    Alert.alert(label, t("payments_action_confirm_body", "This cannot be undone."), [
+      { text: t("btn_cancel", "Cancel"), style: "cancel" },
+      { text: t("btn_confirm", "Confirm"), style: action === "close" ? "destructive" : "default",
         onPress: async () => {
           setActionBusy(action);
           try {
             const res = await fn();
             setBill(res.data.bill);
-            toast.success(`${label} successful.`);
+            toast.success(t("payments_action_success", "Action successful."));
           } catch (e) {
-            toast.error(e?.response?.data?.message || "Action failed.");
+            toast.error(e?.response?.data?.message || t("payments_action_failed","Action failed."));
           } finally {
             setActionBusy(null);
           }
@@ -540,7 +545,7 @@ const BillDetailModal = ({ open, billId, onClose, isAdmin }) => {
   }, {});
 
   return (
-    <Modal open={open} onClose={onClose} title={bill?.title || "Bill Detail"}>
+    <Modal open={open} onClose={onClose} title={bill?.title || (useLanguage().t("payments_bill_detail","Bill Detail"))}>
       {loading && (
         <View style={S.center}>
           <Spinner size={32} />
@@ -552,9 +557,9 @@ const BillDetailModal = ({ open, billId, onClose, isAdmin }) => {
           {/* Status + meta */}
           <View style={S.billMetaRow}>
             <View style={{ flex: 1 }}>
-              <Text style={S.billMonth}>{bill.billMonth || "Maintenance Bill"}</Text>
+              <Text style={S.billMonth}>{bill.billMonth || useLanguage().t("payments_bill_default_title","Maintenance Bill")}</Text>
               <Text style={S.billDue}>
-                Due {fmtDate(bill.dueDate)}{overdueBool ? " · ⚠️ Overdue" : ""}
+                {useLanguage().t("payments_due_prefix","Due")} {fmtDate(bill.dueDate)}{overdueBool ? ` · ⚠️ ${useLanguage().t("payments_overdue_label","Overdue")}` : ""}
               </Text>
             </View>
             <View style={[S.statusChip, { backgroundColor: status.bg + "33" }]}>
@@ -568,31 +573,31 @@ const BillDetailModal = ({ open, billId, onClose, isAdmin }) => {
               <View style={S.collectionRow}>
                 <View style={[S.collectionBox, { backgroundColor: C.green + "15" }]}>
                   <Text style={[S.collectionAmount, { color: C.green }]}>{fmt(summary.collected)}</Text>
-                  <Text style={S.collectionLabel}>Collected</Text>
+                  <Text style={S.collectionLabel}>{useLanguage().t("payments_collected","Collected")}</Text>
                 </View>
                 <View style={[S.collectionBox, { backgroundColor: C.amber + "15" }]}>
                   <Text style={[S.collectionAmount, { color: C.amber }]}>{fmt(summary.pending)}</Text>
-                  <Text style={S.collectionLabel}>Pending</Text>
+                  <Text style={S.collectionLabel}>{useLanguage().t("payments_pending","Pending")}</Text>
                 </View>
                 <View style={[S.collectionBox, { backgroundColor: C.gray50 }]}>
                   <Text style={[S.collectionAmount, { color: C.navy }]}>{fmt(summary.total)}</Text>
-                  <Text style={S.collectionLabel}>Total</Text>
+                  <Text style={S.collectionLabel}>{useLanguage().t("payments_total","Total")}</Text>
                 </View>
               </View>
               <ProgressBar pct={paidPct} />
-              <Text style={S.pctLabel}>{paidPct}% collected</Text>
+              <Text style={S.pctLabel}>{paidPct}% {useLanguage().t("payments_collected_pct","collected")}</Text>
             </View>
           )}
 
           {/* Bill info rows */}
           <View style={S.detailCard}>
-            <SectionLabel title="Bill Details" />
+            <SectionLabel title={useLanguage().t("payments_details_title","Bill Details")} />
             {[
-              ["Base Amount", fmt(bill.baseAmount)],
-              ["Due Date",    fmtDate(bill.dueDate)],
-              ["Target",      bill.targetMode === "all" ? "All Flats" : `${bill.targetFlats?.length || 0} flats`],
-              bill.penaltyEnabled ? ["Late Penalty", fmt(bill.penaltyAmount)] : null,
-              bill.description   ? ["Description",  bill.description]        : null,
+              [useLanguage().t("payments_label_base_amount","Base Amount"), fmt(bill.baseAmount)],
+              [useLanguage().t("payments_label_due_date","Due Date"),    fmtDate(bill.dueDate)],
+              [useLanguage().t("payments_label_target","Target"),      bill.targetMode === "all" ? useLanguage().t("payments_all_flats","All Flats") : `${bill.targetFlats?.length || 0} ${useLanguage().t("payments_flats","flats")}`],
+              bill.penaltyEnabled ? [useLanguage().t("payments_penalty_label","Late Penalty"), fmt(bill.penaltyAmount)] : null,
+              bill.description   ? [useLanguage().t("payments_label_description","Description"),  bill.description]        : null,
             ].filter(Boolean).map(([label, value]) => (
               <View key={label} style={S.detailRow}>
                 <Text style={S.detailLabel}>{label}</Text>
@@ -604,24 +609,24 @@ const BillDetailModal = ({ open, billId, onClose, isAdmin }) => {
           {/* Admin actions */}
           {isAdmin && (
             <View style={[S.detailCard, { marginBottom: 12 }]}>
-              <SectionLabel title="Admin Actions" />
+              <SectionLabel title={useLanguage().t("payments_admin_actions","Admin Actions")} />
               <View style={S.actionRow}>
                 {!bill.isPublished && !bill.isClosed && (
                   <Btn small loading={actionBusy === "publish"}
-                    onPress={() => doAction("publish", "Publish bill", () => maintenanceApi.publishBill(bill._id))}>
-                    📢 Publish
+                    onPress={() => doAction("publish", useLanguage().t("payments_publish_bill","Publish bill"), () => maintenanceApi.publishBill(bill._id))}>
+                    {`📢 ${useLanguage().t("payments_publish","Publish")}`}
                   </Btn>
                 )}
                 {bill.isPublished && !bill.isClosed && bill.penaltyEnabled && overdueBool && (
-                  <Btn small variant="ghost" loading={actionBusy === "penalty"}
-                    onPress={() => doAction("penalty", "Apply penalty", () => maintenanceApi.applyPenalty(bill._id))}>
-                    ⚠️ Apply Penalty
+                    <Btn small variant="ghost" loading={actionBusy === "penalty"}
+                    onPress={() => doAction("penalty", useLanguage().t("payments_apply_penalty","Apply penalty"), () => maintenanceApi.applyPenalty(bill._id))}>
+                    {`⚠️ ${useLanguage().t("payments_apply_penalty","Apply Penalty")}`}
                   </Btn>
                 )}
                 {bill.isPublished && !bill.isClosed && (
-                  <Btn small variant="danger" loading={actionBusy === "close"}
-                    onPress={() => doAction("close", "Close bill", () => maintenanceApi.closeBill(bill._id))}>
-                    🔒 Close
+                    <Btn small variant="danger" loading={actionBusy === "close"}
+                    onPress={() => doAction("close", useLanguage().t("payments_close_bill","Close bill"), () => maintenanceApi.closeBill(bill._id))}>
+                    {`🔒 ${useLanguage().t("payments_close","Close")}`}
                   </Btn>
                 )}
               </View>
@@ -636,10 +641,10 @@ const BillDetailModal = ({ open, billId, onClose, isAdmin }) => {
                   {/* Status filter */}
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 8 }}>
                     {[
-                      { key: "all",     label: `All (${bill.payments?.length || 0})` },
-                      { key: "unpaid",  label: `Unpaid (${statusCounts.unpaid  || 0})` },
-                      { key: "overdue", label: `Overdue (${statusCounts.overdue || 0})` },
-                      { key: "paid",    label: `Paid (${statusCounts.paid      || 0})` },
+                      { key: "all",     label: `${useLanguage().t("payments_filter_all","All")} (${bill.payments?.length || 0})` },
+                        { key: "unpaid",  label: `${useLanguage().t("payments_filter_unpaid","Unpaid")} (${statusCounts.unpaid  || 0})` },
+                        { key: "overdue", label: `${useLanguage().t("payments_filter_overdue","Overdue")} (${statusCounts.overdue || 0})` },
+                        { key: "paid",    label: `${useLanguage().t("payments_filter_paid","Paid")} (${statusCounts.paid      || 0})` },
                     ].map(({ key, label }) => (
                       <FilterPill
                         key={key}
@@ -653,10 +658,10 @@ const BillDetailModal = ({ open, billId, onClose, isAdmin }) => {
                   {/* Search */}
                   <View style={S.searchRow}>
                     <Text style={S.searchIcon}>🔍</Text>
-                    <TextInput
+                      <TextInput
                       value={search}
                       onChangeText={setSearch}
-                      placeholder="Search by flat or resident…"
+                      placeholder={useLanguage().t("payments_search_ph","Search by flat or resident…")}
                       placeholderTextColor={C.gray300}
                       style={S.searchInput}
                     />
@@ -665,7 +670,7 @@ const BillDetailModal = ({ open, billId, onClose, isAdmin }) => {
                   <SectionLabel title="Payment Records" count={filteredPayments.length} />
 
                   {filteredPayments.length === 0
-                    ? <EmptyState icon="📋" message="No records match." />
+                    ? <EmptyState icon="📋" message={useLanguage().t("payments_no_records_match","No records match.")} />
                     : filteredPayments.map((p) => {
                         const sc     = PAYMENT_STATUS_COLOR[p.status] || {};
                         const isPaid = p.status === "paid" || p.status === "waived";
@@ -695,10 +700,10 @@ const BillDetailModal = ({ open, billId, onClose, isAdmin }) => {
                             {!isPaid && !bill.isClosed && (
                               <View style={S.recordActions}>
                                 <TouchableOpacity onPress={() => setRecordModal(p)} style={S.recordBtn} activeOpacity={0.75}>
-                                  <Text style={S.recordBtnText}>✓ Pay</Text>
+                                  <Text style={S.recordBtnText}>{`✓ ${useLanguage().t("payments_btn_pay","Pay")}`}</Text>
                                 </TouchableOpacity>
                                 <TouchableOpacity onPress={() => setDiscountModal(p)} style={S.discountBtn} activeOpacity={0.75}>
-                                  <Text style={S.discountBtnText}>%</Text>
+                                    <Text style={S.discountBtnText}>%</Text>
                                 </TouchableOpacity>
                               </View>
                             )}
@@ -710,7 +715,7 @@ const BillDetailModal = ({ open, billId, onClose, isAdmin }) => {
               ) : (
                 // Resident: own record only
                 <>
-                  <SectionLabel title="Your Payment" />
+                  <SectionLabel title={useLanguage().t("payments_your_payment","Your Payment")} />
                   {bill.payments?.length > 0 ? (() => {
                     const p  = bill.payments[0];
                     const sc = PAYMENT_STATUS_COLOR[p.status] || {};
@@ -723,8 +728,8 @@ const BillDetailModal = ({ open, billId, onClose, isAdmin }) => {
                             {fmt(isPaid ? (p.paidAmount || p.totalDue) : p.totalDue)}
                           </Text>
                         </View>
-                        {p.penalty  > 0 && <Text style={S.penaltyText}>+{fmt(p.penalty)} late penalty</Text>}
-                        {p.discount > 0 && <Text style={S.discountText}>-{fmt(p.discount)} discount</Text>}
+                        {p.penalty  > 0 && <Text style={S.penaltyText}>+{fmt(p.penalty)} {useLanguage().t("payments_late_penalty","late penalty")}</Text>}
+                        {p.discount > 0 && <Text style={S.discountText}>-{fmt(p.discount)} {useLanguage().t("payments_discount","discount")}</Text>}
                         {isPaid && p.paidAt && (
                           <Text style={S.paidMeta}>
                             Paid {fmtDate(p.paidAt)} via {p.paymentMethod}
@@ -733,14 +738,14 @@ const BillDetailModal = ({ open, billId, onClose, isAdmin }) => {
                         {!isPaid && (
                           <View style={[S.alertBox, { backgroundColor: C.amber + "15" }]}>
                             <Text style={{ fontSize: 12, color: C.amber, fontWeight: "600" }}>
-                              ⏰ Payment due by {fmtDate(bill.dueDate)}. Please pay at the office or contact admin.
+                              ⏰ {useLanguage().t("payments_due_notice","Payment due by")} {fmtDate(bill.dueDate)}. {useLanguage().t("payments_due_contact","Please pay at the office or contact admin.")}
                             </Text>
                           </View>
                         )}
                       </View>
                     );
                   })() : (
-                    <EmptyState icon="💰" message="No payment record yet. Bill may not have been published for your flat." />
+                          <EmptyState icon="💰" message={useLanguage().t("payments_no_payment_record","No payment record yet. Bill may not have been published for your flat.")} />
                   )}
                 </>
               )}
@@ -751,7 +756,7 @@ const BillDetailModal = ({ open, billId, onClose, isAdmin }) => {
           {!bill.isPublished && !bill.isClosed && (
             <View style={[S.alertBox, { backgroundColor: C.amber + "12", marginTop: 8 }]}>
               <Text style={{ fontSize: 13, color: C.gray700, lineHeight: 20 }}>
-                ℹ️ This bill is a <Text style={{ fontWeight: "700" }}>draft</Text>. Publish it to generate payment records and notify residents.
+                ℹ️ {useLanguage().t("payments_draft_info_pre","This bill is a")} <Text style={{ fontWeight: "700" }}>{useLanguage().t("payments_draft_label","draft")}</Text>. {useLanguage().t("payments_draft_info_post","Publish it to generate payment records and notify residents.")}
               </Text>
             </View>
           )}
@@ -793,7 +798,8 @@ const MyPaymentsView = ({ onBack }) => {
       const list = res.data?.payments || [];
       setPayments(list.map((item) => ({ ...item, ...(item.payment || {}) })));
     } catch (e) {
-      setError(e?.response?.data?.message || "Failed to load payment history.");
+      const { t } = useLanguage();
+      setError(e?.response?.data?.message || t("payments_history_load_failed","Failed to load payment history."));
     } finally {
       setLoading(false);
     }
@@ -808,9 +814,9 @@ const MyPaymentsView = ({ onBack }) => {
     <SafeAreaView style={S.safe} edges={["top"]}>
       <View style={S.subHeader}>
         <TouchableOpacity onPress={onBack} activeOpacity={0.75} style={S.backBtn}>
-          <Text style={S.backBtnText}>← Back</Text>
+          <Text style={S.backBtnText}>{useLanguage().t("btn_back","← Back")}</Text>
         </TouchableOpacity>
-        <Text style={S.subHeaderTitle}>💳 My Payments</Text>
+        <Text style={S.subHeaderTitle}>{useLanguage().t("payments_my_payments_title","💳 My Payments")}</Text>
       </View>
 
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
@@ -819,17 +825,17 @@ const MyPaymentsView = ({ onBack }) => {
 
         {!loading && !error && payments.length > 0 && (
           <View style={S.summaryRow}>
-            <StatBox icon="✅" label="Total Paid"  value={fmt(totalPaid)}    color={C.green} />
-            <StatBox icon="⏳" label="Pending"     value={fmt(totalPending)} color={totalPending > 0 ? C.red : C.gray500} />
-            <StatBox icon="📋" label="Bills"       value={payments.length}  color={C.navy} />
+            <StatBox icon="✅" label={useLanguage().t("payments_stat_total_paid","Total Paid")}  value={fmt(totalPaid)}    color={C.green} />
+            <StatBox icon="⏳" label={useLanguage().t("payments_stat_pending","Pending")}     value={fmt(totalPending)} color={totalPending > 0 ? C.red : C.gray500} />
+            <StatBox icon="📋" label={useLanguage().t("payments_stat_bills","Bills")}       value={payments.length}  color={C.navy} />
           </View>
         )}
 
         {!loading && !error && payments.length === 0 && (
           <View style={S.emptyBills}>
             <Text style={S.emptyBillsIcon}>💰</Text>
-            <Text style={S.emptyBillsTitle}>No bills yet</Text>
-            <Text style={S.emptyBillsSub}>Your maintenance bills will appear here once admin publishes them.</Text>
+            <Text style={S.emptyBillsTitle}>{useLanguage().t("payments_no_bills_title","No bills yet")}</Text>
+            <Text style={S.emptyBillsSub}>{useLanguage().t("payments_no_bills_sub","Your maintenance bills will appear here once admin publishes them.")}</Text>
           </View>
         )}
 
@@ -840,7 +846,7 @@ const MyPaymentsView = ({ onBack }) => {
             <Card key={p._id}>
               <View style={S.myBillRow}>
                 <View style={{ flex: 1 }}>
-                  <Text style={S.myBillTitle}>{p.bill?.title || "Maintenance Bill"}</Text>
+                  <Text style={S.myBillTitle}>{p.bill?.title || useLanguage().t("payments_bill_default_title","Maintenance Bill")}</Text>
                   <Text style={S.myBillMeta}>
                     Due {fmtDate(p.bill?.dueDate || p.dueDate)}
                     {p.bill?.billMonth ? `  ·  ${p.bill.billMonth}` : ""}
@@ -884,7 +890,8 @@ const DefaulterView = ({ onBack }) => {
       const res = await maintenanceApi.getDefaulters();
       setDefaulters(res.data?.defaulters || []);
     } catch (e) {
-      setError(e?.response?.data?.message || "Failed to load defaulters.");
+      const { t } = useLanguage();
+      setError(e?.response?.data?.message || t("payments_defaulters_load_failed","Failed to load defaulters."));
     } finally {
       setLoading(false);
     }
@@ -898,14 +905,14 @@ const DefaulterView = ({ onBack }) => {
         <TouchableOpacity onPress={onBack} activeOpacity={0.75} style={S.backBtn}>
           <Text style={S.backBtnText}>← Back</Text>
         </TouchableOpacity>
-        <Text style={S.subHeaderTitle}>⚠️ Defaulter Triage</Text>
+        <Text style={S.subHeaderTitle}>{useLanguage().t("payments_defaulter_title","⚠️ Defaulter Triage")}</Text>
       </View>
 
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
         {loading && <View style={S.center}><Spinner size={32} /></View>}
         {error   && <ErrorState message={error} onRetry={load} />}
         {!loading && !error && defaulters.length === 0 && (
-          <EmptyState icon="🎉" message="No defaulters! All dues are clear." />
+          <EmptyState icon="🎉" message={useLanguage().t("defaulters_empty","No defaulters! All dues are clear.")} />
         )}
         {!loading && !error && defaulters.map((d, i) => (
           <Card key={d._id || i}>
@@ -920,8 +927,8 @@ const DefaulterView = ({ onBack }) => {
                 </Text>
               </View>
               <View style={[S.statusChip, { backgroundColor: C.red + "15" }]}>
-                <Text style={[S.statusChipText, { color: C.red }]}>
-                  {d.overdueCount > 0 ? "Overdue" : "Unpaid"}
+                <Text style={[S.statusChipText, { color: C.red }]}> 
+                  {d.overdueCount > 0 ? useLanguage().t("defaulters_overdue","Overdue") : useLanguage().t("defaulters_unpaid","Unpaid")}
                 </Text>
               </View>
             </View>
@@ -961,9 +968,9 @@ const MaintenanceDashboard = ({ isAdmin, onOpenBill, onOpenMyPayments, onOpenDef
             try {
               await maintenanceApi.deleteBill(billId);
               setBills((prev) => prev.filter((b) => b._id !== billId));
-              toast.success("Draft bill deleted.");
+              toast.success(useLanguage().t("payments_delete_success","Draft bill deleted."));
             } catch (e) {
-              toast.error(e?.response?.data?.message || "Delete failed.");
+              toast.error(e?.response?.data?.message || useLanguage().t("payments_delete_failed","Delete failed."));
             }
           },
         },
@@ -982,7 +989,7 @@ const MaintenanceDashboard = ({ isAdmin, onOpenBill, onOpenMyPayments, onOpenDef
       const res = await maintenanceApi.getAllBills(params);
       setBills(res.data?.bills || []);
     } catch (e) {
-      setError(e?.response?.data?.message || "Failed to load bills.");
+      setError(e?.response?.data?.message || useLanguage().t("payments_load_bills_failed","Failed to load bills."));
     } finally {
       setLoading(false);
     }
@@ -1019,8 +1026,8 @@ const MaintenanceDashboard = ({ isAdmin, onOpenBill, onOpenMyPayments, onOpenDef
         {/* My Payments shortcut */}
         <TouchableOpacity onPress={onOpenMyPayments} activeOpacity={0.85} style={S.shortcutCard}>
           <View>
-            <Text style={[S.shortcutTitle, { color: C.teal }]}>💳 My Payment History</Text>
-            <Text style={S.shortcutSub}>View your maintenance bills and payment status</Text>
+            <Text style={[S.shortcutTitle, { color: C.teal }]}>{useLanguage().t("payments_shortcut_my_payments","💳 My Payment History")}</Text>
+            <Text style={S.shortcutSub}>{useLanguage().t("payments_shortcut_my_payments_sub","View your maintenance bills and payment status")}</Text>
           </View>
           <Text style={[S.shortcutArrow, { color: C.teal }]}>›</Text>
         </TouchableOpacity>
@@ -1030,12 +1037,12 @@ const MaintenanceDashboard = ({ isAdmin, onOpenBill, onOpenMyPayments, onOpenDef
 
         {/* Defaulter shortcut (admin only) */}
         {isAdmin && (
-          <TouchableOpacity onPress={onOpenDefaulters} activeOpacity={0.85} style={[S.shortcutCard, S.shortcutDanger]}>
+                <TouchableOpacity onPress={onOpenDefaulters} activeOpacity={0.85} style={[S.shortcutCard, S.shortcutDanger]}>
             <View>
-              <Text style={[S.shortcutTitle, { color: C.red }]}>⚠️ Defaulter Triage</Text>
-              <Text style={S.shortcutSub}>Residents with unpaid or overdue records</Text>
+              <Text style={[S.shortcutTitle, { color: C.red }]}>{useLanguage().t("payments_shortcut_defaulters","⚠️ Defaulter Triage")}</Text>
+              <Text style={S.shortcutSub}>{useLanguage().t("payments_shortcut_defaulters_sub","Residents with unpaid or overdue records")}</Text>
             </View>
-            <Text style={[S.shortcutArrow, { color: C.red }]}>›</Text>
+            <Text style={[S.shortcutArrow, { color: C.red }]}>{useLanguage().t("btn_more_arrow","›")}</Text>
           </TouchableOpacity>
         )}
 
@@ -1048,7 +1055,7 @@ const MaintenanceDashboard = ({ isAdmin, onOpenBill, onOpenMyPayments, onOpenDef
                   <FilterPill key={f} label={f} active={statusFilter === f} onPress={() => setStatusFilter(f)} />
                 ))}
               </ScrollView>
-              <Btn small onPress={() => setShowCreate(true)} style={{ marginLeft: 10 }}>+ New</Btn>
+              <Btn small onPress={() => setShowCreate(true)} style={{ marginLeft: 10 }}>{useLanguage().t("payments_new_btn","+ New")}</Btn>
             </View>
             <MonthPicker value={monthFilter} onChange={setMonthFilter} />
           </>
@@ -1064,10 +1071,10 @@ const MaintenanceDashboard = ({ isAdmin, onOpenBill, onOpenMyPayments, onOpenDef
             icon="💰"
             message={
               monthFilter
-                ? `No bills for ${monthFilter}.`
+                ? `${useLanguage().t("payments_no_bills_for","No bills for")} ${monthFilter}.`
                 : isAdmin
-                  ? "No bills yet. Create your first maintenance bill."
-                  : "No maintenance bills published yet."
+                  ? useLanguage().t("payments_no_bills_create","No bills yet. Create your first maintenance bill.")
+                  : useLanguage().t("payments_no_bills_published","No maintenance bills published yet.")
             }
           />
         )}

@@ -29,16 +29,23 @@ import {
 } from "../../constants/theme";
 import { timeAgo } from "../../utils/timeago";
 
-const FILTERS = ["All", "Open", "In Progress", "Resolved"];
+const FILTERS = [
+  { key: "All", id: "issues_filter_all" },
+  { key: "Open", id: "issues_filter_open" },
+  { key: "In Progress", id: "issues_filter_in_progress" },
+  { key: "Resolved", id: "issues_filter_resolved" },
+];
 const EMPTY_FORM = {
   title: "", description: "", category: "Water",
   priority: "Medium", isAnonymous: false,
 };
 
 // ─── Chip selector (category / priority) ─────────────────────────────────────
-const ChipSelector = ({ label, options, value, onChange }) => (
+const ChipSelector = ({ label, options, value, onChange }) => {
+  const { t } = useLanguage();
+  return (
   <View style={{ marginBottom: 14 }}>
-    <Text style={chipStyles.label}>{label}</Text>
+    <Text style={chipStyles.label}>{t(label, label)}</Text>
     <ScrollView horizontal showsHorizontalScrollIndicator={false}>
       <View style={{ flexDirection: "row", gap: 8 }}>
         {options.map((opt) => (
@@ -117,7 +124,8 @@ const PhotoPickerRow = ({ assets, onAdd, onRemove }) => {
     if (Platform.OS !== "web") {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== "granted") {
-        Alert.alert("Permission needed", "Please allow photo access in settings.");
+        const { t } = useLanguage();
+        Alert.alert(t("issues_permission_needed","Permission needed"), t("issues_permission_photos","Please allow photo access in settings."));
         return;
       }
     }
@@ -136,7 +144,7 @@ const PhotoPickerRow = ({ assets, onAdd, onRemove }) => {
   return (
     <View style={{ marginBottom: 14 }}>
       <Text style={{ fontSize: 12, fontWeight: "600", color: C.gray700, marginBottom: 8 }}>
-        Photos (up to 5, optional)
+        {useLanguage().t("issues_photos_label","Photos (up to 5, optional)")}
       </Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false}>
         <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
@@ -170,7 +178,7 @@ const PhotoPickerRow = ({ assets, onAdd, onRemove }) => {
               }}
             >
               <Text style={{ fontSize: 22, color: C.gray300 }}>📷</Text>
-              <Text style={{ fontSize: 10, color: C.gray300, marginTop: 3 }}>Add</Text>
+              <Text style={{ fontSize: 10, color: C.gray300, marginTop: 3 }}>{useLanguage().t("issues_photos_add","Add")}</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -187,14 +195,14 @@ const IssueCard = ({ issue, onPress }) => (
       <View style={{ flex: 1, marginLeft: 10 }}>
         <Text style={styles.issueTitle} numberOfLines={2}>{issue.title}</Text>
         <Text style={styles.issueMeta}>
-          {issue.isAnonymous ? "Anonymous" : (issue.flat || issue.reporter?.flat || "—")}
+          {issue.isAnonymous ? useLanguage().t("issues_anonymous","Anonymous") : (issue.flat || issue.reporter?.flat || "—")}
           {" · "}{timeAgo(issue.createdAt)}
         </Text>
         <View style={styles.badgeRow}>
           <Badge label={issue.status}   {...(STATUS_COLOR[issue.status]   || {})} />
           <Badge label={issue.priority} {...(PRIORITY_COLOR[issue.priority] || {})} />
-          {issue.isEscalated && <Badge label="Escalated" bg="#FEE2E2" text={C.red} />}
-          {issue.isAnonymous && <Badge label="Anon"      bg={C.gray100} text={C.gray500} />}
+          {issue.isEscalated && <Badge label={useLanguage().t("issues_escalated_badge","Escalated")} bg="#FEE2E2" text={C.red} />}
+          {issue.isAnonymous && <Badge label={useLanguage().t("issues_anon_badge","Anon")}      bg={C.gray100} text={C.gray500} />}
           {(issue.photos?.length ?? 0) > 0 && (
             <Badge label={`📷 ${issue.photos.length}`} bg={C.gray100} text={C.gray700} />
           )}
@@ -244,9 +252,9 @@ const IssueDetailModal = ({ issue, visible, onClose, isAdmin, onUpdated }) => {
       const res = await issuesApi.update(localIssue._id, { status: newStatus });
       setLocalIssue(res.data.issue);
       onUpdated?.(res.data.issue);
-      toast.success(`Status → "${newStatus}"`);
+      toast.success(useLanguage().t("issues_status_changed","Status updated."));
     } catch (e) {
-      toast.error(e?.response?.data?.message || "Update failed");
+      toast.error(e?.response?.data?.message || useLanguage().t("issues_update_failed","Update failed"));
     } finally {
       setStatusLoading(false);
     }
@@ -273,7 +281,7 @@ const IssueDetailModal = ({ issue, visible, onClose, isAdmin, onUpdated }) => {
       }
       setCommentBody("");
     } catch (e) {
-      toast.error(e?.response?.data?.message || "Failed");
+      toast.error(e?.response?.data?.message || useLanguage().t("issues_generic_failed","Failed"));
     } finally {
       setCommentLoading(false);
     }
@@ -282,7 +290,7 @@ const IssueDetailModal = ({ issue, visible, onClose, isAdmin, onUpdated }) => {
   // ── Assign vendor (admin) ────────────────────────────────────────────────────
   const handleAssignVendor = async () => {
     if (!vendorForm.name.trim() || !vendorForm.phone.trim())
-      return toast.error("Vendor name and phone are required.");
+      return toast.error(useLanguage().t("issues_vendor_required","Vendor name and phone are required."));
     setVendorLoading(true);
     try {
       const res = await issuesApi.assignVendor(localIssue._id, vendorForm);
@@ -291,9 +299,9 @@ const IssueDetailModal = ({ issue, visible, onClose, isAdmin, onUpdated }) => {
       onUpdated?.(updated);
       setShowVendor(false);
       setVendorForm(EMPTY_VENDOR);
-      toast.success("Vendor assigned.");
+      toast.success(useLanguage().t("issues_vendor_assigned","Vendor assigned."));
     } catch (e) {
-      toast.error(e?.response?.data?.message || "Failed to assign vendor.");
+      toast.error(e?.response?.data?.message || useLanguage().t("issues_vendor_assign_failed","Failed to assign vendor."));
     } finally {
       setVendorLoading(false);
     }
@@ -303,14 +311,14 @@ const IssueDetailModal = ({ issue, visible, onClose, isAdmin, onUpdated }) => {
   const sc = STATUS_COLOR[localIssue.status] || {};
 
   return (
-    <Modal open={visible} onClose={onClose} title="Issue Detail">
+    <Modal open={visible} onClose={onClose} title={useLanguage().t("issues_detail_title","Issue Detail")}>
       {/* Title + meta */}
       <View style={{ flexDirection: "row", gap: 10, marginBottom: 12 }}>
         <Text style={{ fontSize: 28 }}>{CATEGORY_ICON[localIssue.category] || "📋"}</Text>
         <View style={{ flex: 1 }}>
           <Text style={detailStyles.title}>{localIssue.title}</Text>
           <Text style={detailStyles.meta}>
-            {localIssue.isAnonymous ? "Anonymous" : (localIssue.flat || localIssue.reporter?.flat || "—")}
+            {localIssue.isAnonymous ? useLanguage().t("issues_anonymous","Anonymous") : (localIssue.flat || localIssue.reporter?.flat || "—")}
             {" · "}{timeAgo(localIssue.createdAt)}
           </Text>
         </View>
@@ -321,7 +329,7 @@ const IssueDetailModal = ({ issue, visible, onClose, isAdmin, onUpdated }) => {
         <Badge label={localIssue.status}   {...(STATUS_COLOR[localIssue.status]     || {})} />
         <Badge label={localIssue.priority} {...(PRIORITY_COLOR[localIssue.priority] || {})} />
         <Badge label={localIssue.category} bg={C.gray100} text={C.gray700} />
-        {localIssue.isAnonymous && <Badge label="Anonymous" bg={C.gray100} text={C.gray500} />}
+        {localIssue.isAnonymous && <Badge label={useLanguage().t("issues_anonymous","Anonymous")} bg={C.gray100} text={C.gray500} />}
       </View>
 
       {/* Description */}
@@ -337,7 +345,7 @@ const IssueDetailModal = ({ issue, visible, onClose, isAdmin, onUpdated }) => {
       {/* Admin status controls */}
       {isAdmin && (
         <View style={{ marginBottom: 16 }}>
-          <Text style={detailStyles.sectionLabel}>Update Status</Text>
+            <Text style={detailStyles.sectionLabel}>{useLanguage().t("issues_update_status","Update Status")}</Text>
           <View style={{ flexDirection: "row", gap: 8 }}>
             {["Open", "In Progress", "Resolved"].map((s) => {
               const ssc = STATUS_COLOR[s] || {};
@@ -376,7 +384,7 @@ const IssueDetailModal = ({ issue, visible, onClose, isAdmin, onUpdated }) => {
 
       {/* Assign vendor button (admin only) */}
       {isAdmin && (
-        <TouchableOpacity
+            <TouchableOpacity
           onPress={() => {
             setVendorForm(localIssue.assignedVendor?.name
               ? { ...localIssue.assignedVendor }
@@ -387,19 +395,19 @@ const IssueDetailModal = ({ issue, visible, onClose, isAdmin, onUpdated }) => {
           style={detailStyles.assignVendorBtn}
         >
           <Text style={detailStyles.assignVendorText}>
-            🔧 {localIssue.assignedVendor?.name ? "Change Vendor" : "Assign Vendor"}
+            🔧 {localIssue.assignedVendor?.name ? useLanguage().t("issues_change_vendor","Change Vendor") : useLanguage().t("issues_assign_vendor","Assign Vendor")}
           </Text>
         </TouchableOpacity>
       )}
 
       {/* Comments */}
-      <Text style={detailStyles.sectionLabel}>Comments ({comments.length})</Text>
+      <Text style={detailStyles.sectionLabel}>{useLanguage().t("issues_comments_label","Comments")} ({comments.length})</Text>
       {loadingDetail
         ? <Spinner size={20} />
         : comments.map((c) => (
           <View key={c._id} style={[detailStyles.commentBubble, c.isAdminReply && { borderLeftWidth: 3, borderLeftColor: C.teal }]}>
             <Text style={[detailStyles.commentAuthor, c.isAdminReply && { color: C.teal }]}>
-              {c.author?.name || "User"}{c.isAdminReply ? " · Admin" : ""} · {timeAgo(c.createdAt)}
+              {c.author?.name || useLanguage().t("issues_unknown_user","User")}{c.isAdminReply ? useLanguage().t("issues_admin_reply"," · Admin") : ""} · {timeAgo(c.createdAt)}
             </Text>
             <Text style={detailStyles.commentBody}>{c.body || c.text}</Text>
           </View>
@@ -408,46 +416,46 @@ const IssueDetailModal = ({ issue, visible, onClose, isAdmin, onUpdated }) => {
 
       {/* Comment input */}
       <View style={detailStyles.commentInput}>
-        <TextInput
+          <TextInput
           value={commentBody}
           onChangeText={setCommentBody}
-          placeholder="Add a comment…"
+          placeholder={useLanguage().t("issues_add_comment_ph","Add a comment…")}
           placeholderTextColor={C.gray300}
           style={detailStyles.textInput}
           onSubmitEditing={handleAddComment}
           returnKeyType="send"
         />
-        <Btn onPress={handleAddComment} loading={commentLoading} small>Send</Btn>
+        <Btn onPress={handleAddComment} loading={commentLoading} small>{useLanguage().t("issues_send_btn","Send")}</Btn>
       </View>
 
       {/* Assign Vendor Modal (admin only) */}
       <Modal
         open={showVendor}
         onClose={() => { setShowVendor(false); setVendorForm(EMPTY_VENDOR); }}
-        title="Assign to Vendor"
+        title={useLanguage().t("issues_assign_vendor_title","Assign to Vendor")}
       >
         <Input
-          label="Vendor Name *"
+          label={useLanguage().t("issues_label_vendor_name","Vendor Name *")}
           value={vendorForm.name}
           onChangeText={(v) => setVendorForm((p) => ({ ...p, name: v }))}
-          placeholder="e.g. SpeedLift Services"
+          placeholder={useLanguage().t("issues_ph_vendor_name","e.g. SpeedLift Services")}
         />
         <Input
-          label="Vendor Phone *"
+          label={useLanguage().t("issues_label_vendor_phone","Vendor Phone *")}
           value={vendorForm.phone}
           onChangeText={(v) => setVendorForm((p) => ({ ...p, phone: v }))}
-          placeholder="+91 99887 76655"
+          placeholder={useLanguage().t("issues_ph_vendor_phone","+91 99887 76655")}
           keyboardType="phone-pad"
         />
         <Input
-          label="Note (optional)"
+          label={useLanguage().t("issues_label_vendor_note","Note (optional)")}
           value={vendorForm.note}
           onChangeText={(v) => setVendorForm((p) => ({ ...p, note: v }))}
-          placeholder="Visit scheduled for Friday 10 AM"
+          placeholder={useLanguage().t("issues_ph_vendor_note","Visit scheduled for Friday 10 AM")}
           multiline
         />
         <Btn onPress={handleAssignVendor} loading={vendorLoading} style={{ width: "100%" }}>
-          Assign Vendor
+          {useLanguage().t("issues_assign_vendor_btn","Assign Vendor")}
         </Btn>
       </Modal>
     </Modal>
@@ -500,7 +508,7 @@ export const IssuesScreen = () => {
       const res = await issuesApi.getAll(params);
       setIssues(res.data?.issues || []);
     } catch (e) {
-      setError(e?.response?.data?.message || "Failed to load issues.");
+      setError(e?.response?.data?.message || t("issues_load_failed","Failed to load issues."));
     } finally {
       setLoading(false);
     }
@@ -511,8 +519,8 @@ export const IssuesScreen = () => {
   const handleCreate = async () => {
     const title = form.title.trim();
     setFormError("");
-    if (!title) { setFormError("Title is required."); return; }
-    if (title.length < 5) { setFormError("Please enter a clear issue title with at least 5 characters."); return; }
+    if (!title) { setFormError(t("issues_title_required","Title is required.")); return; }
+    if (title.length < 5) { setFormError(t("issues_title_min_length","Please enter a clear issue title with at least 5 characters.")); return; }
     setSubmitting(true);
     try {
       const res = await issuesApi.create({ ...form, title });
@@ -528,9 +536,9 @@ export const IssuesScreen = () => {
       setForm(EMPTY_FORM);
       setPhotoAssets([]);
       setShowNew(false);
-      toast.success("Issue reported!");
+      toast.success(useLanguage().t("issues_report_success","Issue reported!"));
     } catch (e) {
-      setFormError(e?.response?.data?.message || "Failed to create issue.");
+      setFormError(e?.response?.data?.message || useLanguage().t("issues_create_failed","Failed to create issue."));
     } finally {
       setSubmitting(false);
     }
@@ -549,7 +557,7 @@ export const IssuesScreen = () => {
       <ScreenHeader
         title={t("nav_issues", "Issues")}
         action={
-          <Btn small onPress={() => setShowNew(true)}>+ Report</Btn>
+          <Btn small onPress={() => setShowNew(true)}>{t("issues_report_btn","+ Report")}</Btn>
         }
       />
 
@@ -560,12 +568,12 @@ export const IssuesScreen = () => {
         style={{ flexGrow: 0, flexShrink: 0 }}
         contentContainerStyle={styles.filterRow}
       >
-        {FILTERS.map((f) => (
+        {FILTERS.map(({ key, id }) => (
           <FilterPill
-            key={f}
-            label={f}
-            active={filter === f}
-            onPress={() => setFilter(f)}
+            key={key}
+            label={t(id, key)}
+            active={filter === key}
+            onPress={() => setFilter(key)}
           />
         ))}
       </ScrollView>
@@ -576,11 +584,11 @@ export const IssuesScreen = () => {
         : error
           ? <ErrorState message={error} onRetry={fetchIssues} />
           : (
-            <FlatList
+              <FlatList
               data={issues}
               keyExtractor={(i) => i._id}
               contentContainerStyle={styles.list}
-              ListEmptyComponent={<EmptyState icon="✅" message="No issues found." />}
+              ListEmptyComponent={<EmptyState icon="✅" message={t("issues_empty","No issues found.")} />}
               renderItem={({ item }) => (
                 <IssueCard issue={item} onPress={setSelected} />
               )}
@@ -599,40 +607,40 @@ export const IssuesScreen = () => {
       />
 
       {/* New issue modal */}
-      <Modal open={showNew} onClose={() => { setShowNew(false); setPhotoAssets([]); setFormError(""); }} title="Report an Issue">
+      <Modal open={showNew} onClose={() => { setShowNew(false); setPhotoAssets([]); setFormError(""); }} title={useLanguage().t("issues_new_modal_title","Report an Issue")}>
         {!!formError && (
           <View style={styles.formError}>
             <Text style={styles.formErrorText}>{formError}</Text>
           </View>
         )}
         <Input
-          label="Issue Title *"
+          label={useLanguage().t("issues_label_title","Issue Title *")}
           value={form.title}
           onChangeText={setF("title")}
-          placeholder="e.g. Lift not working in Block A"
+          placeholder={useLanguage().t("issues_ph_title","e.g. Lift not working in Block A")}
         />
         <Input
-          label="Description"
+          label={useLanguage().t("issues_label_description","Description")}
           value={form.description}
           onChangeText={setF("description")}
-          placeholder="Describe the issue in detail…"
+          placeholder={useLanguage().t("issues_ph_description","Describe the issue in detail…")}
           multiline
         />
         <ChipSelector
-          label="Category"
+          label={t("issues_label_category","Category")}
           options={ISSUE_CATEGORIES}
           value={form.category}
           onChange={setF("category")}
         />
         <ChipSelector
-          label="Priority"
+          label={t("issues_label_priority","Priority")}
           options={PRIORITIES}
           value={form.priority}
           onChange={setF("priority")}
         />
         <ToggleRow
-          label="Report Anonymously"
-          hint="Your name and flat number will be hidden"
+          label={useLanguage().t("issues_label_report_anonymous","Report Anonymously")}
+          hint={useLanguage().t("issues_hint_report_anonymous","Your name and flat number will be hidden")}
           value={form.isAnonymous}
           onChange={setF("isAnonymous")}
         />
@@ -642,7 +650,7 @@ export const IssuesScreen = () => {
           onRemove={(i) => setPhotoAssets((p) => p.filter((_, j) => j !== i))}
         />
         <Btn onPress={handleCreate} loading={submitting} style={{ marginTop: 4 }}>
-          Submit Issue
+          {useLanguage().t("issues_submit_btn","Submit Issue")}
         </Btn>
       </Modal>
     </SafeAreaView>

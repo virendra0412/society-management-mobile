@@ -18,6 +18,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { pollsApi } from "../../api/resources.api";
 import { useAuth }  from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
+import { useLanguage } from "../../context/LanguageContext";
 import {
   Btn, Card, EmptyState, ErrorState,
   Modal, Input, Spinner, ScreenHeader,
@@ -27,6 +28,7 @@ import { timeAgo } from "../../utils/timeago";
 
 // ─── Poll Card ────────────────────────────────────────────────────────────────
 const PollCard = ({ poll, isAdmin, onVote, onClose, voting, closeBusy }) => {
+  const { t } = useLanguage();
   const max      = Math.max(...poll.options.map((o) => o.votes), 0);
   const isVoting = !!voting;
 
@@ -39,12 +41,12 @@ const PollCard = ({ poll, isAdmin, onVote, onClose, voting, closeBusy }) => {
         </Text>
         {poll.isClosed && (
           <View style={{ backgroundColor: C.gray100, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 2 }}>
-            <Text style={{ fontSize: 10, fontWeight: "700", color: C.gray500 }}>Closed</Text>
+            <Text style={{ fontSize: 10, fontWeight: "700", color: C.gray500 }}>{t("polls_closed_badge", "Closed")}</Text>
           </View>
         )}
         {poll.myVote && !poll.isClosed && (
           <View style={{ backgroundColor: C.teal + "15", borderRadius: 6, paddingHorizontal: 8, paddingVertical: 2 }}>
-            <Text style={{ fontSize: 10, fontWeight: "700", color: C.teal }}>✓ Voted</Text>
+            <Text style={{ fontSize: 10, fontWeight: "700", color: C.teal }}>{t("polls_voted_badge", "✓ Voted")}</Text>
           </View>
         )}
       </View>
@@ -88,21 +90,21 @@ const PollCard = ({ poll, isAdmin, onVote, onClose, voting, closeBusy }) => {
       {/* Footer */}
       <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 10, gap: 8 }}>
         <Text style={{ fontSize: 11, color: C.gray500, flex: 1 }}>
-          {poll.totalVotes} vote{poll.totalVotes !== 1 ? "s" : ""} ·{" "}
-          {poll.isClosed ? "Poll closed" : "Tap an option to vote"}
+          {poll.totalVotes} {poll.totalVotes !== 1 ? t("polls_vote_count_plural", "votes") : t("polls_vote_count_singular", "vote")} ·{" "}
+          {poll.isClosed ? t("polls_status_closed", "Poll closed") : t("polls_status_tap_to_vote", "Tap an option to vote")}
           {poll.closesAt && !poll.isClosed ? ` · Closes ${timeAgo(poll.closesAt)}` : ""}
         </Text>
         {isAdmin && !poll.isClosed && (
-          <TouchableOpacity
-            onPress={() => !closeBusy && onClose(poll._id)}
-            disabled={!!closeBusy}
-            style={{ flexDirection: "row", alignItems: "center", gap: 4,
-              backgroundColor: C.gray100, borderRadius: 7,
-              paddingHorizontal: 10, paddingVertical: 4 }}
-          >
-            {closeBusy ? <Spinner size={10} /> : <Text style={{ fontSize: 10 }}>🔒</Text>}
-            <Text style={{ fontSize: 11, fontWeight: "700", color: C.gray600 }}>Close Poll</Text>
-          </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => !closeBusy && onClose(poll._id)}
+              disabled={!!closeBusy}
+              style={{ flexDirection: "row", alignItems: "center", gap: 4,
+                backgroundColor: C.gray100, borderRadius: 7,
+                paddingHorizontal: 10, paddingVertical: 4 }}
+            >
+              {closeBusy ? <Spinner size={10} /> : <Text style={{ fontSize: 10 }}>🔒</Text>}
+              <Text style={{ fontSize: 11, fontWeight: "700", color: C.gray600 }}>{t("polls_close_poll_btn", "Close Poll")}</Text>
+            </TouchableOpacity>
         )}
       </View>
     </Card>
@@ -121,6 +123,7 @@ const pc = StyleSheet.create({
 // ─── Create Poll Modal ────────────────────────────────────────────────────────
 const CreatePollModal = ({ open, onClose, onCreated }) => {
   const toast = useToast();
+  const { t } = useLanguage();
   const [question,   setQuestion]   = useState("");
   const [options,    setOptions]    = useState([{ label: "" }, { label: "" }]);
   const [submitting, setSubmitting] = useState(false);
@@ -132,30 +135,30 @@ const CreatePollModal = ({ open, onClose, onCreated }) => {
   const removeOption = (i) => setOptions((o) => o.filter((_, j) => j !== i));
 
   const handleCreate = async () => {
-    if (!question.trim()) return toast.error("Question is required.");
+    if (!question.trim()) return toast.error(t("polls_question_required", "Question is required."));
     const opts = options.filter((o) => o.label.trim());
-    if (opts.length < 2) return toast.error("At least 2 options are required.");
+    if (opts.length < 2) return toast.error(t("polls_options_required", "At least 2 options are required."));
     setSubmitting(true);
     try {
       const res = await pollsApi.create({ question, options: opts });
       onCreated(res.data.poll);
       reset(); onClose();
-      toast.success("Poll created.");
+      toast.success(t("polls_create_success", "Poll created."));
     } catch (e) {
-      toast.error(e.response?.data?.message || "Failed to create poll.");
+      toast.error(e.response?.data?.message || t("polls_create_failed", "Failed to create poll."));
     } finally { setSubmitting(false); }
   };
 
   return (
-    <Modal open={open} onClose={() => { onClose(); reset(); }} title="Create a Poll">
+    <Modal open={open} onClose={() => { onClose(); reset(); }} title={t("polls_new_modal_title", "Create a Poll")}>
       <Input
-        label="Question *"
+        label={t("polls_question_label", "Question *")}
         value={question}
         onChangeText={setQuestion}
-        placeholder="e.g. Should we add CCTV in parking?"
+        placeholder={t("polls_question_ph", "e.g. Should we add CCTV in parking?")}
       />
 
-      <Text style={{ fontSize: 12, fontWeight: "600", color: C.gray700, marginBottom: 8 }}>Options (min 2)</Text>
+      <Text style={{ fontSize: 12, fontWeight: "600", color: C.gray700, marginBottom: 8 }}>{t("polls_options_label", "Options (min 2)")}</Text>
       {options.map((opt, i) => (
         <View key={i} style={{ flexDirection: "row", gap: 8, marginBottom: 8, alignItems: "center" }}>
           <TextInput
@@ -188,11 +191,11 @@ const CreatePollModal = ({ open, onClose, onCreated }) => {
             borderRadius: 8, paddingVertical: 8, alignItems: "center", marginBottom: 14,
           }}
         >
-          <Text style={{ fontSize: 13, fontWeight: "600", color: C.teal }}>+ Add option</Text>
+          <Text style={{ fontSize: 13, fontWeight: "600", color: C.teal }}>{t("polls_add_option", "+ Add option")}</Text>
         </TouchableOpacity>
       )}
 
-      <Btn onPress={handleCreate} loading={submitting} style={{ width: "100%" }}>Create Poll</Btn>
+      <Btn onPress={handleCreate} loading={submitting} style={{ width: "100%" }}>{t("polls_create_btn_submit", "Create Poll")}</Btn>
     </Modal>
   );
 };
@@ -201,6 +204,7 @@ const CreatePollModal = ({ open, onClose, onCreated }) => {
 export const PollsScreen = ({ navigation }) => {
   const { isAdmin } = useAuth();
   const toast = useToast();
+  const { t } = useLanguage();
 
   const [polls,     setPolls]     = useState([]);
   const [loading,   setLoading]   = useState(true);
@@ -232,39 +236,39 @@ export const PollsScreen = ({ navigation }) => {
     // Check if user already voted in this poll (client-side, avoids needless API call)
     const poll = polls.find((p) => p._id === pollId);
     if (poll?.myVote) {
-      toast.info("You have already voted in this poll.");
+      toast.info(t("polls_already_voted", "You have already voted in this poll."));
       return;
     }
     setVoting((v) => ({ ...v, [pollId]: true }));
     try {
       const res = await pollsApi.vote(pollId, { optionId });
       setPolls((p) => p.map((po) => po._id === pollId ? res.data.poll : po));
-      toast.success("Vote recorded!");
+      toast.success(t("polls_vote_success", "Vote recorded!"));
     } catch (e) {
       const code = e.response?.data?.code;
       const message = e.response?.data?.message || "";
-      if (code === "ALREADY_VOTED" || /already voted/i.test(message)) toast.info("You have already voted in this poll.");
-      else toast.error(message || "Voting failed.");
+      if (code === "ALREADY_VOTED" || /already voted/i.test(message)) toast.info(t("polls_already_voted", "You have already voted in this poll."));
+      else toast.error(message || t("polls_vote_failed", "Voting failed."));
     } finally { setVoting((v) => ({ ...v, [pollId]: false })); }
   };
 
   const handleClosePoll = async (pollId) => {
     if (closeBusy[pollId]) return;
     Alert.alert(
-      "Close Poll",
-      "Are you sure you want to close this poll? Residents will no longer be able to vote.",
+      t("polls_close_confirm_title", "Close Poll"),
+      t("polls_close_confirm_msg", "Are you sure you want to close this poll? Residents will no longer be able to vote."),
       [
-        { text: "Cancel", style: "cancel" },
+        { text: t("btn_cancel", "Cancel"), style: "cancel" },
         {
-          text: "Close Poll", style: "destructive",
+          text: t("polls_close_poll_btn", "Close Poll"), style: "destructive",
           onPress: async () => {
             setCloseBusy((b) => ({ ...b, [pollId]: true }));
             try {
               await pollsApi.close(pollId);
               setPolls((p) => p.map((poll) => poll._id === pollId ? { ...poll, isClosed: true } : poll));
-              toast.success("Poll closed.");
+              toast.success(t("polls_close_success", "Poll closed."));
             } catch (e) {
-              toast.error(e.response?.data?.message || "Failed to close poll.");
+              toast.error(e.response?.data?.message || t("polls_close_failed", "Failed to close poll."));
             } finally { setCloseBusy((b) => ({ ...b, [pollId]: false })); }
           }
         },
@@ -275,13 +279,13 @@ export const PollsScreen = ({ navigation }) => {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }} edges={["top"]}>
       <ScreenHeader
-        title="Polls & Voting"
+        title={t("polls_header_title", "Polls & Voting")}
         action={isAdmin && (
           <TouchableOpacity
             onPress={() => setShowNew(true)}
             style={{ backgroundColor: C.teal + "15", borderRadius: 8, paddingHorizontal: 12, paddingVertical: 5 }}
           >
-            <Text style={{ fontSize: 12, fontWeight: "700", color: C.teal }}>+ Create</Text>
+            <Text style={{ fontSize: 12, fontWeight: "700", color: C.teal }}>{t("polls_create_btn", "+ Create")}</Text>
           </TouchableOpacity>
         )}
       />
@@ -291,7 +295,7 @@ export const PollsScreen = ({ navigation }) => {
       ) : error ? (
         <ErrorState message={error} onRetry={fetchPolls} />
       ) : polls.length === 0 ? (
-        <EmptyState icon="🗳️" message="No polls yet." />
+        <EmptyState icon="🗳️" message={t("polls_empty", "No polls yet.")} />
       ) : (
         <FlatList
           data={polls}
