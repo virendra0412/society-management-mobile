@@ -194,25 +194,29 @@ const MethodPicker = ({ value, onChange }) => (
 );
 
 // ─── Target Mode picker ───────────────────────────────────────────────────────
-const TargetPicker = ({ value, onChange }) => (
-  <View style={S.targetRow}>
-    {["all", "specific"].map((m) => (
-      <TouchableOpacity
-        key={m}
-        onPress={() => onChange(m)}
-        activeOpacity={0.75}
-        style={[S.targetBtn, value === m && S.targetBtnActive]}
-      >
-        <Text style={[S.targetBtnText, value === m && S.targetBtnTextActive]}>
-          {m === "all" ? t("payments_all_flats", "All Flats") : t("payments_specific_flats", "Specific Flats")}
-        </Text>
-      </TouchableOpacity>
-    ))}
-  </View>
-);
+const TargetPicker = ({ value, onChange }) => {
+  const { t } = useLanguage();
+  return (
+    <View style={S.targetRow}>
+      {["all", "specific"].map((m) => (
+        <TouchableOpacity
+          key={m}
+          onPress={() => onChange(m)}
+          activeOpacity={0.75}
+          style={[S.targetBtn, value === m && S.targetBtnActive]}
+        >
+          <Text style={[S.targetBtnText, value === m && S.targetBtnTextActive]}>
+            {m === "all" ? t("payments_all_flats", "All Flats") : t("payments_specific_flats", "Specific Flats")}
+          </Text>
+        </TouchableOpacity>
+      ))}
+    </View>
+  );
+};
 
 // ─── Month Picker (horizontal chip strip) ─────────────────────────────────────
 const MonthPicker = ({ value, onChange }) => {
+  const { t } = useLanguage();
   const months = [];
   const now = new Date();
   for (let i = 0; i < 12; i++) {
