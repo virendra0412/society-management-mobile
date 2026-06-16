@@ -479,7 +479,7 @@ const AmenityFormModal = ({ open, editing, onClose, onSaved }) => {
 // ═══════════════════════════════════════════════════════
 // BROWSE TAB
 // ═══════════════════════════════════════════════════════
-const BrowseTab = ({ onBook, onDeactivate, onEdit, isAdmin }) => {
+const BrowseTab = ({ onBook, onDeactivate, onEdit, isAdmin, dataVersion }) => {
   const { t } = useLanguage();
   const [amenities, setAmenities] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -492,19 +492,15 @@ const BrowseTab = ({ onBook, onDeactivate, onEdit, isAdmin }) => {
       const res = await amenitiesApi.getAll();
       setAmenities(res.data?.amenities || []);
     } catch (e) {
-          setError(e.response?.data?.message || t("amenity_error_load", "Failed to load amenities."));
-        } finally {
-          setLoading(false);
-        }
-      }, [t]);
-  };
+      setError(e.response?.data?.message || t("amenity_error_load", "Failed to load amenities."));
+    } finally {
+      setLoading(false);
+    }
+  }, [t, dataVersion]);
 
-  // TC-AMEN-12 — after edit, patch updated amenity in-place
-  const handleEdited = (updated) => {
-    setAmenities((p) =>
-      p.map((a) => (a._id === updated._id ? updated : a))
-    );
-  };
+  useEffect(() => {
+    load();
+  }, [load, dataVersion]);
 
   if (loading) {
     return (
@@ -537,8 +533,8 @@ const BrowseTab = ({ onBook, onDeactivate, onEdit, isAdmin }) => {
             amenity={amenity}
             isAdmin={isAdmin}
             onBook={onBook}
-            onDeactivate={handleDeactivate}
-            onEdit={onEdit}                // TC-AMEN-12
+            onDeactivate={onDeactivate}
+            onEdit={onEdit}
           />
         ))}
       </View>
@@ -549,7 +545,7 @@ const BrowseTab = ({ onBook, onDeactivate, onEdit, isAdmin }) => {
 // ═══════════════════════════════════════════════════════
 // BOOKINGS TAB
 // ═══════════════════════════════════════════════════════
-const BookingsTab = ({ view, isAdmin, onCancel, onConfirm, onReject }) => {
+const BookingsTab = ({ view, isAdmin, onCancel, onConfirm, onReject, dataVersion }) => {
   const { t } = useLanguage();
   const [bookings, setBookings] = useState([]);
   const [statusFilter, setStatusFilter] = useState("all");
@@ -573,11 +569,11 @@ const BookingsTab = ({ view, isAdmin, onCancel, onConfirm, onReject }) => {
     } finally {
       setLoading(false);
     }
-  }, [view, statusFilter]);
+  }, [view, statusFilter, dataVersion]);
 
   useEffect(() => {
     load();
-  }, [load]);
+  }, [load, dataVersion]);
 
   const STATUSES = ["all", "pending", "confirmed", "completed", "cancelled"];
   const pendingCount = bookings.filter((b) => b.status === "pending").length;
@@ -682,7 +678,8 @@ const BookSlotModal = ({ open, amenity, onClose, onBooked }) => {
 
   const submit = async () => {
     if (!date || !startTime || !duration) {
-          return toast.error(t("amenity_booking_error_required_fields", "Please fill all required fields."));
+      return toast.error(t("amenity_booking_error_required_fields", "Please fill all required fields."));
+    }                                                           // ← Fix 1: closed the if-block
     setBusy(true);
     try {
       const data = {
@@ -808,11 +805,16 @@ const ReviewModal = ({ open, booking, action, onClose, onDone }) => {
 
       if (action === "confirm") {
         await amenitiesApi.confirmBooking(amenityId, bookingId, note.trim() || undefined);
-            toast.success(t("amenity_review_confirmed", "Booking confirmed!"));
-            onDone({ ...booking, status: "confirmed", adminNote: note });
-          } else if (action === "reject") {
-            await amenitiesApi.rejectBooking(amenityId, bookingId, note.trim() || undefined);
-            toast.success(t("amenity_review_rejected", "Booking rejected!"));
+        toast.success(t("amenity_review_confirmed", "Booking confirmed!"));
+        onDone({ ...booking, status: "confirmed", adminNote: note });
+      } else if (action === "reject") {
+        await amenitiesApi.rejectBooking(amenityId, bookingId, note.trim() || undefined);
+        toast.success(t("amenity_review_rejected", "Booking rejected!"));
+        onDone({ ...booking, status: "rejected" });
+      }
+    } catch (e) {
+      toast.error(e?.response?.data?.message || t("amenity_review_failed", "Failed to update booking."));
+    } finally {
       setBusy(false);
     }
   };
@@ -866,11 +868,13 @@ const CancelModal = ({ open, booking, onClose, onCancelled }) => {
 
   const submit = async () => {
     if (!reason.trim()) {
-          return toast.error(t("amenity_cancel_error_reason", "Please provide a reason."));
+      return toast.error(t("amenity_cancel_error_reason", "Please provide a reason."));
+    }                                                           // ← Fix 2: closed the if-block
     setBusy(true);
     try {
       const amenityId = resolveAmenityId(booking);
       const bookingId = booking._id;
+      await amenitiesApi.cancelBooking(amenityId, bookingId, reason.trim()); // ← Fix 3: missing API call
       toast.success(t("amenity_cancelled", "Booking cancelled."));
       onCancelled({ ...booking, status: "cancelled", cancelReason: reason });
       setReason("");
@@ -916,7 +920,7 @@ const CancelModal = ({ open, booking, onClose, onCancelled }) => {
 // ═══════════════════════════════════════════════════════
 export const AmenityScreen = () => {
   const { t } = useLanguage();
-  const { isAdmin } = useAuth();
+  const { isAdmin, dataVersion } = useAuth();
   const [view, setView] = useState("browse");
   const [bookTarget,    setBookTarget]    = useState(null);
   const [reviewTarget,  setReviewTarget]  = useState(null);
@@ -980,6 +984,7 @@ export const AmenityScreen = () => {
           onDeactivate={() => setRefreshKey((k) => k + 1)}
           onEdit={openEdit}           // TC-AMEN-12
           isAdmin={isAdmin}
+          dataVersion={dataVersion}
         />
       )}
 
@@ -991,6 +996,7 @@ export const AmenityScreen = () => {
           onCancel={setCancelTarget}
           onConfirm={(b) => setReviewTarget({ booking: b, action: "confirm" })}
           onReject={(b) => setReviewTarget({ booking: b, action: "reject" })}
+          dataVersion={dataVersion}
         />
       )}
 

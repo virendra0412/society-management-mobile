@@ -512,7 +512,7 @@ const EventDetailView = ({ eventId, onBack, isAdmin }) => {
               <Text style={{ fontSize: 12, fontWeight: "700", color: "#fff" }}>
                 {t("Events.Back", "← Back")}
               </Text>
-
+          </TouchableOpacity> 
           <Text style={{ fontSize: 44, marginBottom: 12 }}>{catIcon}</Text>
 
           <View style={{ flexDirection: "row", gap: 6, marginBottom: 8 }}>
@@ -1080,7 +1080,7 @@ const EventFormModal = ({ open, editing, onClose, onSaved }) => {
 // ═══════════════════════════════════════════════════════
 export const EventsScreen = () => {
   const { t } = useLanguage();
-  const { isAdmin } = useAuth();
+  const { isAdmin, dataVersion } = useAuth();
   const toast = useToast();
   const [view, setView] = useState("list");
   const [tab, setTab] = useState("upcoming");
@@ -1114,7 +1114,7 @@ export const EventsScreen = () => {
 
   useEffect(() => {
     loadEvents();
-  }, [loadEvents]);
+  }, [loadEvents, dataVersion]);
 
   const onRefresh = async () => {
     setRefreshing(true);

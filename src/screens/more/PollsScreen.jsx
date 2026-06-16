@@ -202,7 +202,7 @@ const CreatePollModal = ({ open, onClose, onCreated }) => {
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 export const PollsScreen = ({ navigation }) => {
-  const { isAdmin } = useAuth();
+  const { isAdmin, dataVersion } = useAuth();
   const toast = useToast();
   const { t } = useLanguage();
 
@@ -223,7 +223,7 @@ export const PollsScreen = ({ navigation }) => {
     } finally { setLoading(false); }
   }, []);
 
-  useEffect(() => { fetchPolls(); }, [fetchPolls]);
+  useEffect(() => { fetchPolls(); }, [fetchPolls, dataVersion]);
 
   useFocusEffect(
     useCallback(() => {

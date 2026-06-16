@@ -62,7 +62,7 @@ const ChipSelector = ({ label, options, value, onChange }) => {
       </View>
     </ScrollView>
   </View>
-);
+);}
 
 const chipStyles = StyleSheet.create({
   label:         { fontSize: 12, fontWeight: "600", color: C.gray700, marginBottom: 6 },
@@ -485,7 +485,7 @@ const detailStyles = StyleSheet.create({
 
 // ─── Main IssuesScreen ────────────────────────────────────────────────────────
 export const IssuesScreen = () => {
-  const { isAdmin } = useAuth();
+  const { isAdmin, dataVersion } = useAuth();
   const toast       = useToast();
   const { t }       = useLanguage();
 
@@ -514,7 +514,7 @@ export const IssuesScreen = () => {
     }
   }, [filter]);
 
-  useEffect(() => { fetchIssues(); }, [fetchIssues]);
+  useEffect(() => { fetchIssues(); }, [fetchIssues, dataVersion]);
 
   const handleCreate = async () => {
     const title = form.title.trim();
@@ -671,5 +671,5 @@ const styles = StyleSheet.create({
   badgeRow:     { flexDirection: "row", gap: 6, flexWrap: "wrap" },
   commentCount: { fontSize: 11, color: C.gray500, marginLeft: 8, marginTop: 4 },
   formError:    { backgroundColor: "#FEE2E2", borderRadius: 10, padding: 12, marginBottom: 10, borderWidth: 1, borderColor: "#FCA5A5" },
-  formErrorText:{ fontSize: 13, color: "#B91C1C", fontWeight: "600", lineHeight: 18 },
-});
+  formErrorText:{ fontSize: 13, color: "#B91C1C", fontWeight: "600", lineHeight: 18 }
+})

@@ -197,7 +197,7 @@ const TrialBanner = ({ plan, daysLeft, onPress, t }) => {
 
 // ─── HomeScreen ───────────────────────────────────────────────────────────────
 export const HomeScreen = () => {
-  const { user, isAdmin, hasPermission, committeeTitle, memberships, switchSociety, activeSocietyId, plan, trialDaysLeft } = useAuth();
+  const { user, isAdmin, hasPermission, committeeTitle, memberships, switchSociety, activeSocietyId, plan, trialDaysLeft, dataVersion } = useAuth();
   const { t }             = useLanguage();
   const navigation        = useNavigation();
 
@@ -254,7 +254,7 @@ export const HomeScreen = () => {
       }
     };
     load();
-  }, []);
+  }, [dataVersion]);
 
   const openCount    = issues.filter((i) => i.status !== "Resolved").length;
   const urgentNotice = notices.find((n) => n.tag === "Urgent") || notices[0];

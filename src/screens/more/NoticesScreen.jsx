@@ -139,7 +139,7 @@ const BLANK_FORM = { title: "", body: "", tag: "Notice" };
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 export const NoticesScreen = ({ navigation }) => {
-  const { isAdmin, hasPermission } = useAuth();
+  const { isAdmin, hasPermission, dataVersion } = useAuth();
   const { t } = useLanguage();
   const canWrite = isAdmin || hasPermission("notices", "write");
   const toast = useToast();
@@ -170,7 +170,7 @@ export const NoticesScreen = ({ navigation }) => {
     } finally { setLoading(false); }
   }, []);
 
-  useEffect(() => { fetchNotices(); }, [fetchNotices]);
+  useEffect(() => { fetchNotices(); }, [fetchNotices, dataVersion]);
 
   useFocusEffect(
     useCallback(() => {

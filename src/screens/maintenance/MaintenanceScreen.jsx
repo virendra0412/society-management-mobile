@@ -944,7 +944,7 @@ const DefaulterView = ({ onBack }) => {
 // ═══════════════════════════════════════════════════════════════════════════════
 const BILL_STATUS_FILTERS = ["All", "Draft", "Published", "Closed"];
 
-const MaintenanceDashboard = ({ isAdmin, onOpenBill, onOpenMyPayments, onOpenDefaulters }) => {
+const MaintenanceDashboard = ({ isAdmin, onOpenBill, onOpenMyPayments, onOpenDefaulters, dataVersion }) => {
   const { t } = useLanguage();
   const toast = useToast();
   const [bills,        setBills]        = useState([]);
@@ -995,7 +995,7 @@ const MaintenanceDashboard = ({ isAdmin, onOpenBill, onOpenMyPayments, onOpenDef
     }
   }, [statusFilter, monthFilter]);
 
-  useEffect(() => { loadBills(); }, [loadBills]);
+  useEffect(() => { loadBills(); }, [loadBills, dataVersion]);
 
   const handleBillSaved = (bill, mode) => {
     if (mode === "create") setBills((p) => [bill, ...p]);
@@ -1150,7 +1150,7 @@ const MaintenanceDashboard = ({ isAdmin, onOpenBill, onOpenMyPayments, onOpenDef
 // ─── ROOT MaintenanceScreen ───────────────────────────────────────────────────
 // ═══════════════════════════════════════════════════════════════════════════════
 export const MaintenanceScreen = () => {
-  const { isAdmin } = useAuth();
+  const { isAdmin, dataVersion } = useAuth();
   const [view,       setView]      = useState("dashboard"); // "dashboard" | "my-payments" | "defaulters"
   const [openBillId, setOpenBillId]= useState(null);
 
@@ -1164,6 +1164,7 @@ export const MaintenanceScreen = () => {
         onOpenBill={(id)     => setOpenBillId(id)}
         onOpenMyPayments={()  => setView("my-payments")}
         onOpenDefaulters={()  => setView("defaulters")}
+        dataVersion={dataVersion}
       />
       <BillDetailModal
         open={!!openBillId}

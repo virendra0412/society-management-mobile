@@ -803,7 +803,7 @@ const TABS_RES   = [{ id: "overview", label: "Overview" }, { id: "slots", label:
 const TABS_ADMIN = [{ id: "overview", label: "Overview" }, { id: "slots", label: "All Slots" }, { id: "requests", label: "All Requests" }];
 
 export const ParkingScreen = () => {
-  const { isAdmin }  = useAuth();
+  const { isAdmin, dataVersion }  = useAuth();
   const toast        = useToast();
   const [tab, setTab] = useState("overview");
 
@@ -827,7 +827,7 @@ export const ParkingScreen = () => {
     finally { setSumLoading(false); }
   }, []);
 
-  useEffect(() => { loadSummary(); }, [loadSummary]);
+  useEffect(() => { loadSummary(); }, [loadSummary, dataVersion]);
 
   const TABS = isAdmin ? TABS_ADMIN : TABS_RES;
 
