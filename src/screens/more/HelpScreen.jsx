@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useFocusEffect } from "@react-navigation/native";
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
   ScrollView, Linking, Switch,
@@ -192,6 +193,12 @@ export const HelpScreen = ({ navigation }) => {
   }, [catFilter]);
 
   useEffect(() => { fetchPosts(); }, [fetchPosts]);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchPosts();
+    }, [fetchPosts])
+  );
 
   const openDetail = async (post) => {
     setDetailPost(post);

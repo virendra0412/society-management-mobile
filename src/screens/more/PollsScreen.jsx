@@ -9,6 +9,7 @@
  *   • Anonymous voting support
  */
 import { useState, useEffect, useCallback } from "react";
+import { useFocusEffect } from "@react-navigation/native";
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity, ScrollView, TextInput, Alert,
 } from "react-native";
@@ -219,6 +220,12 @@ export const PollsScreen = ({ navigation }) => {
   }, []);
 
   useEffect(() => { fetchPolls(); }, [fetchPolls]);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchPolls();
+    }, [fetchPolls])
+  );
 
   const handleVote = async (pollId, optionId) => {
     if (voting[pollId]) return;

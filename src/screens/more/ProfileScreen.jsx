@@ -9,6 +9,7 @@
  *   • JoinSocietyModal — enter join code, flat, wing → POST /auth/join-society
  */
 import { useState, useEffect, useCallback } from "react";
+import { useFocusEffect } from "@react-navigation/native";
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   Image, ActivityIndicator, Alert, Platform,
@@ -510,6 +511,12 @@ export const ProfileScreen = ({ navigation }) => {
   }, []);
 
   useEffect(() => { loadProfile(); }, [loadProfile]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadProfile();
+    }, [loadProfile])
+  );
 
   const handleProfileSaved = async (updated) => {
     setProfile(updated);

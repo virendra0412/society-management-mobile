@@ -12,6 +12,7 @@
  *   and calls noticesApi.update(id, form) on save instead of create.
  */
 import { useState, useEffect, useCallback } from "react";
+import { useFocusEffect } from "@react-navigation/native";
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity, ScrollView,
 } from "react-native";
@@ -170,6 +171,12 @@ export const NoticesScreen = ({ navigation }) => {
   }, []);
 
   useEffect(() => { fetchNotices(); }, [fetchNotices]);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchNotices();
+    }, [fetchNotices])
+  );
 
   // ── Open modal helpers ────────────────────────────────────────────────────
   const openCreate = () => {

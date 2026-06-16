@@ -50,7 +50,17 @@ export const AuthProvider = ({ children }) => {
   const restoreSession = useCallback(async () => {
     const refreshToken = await tokenStorage.getRefresh();
     if (!refreshToken) {
-      setUser(null);
+      // No refresh token available — try to keep showing cached user (non-sensitive
+      // profile) so the UI doesn't flash empty/zero values when the JS cache is
+      // cleared (Expo dev "clear cache" behavior). If no cached user exists,
+      // clear user and return false.
+      const cached = await tokenStorage.getUser();
+      if (cached) {
+        setUser(cached);
+        bumpDataVersion();
+      } else {
+        setUser(null);
+      }
       return false;
     }
 

@@ -8,6 +8,7 @@
  *   • Admin: add / edit / delete contacts
  */
 import { useState, useEffect, useCallback } from "react";
+import { useFocusEffect } from "@react-navigation/native";
 import {
   View, Text, StyleSheet, FlatList, SectionList, TouchableOpacity,
   Linking, ScrollView,
@@ -126,6 +127,12 @@ export const ContactsScreen = ({ navigation }) => {
   }, []);
 
   useEffect(() => { fetchContacts(); }, [fetchContacts]);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchContacts();
+    }, [fetchContacts])
+  );
 
   const openAdd = () => {
     setEditTarget(null);

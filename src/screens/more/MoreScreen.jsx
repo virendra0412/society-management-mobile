@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from "react-native";
-import { SafeAreaView }   from "react-native-safe-area-context";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { useNavigation }  from "@react-navigation/native";
+import { useNavigation } from "@react-navigation/native";
+import { Ionicons } from "@expo/vector-icons";
 
 import { useAuth }     from "../../context/AuthContext";
 import { useLanguage } from "../../context/LanguageContext";
@@ -27,6 +28,21 @@ import { TermsScreen }         from "../legal/TermsScreen";
 
 const { width } = Dimensions.get("window");
 const TILE_SIZE = (width - 56) / 3;
+
+const SCREEN_TITLES = {
+  Notices:          "Notices",
+  Help:             "Community Help",
+  Contacts:         "Contacts",
+  Polls:            "Polls",
+  Events:           "Events",
+  Parking:          "Parking",
+  Amenity:          "Amenities",
+  Profile:          "Profile",
+  Committee:        "Committee",
+  Upgrade:          "Upgrades",
+  PrivacyPolicy:    "Privacy Policy",
+  Terms:            "Terms & Conditions",
+};
 
 // ─── MoreScreen ───────────────────────────────────────────────────────────────
 
@@ -103,7 +119,31 @@ const gridStyles = StyleSheet.create({
 const Stack = createNativeStackNavigator();
 
 export const MoreScreen = () => (
-  <Stack.Navigator screenOptions={{ headerShown: false }}>
+  <Stack.Navigator
+    screenOptions={({ navigation, route }) => {
+      const showHeader = route.name !== "MoreGrid";
+      return {
+        headerShown: showHeader,
+        headerTitle: SCREEN_TITLES[route.name] || route.name,
+        headerTitleAlign: "center",
+        headerTitleStyle: { fontSize: 16, fontWeight: "700", color: C.navy },
+        headerStyle: {
+          backgroundColor: C.bg,
+          shadowColor: "transparent",
+          elevation: 0,
+          borderBottomColor: "rgba(0,0,0,0.08)",
+          borderBottomWidth: StyleSheet.hairlineWidth,
+        },
+        headerLeft: showHeader
+          ? () => (
+              <TouchableOpacity onPress={() => navigation.goBack()} style={{ paddingHorizontal: 10 }}>
+                <Ionicons name="chevron-back" size={22} color={C.navy} />
+              </TouchableOpacity>
+            )
+          : undefined,
+      };
+    }}
+  >
     <Stack.Screen name="MoreGrid"   component={MoreGrid} />
     <Stack.Screen name="Notices"    component={NoticesScreen} />
     <Stack.Screen name="Help"       component={HelpScreen} />

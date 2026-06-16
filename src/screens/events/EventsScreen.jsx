@@ -63,6 +63,7 @@ const localTimeStr = (iso) => {
 // CATEGORY FILTER PILLS
 // ═══════════════════════════════════════════════════════
 const CategoryFilter = ({ selected, onChange }) => {
+  const { t } = useLanguage();
   const categories = ["All", ...EVENT_CATEGORIES];
 
   return (
@@ -97,7 +98,7 @@ const CategoryFilter = ({ selected, onChange }) => {
                   { color: active ? "#fff" : color },
                 ]}
               >
-                {cat}
+                {cat === "All" ? t("All", "All") : cat}
               </Text>
             </View>
           </TouchableOpacity>
@@ -111,6 +112,7 @@ const CategoryFilter = ({ selected, onChange }) => {
 // RSVP COUNTS DISPLAY
 // ═══════════════════════════════════════════════════════
 const RsvpCounts = ({ summary = {}, maxAttendees }) => {
+  const { t } = useLanguage();
   const going = summary.going || 0;
   const maybe = summary.maybe || 0;
   const notGoing = summary.not_going || 0;
@@ -119,14 +121,14 @@ const RsvpCounts = ({ summary = {}, maxAttendees }) => {
   return (
     <Card style={{ marginBottom: 10 }}>
       <Text style={{ fontSize: 12, fontWeight: "700", color: C.gray700, marginBottom: 10 }}>
-        📊 RSVPs
+        📊 {t("Events.RSVPs", "RSVPs")}
       </Text>
 
       <View style={{ flexDirection: "row", gap: 8, marginBottom: 12 }}>
         {[
-          { icon: "🎉", label: "Going", count: going, color: C.green },
-          { icon: "🤔", label: "Maybe", count: maybe, color: C.amber },
-          { icon: "😕", label: "Not Going", count: notGoing, color: C.gray500 },
+          { icon: "🎉", label: t("Events.Going", "Going"), count: going, color: C.green },
+          { icon: "🤔", label: t("Events.Maybe", "Maybe"), count: maybe, color: C.amber },
+          { icon: "😕", label: t("Events.NotGoing", "Not Going"), count: notGoing, color: C.gray500 },
         ].map(({ icon, label, count, color }) => (
           <View key={label} style={{ flex: 1, alignItems: "center", paddingVertical: 10, backgroundColor: C.gray50, borderRadius: 10 }}>
             <Text style={{ fontSize: 18, marginBottom: 4 }}>{icon}</Text>
@@ -143,7 +145,7 @@ const RsvpCounts = ({ summary = {}, maxAttendees }) => {
       {maxAttendees > 0 && (
         <View>
           <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 6 }}>
-            <Text style={{ fontSize: 11, color: C.gray500 }}>Capacity</Text>
+            <Text style={{ fontSize: 11, color: C.gray500 }}>{t("Events.Capacity", "Capacity")}</Text>
             <Text style={{ fontSize: 11, fontWeight: "600", color: going >= maxAttendees ? C.red : C.gray700 }}>
               {going} / {maxAttendees}
             </Text>
@@ -159,7 +161,7 @@ const RsvpCounts = ({ summary = {}, maxAttendees }) => {
           </View>
           {going >= maxAttendees && (
             <Text style={{ fontSize: 11, color: C.red, fontWeight: "600", marginTop: 6 }}>
-              Event is at full capacity
+              {t("Events.FullCapacity", "Event is at full capacity")}
             </Text>
           )}
         </View>
@@ -172,20 +174,21 @@ const RsvpCounts = ({ summary = {}, maxAttendees }) => {
 // RSVP ACTION BUTTONS
 // ═══════════════════════════════════════════════════════
 const RsvpButtons = ({ event, onRsvp, onRemove, loading }) => {
+  const { t } = useLanguage();
   const [guestCount, setGuestCount] = useState(event.myRsvp?.guestCount || 1);
   const current = event.myRsvp?.status || null;
   const isFull = event.maxAttendees > 0 && (event.rsvpSummary?.going || 0) >= event.maxAttendees && current !== "going";
 
   const options = [
-    { status: "going", icon: "🎉", label: "Going" },
-    { status: "maybe", icon: "🤔", label: "Maybe" },
-    { status: "not_going", icon: "😕", label: "Not Going" },
+    { status: "going", icon: "🎉", label: t("Events.Going", "Going") },
+    { status: "maybe", icon: "🤔", label: t("Events.Maybe", "Maybe") },
+    { status: "not_going", icon: "😕", label: t("Events.NotGoing", "Not Going") },
   ];
 
   return (
     <Card style={{ marginBottom: 10 }}>
       <Text style={{ fontSize: 12, fontWeight: "700", color: C.gray700, marginBottom: 10 }}>
-        {current ? "Your RSVP" : "Will you attend?"}
+        {current ? t("Events.YourRSVP", "Your RSVP") : t("Events.WillYouAttend", "Will you attend?")}
       </Text>
 
       {/* Current RSVP banner */}
@@ -205,11 +208,11 @@ const RsvpButtons = ({ event, onRsvp, onRemove, loading }) => {
           >
             <Text style={{ fontSize: 13, fontWeight: "700", color: sc.text }}>
               {RSVP_LABEL[current]}
-              {current === "going" && event.myRsvp?.guestCount > 1 ? ` · ${event.myRsvp.guestCount} guests` : ""}
+              {current === "going" && event.myRsvp?.guestCount > 1 ? ` · ${event.myRsvp.guestCount} ${t("Events.Guests", "guests")}` : ""}
             </Text>
             <TouchableOpacity onPress={() => !loading && onRemove()} disabled={loading}>
               <Text style={{ fontSize: 11, fontWeight: "700", color: sc.text }}>
-                {loading ? "..." : "Remove"}
+                {loading ? "..." : t("Events.Remove", "Remove")}
               </Text>
             </TouchableOpacity>
           </View>
@@ -248,7 +251,7 @@ const RsvpButtons = ({ event, onRsvp, onRemove, loading }) => {
       {(current === "going" || !current) && (
         <View style={{ marginBottom: isFull && current !== "going" ? 10 : 0 }}>
           <Text style={{ fontSize: 11, fontWeight: "600", color: C.gray500, marginBottom: 8 }}>
-            Number of guests (incl. you)
+            {t("Events.GuestCountLabel", "Number of guests (incl. you)")}
           </Text>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
             <TouchableOpacity
@@ -273,7 +276,7 @@ const RsvpButtons = ({ event, onRsvp, onRemove, loading }) => {
                 loading={loading}
                 style={{ marginLeft: "auto" }}
               >
-                🎉 RSVP
+                🎉 {t("Events.RSVPButton", "RSVP")}
               </Btn>
             )}
           </View>
@@ -282,7 +285,7 @@ const RsvpButtons = ({ event, onRsvp, onRemove, loading }) => {
 
       {isFull && current !== "going" && (
         <Text style={{ fontSize: 11, color: C.red, fontWeight: "600" }}>
-          ⚠️ Event is full
+          ⚠️ {t("Events.EventFull", "Event is full")}
         </Text>
       )}
     </Card>
@@ -293,6 +296,7 @@ const RsvpButtons = ({ event, onRsvp, onRemove, loading }) => {
 // EVENT LIST CARD
 // ═══════════════════════════════════════════════════════
 const EventCard = ({ event, onClick }) => {
+  const { t } = useLanguage();
   const upcoming = isUpcoming(event);
   const catColor = EVENT_CATEGORY_COLOR[event.category] || C.teal;
   const catIcon = EVENT_CATEGORY_ICON[event.category] || "📅";
@@ -341,10 +345,10 @@ const EventCard = ({ event, onClick }) => {
               </Text>
               <View style={{ flexDirection: "row", gap: 4 }}>
                 {event.isCancelled && (
-                  <Badge label="Cancelled" bg={C.red + "15"} text={C.red} />
+                  <Badge label={t("Events.Cancelled", "Cancelled")} bg={C.red + "15"} text={C.red} />
                 )}
                 {!event.isPublished && !event.isCancelled && (
-                  <Badge label="Draft" bg={C.amber + "20"} text={C.amber} />
+                  <Badge label={t("Events.Draft", "Draft")} bg={C.amber + "20"} text={C.amber} />
                 )}
                 {sc && (
                   <Badge label={RSVP_LABEL[event.myRsvp.status]} bg={sc.bg} text={sc.text} />
@@ -355,7 +359,7 @@ const EventCard = ({ event, onClick }) => {
             {/* Meta */}
             <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 6 }}>
               <Text style={styles.meta}>
-                🕐 {event.isAllDay ? "All day" : fmtTime(event.eventDate)}
+                🕐 {event.isAllDay ? t("Events.AllDay", "All day") : fmtTime(event.eventDate)}
               </Text>
               {event.venue && (
                 <Text style={styles.meta} numberOfLines={1}>
@@ -390,6 +394,7 @@ const EventCard = ({ event, onClick }) => {
 // EVENT DETAIL VIEW
 // ═══════════════════════════════════════════════════════
 const EventDetailView = ({ eventId, onBack, isAdmin }) => {
+  const { t } = useLanguage();
   const toast = useToast();
   const [event, setEvent] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -404,7 +409,7 @@ const EventDetailView = ({ eventId, onBack, isAdmin }) => {
       const res = await eventsApi.getOne(eventId);
       setEvent(res.data?.event);
     } catch (e) {
-      toast.error("Failed to load event.");
+      toast.error(t("Events.LoadEventFailed", "Failed to load event."));
     } finally {
       setLoading(false);
     }
@@ -423,12 +428,12 @@ const EventDetailView = ({ eventId, onBack, isAdmin }) => {
       });
       setEvent(res.data?.event);
       const msgs = {
-        going: "You're going! 🎉",
-        maybe: "Marked as maybe 🤔",
+        going: t("Events.RsvpGoingSuccess", "You're going! 🎉"),
+        maybe: t("Events.RsvpMaybeSuccess", "Marked as maybe 🤔"),
       };
-      toast.success(msgs[status] || "RSVP updated.");
+      toast.success(msgs[status] || t("Events.RsvpUpdated", "RSVP updated."));
     } catch (e) {
-      toast.error(e?.response?.data?.message || "RSVP failed.");
+      toast.error(e?.response?.data?.message || t("Events.RsvpFailed", "RSVP failed."));
     } finally {
       setRsvpLoading(false);
     }
@@ -439,9 +444,9 @@ const EventDetailView = ({ eventId, onBack, isAdmin }) => {
     try {
       const res = await eventsApi.removeRsvp(event._id);
       setEvent(res.data?.event);
-      toast.success("RSVP removed.");
+      toast.success(t("Events.RsvpRemoved", "RSVP removed."));
     } catch (e) {
-      toast.error(e?.response?.data?.message || "Failed to remove RSVP.");
+      toast.error(e?.response?.data?.message || t("Events.RemoveRsvpFailed", "Failed to remove RSVP."));
     } finally {
       setRsvpLoading(false);
     }
@@ -452,9 +457,9 @@ const EventDetailView = ({ eventId, onBack, isAdmin }) => {
     try {
       const res = await eventsApi.publish(event._id);
       setEvent(res.data?.event);
-      toast.success("Event published!");
+      toast.success(t("Events.PublishedSuccess", "Event published!"));
     } catch (e) {
-      toast.error(e?.response?.data?.message || "Failed to publish.");
+      toast.error(e?.response?.data?.message || t("Events.PublishFailed", "Failed to publish."));
     } finally {
       setActionBusy(null);
     }
@@ -467,9 +472,9 @@ const EventDetailView = ({ eventId, onBack, isAdmin }) => {
       setEvent(res.data?.event);
       setShowCancelModal(false);
       setCancelReason("");
-      toast.success("Event cancelled.");
+      toast.success(t("Events.CancelledSuccess", "Event cancelled."));
     } catch (e) {
-      toast.error(e?.response?.data?.message || "Failed to cancel event.");
+      toast.error(e?.response?.data?.message || t("Events.CancelFailed", "Failed to cancel event."));
     } finally {
       setActionBusy(null);
     }
@@ -484,7 +489,7 @@ const EventDetailView = ({ eventId, onBack, isAdmin }) => {
   }
 
   if (!event) {
-    return <ErrorState message="Event not found." onRetry={load} />;
+    return <ErrorState message={t("Events.NotFound", "Event not found.")} onRetry={load} />;
   }
 
   const catColor = EVENT_CATEGORY_COLOR[event.category] || C.teal;
@@ -504,18 +509,19 @@ const EventDetailView = ({ eventId, onBack, isAdmin }) => {
           }}
         >
           <TouchableOpacity onPress={onBack} style={{ marginBottom: 16 }}>
-            <Text style={{ fontSize: 12, fontWeight: "700", color: "#fff" }}>← Back</Text>
-          </TouchableOpacity>
+              <Text style={{ fontSize: 12, fontWeight: "700", color: "#fff" }}>
+                {t("Events.Back", "← Back")}
+              </Text>
 
           <Text style={{ fontSize: 44, marginBottom: 12 }}>{catIcon}</Text>
 
           <View style={{ flexDirection: "row", gap: 6, marginBottom: 8 }}>
             <Badge label={event.category} bg="rgba(255,255,255,0.2)" text="#fff" />
             {event.isCancelled && (
-              <Badge label="Cancelled" bg={C.red + "80"} text="#fff" />
+              <Badge label={t("Events.Cancelled", "Cancelled")} bg={C.red + "80"} text="#fff" />
             )}
             {!event.isPublished && (
-              <Badge label="Draft" bg={C.amber + "80"} text="#fff" />
+              <Badge label={t("Events.Draft", "Draft")} bg={C.amber + "80"} text="#fff" />
             )}
           </View>
 
@@ -523,7 +529,7 @@ const EventDetailView = ({ eventId, onBack, isAdmin }) => {
             {event.title}
           </Text>
           <Text style={{ fontSize: 13, color: "rgba(255,255,255,0.8)" }}>
-            By {event.createdBy?.name || "Admin"}
+            {t("Events.By", "By")} {event.createdBy?.name || t("Events.Admin", "Admin")}
           </Text>
         </View>
 
@@ -531,10 +537,10 @@ const EventDetailView = ({ eventId, onBack, isAdmin }) => {
           {/* Event info card */}
           <Card style={{ marginBottom: 14 }}>
             {[
-              ["📅", "Date", event.isAllDay ? fmtDate(event.eventDate) : `${fmtDate(event.eventDate)}, ${fmtTime(event.eventDate)}`],
-              event.endDate && ["⏰", "Ends", event.isAllDay ? fmtDate(event.endDate) : `${fmtDateShort(event.endDate)}, ${fmtTime(event.endDate)}`],
-              event.venue && ["📍", "Venue", event.venue],
-              event.maxAttendees && ["👥", "Capacity", `${event.maxAttendees} people`],
+              ["📅", t("Events.Date", "Date"), event.isAllDay ? fmtDate(event.eventDate) : `${fmtDate(event.eventDate)}, ${fmtTime(event.eventDate)}`],
+              event.endDate && ["⏰", t("Events.Ends", "Ends"), event.isAllDay ? fmtDate(event.endDate) : `${fmtDateShort(event.endDate)}, ${fmtTime(event.endDate)}`],
+              event.venue && ["📍", t("Events.Venue", "Venue"), event.venue],
+              event.maxAttendees && ["👥", t("Events.Capacity", "Capacity"), `${event.maxAttendees} ${t("Events.People", "people")}`],
             ]
               .filter(Boolean)
               .map(([icon, label, value]) => (
@@ -552,7 +558,7 @@ const EventDetailView = ({ eventId, onBack, isAdmin }) => {
             {event.isCancelled && event.cancelReason && (
               <View style={{ backgroundColor: C.red + "10", borderRadius: 8, padding: 10 }}>
                 <Text style={{ fontSize: 12, color: C.gray700 }}>
-                  🚫 <Text style={{ fontWeight: "700" }}>Reason:</Text> {event.cancelReason}
+                  🚫 <Text style={{ fontWeight: "700" }}>{t("Events.Reason", "Reason:")}</Text> {event.cancelReason}
                 </Text>
               </View>
             )}
@@ -565,7 +571,7 @@ const EventDetailView = ({ eventId, onBack, isAdmin }) => {
           {isAdmin && event.isPublished && (
             <Card style={{ marginBottom: 14 }}>
               <Text style={{ fontSize: 12, fontWeight: "700", color: C.gray700, marginBottom: 10 }}>
-                👥 Attendees
+                👥 {t("Events.Attendees", "Attendees")}
               </Text>
               <AttendeeList eventId={event._id} />
             </Card>
@@ -585,7 +591,7 @@ const EventDetailView = ({ eventId, onBack, isAdmin }) => {
           {event.isPublished && !event.isCancelled && !upcoming && (
             <View style={{ backgroundColor: C.gray50, borderRadius: 12, padding: 12, marginBottom: 14 }}>
               <Text style={{ fontSize: 13, color: C.gray500, textAlign: "center" }}>
-                This event has already taken place.
+                {t("Events.PastNotice", "This event has already taken place.")}
               </Text>
             </View>
           )}
@@ -594,7 +600,7 @@ const EventDetailView = ({ eventId, onBack, isAdmin }) => {
           {event.description && (
             <Card style={{ marginBottom: 14 }}>
               <Text style={{ fontSize: 12, fontWeight: "700", color: C.gray700, marginBottom: 8 }}>
-                About
+                {t("Events.About", "About")}
               </Text>
               <Text style={{ fontSize: 13, color: C.gray700, lineHeight: 20 }}>
                 {event.description}
@@ -606,7 +612,7 @@ const EventDetailView = ({ eventId, onBack, isAdmin }) => {
           {event.rules && (
             <View style={{ backgroundColor: C.amber + "10", borderRadius: 12, padding: 12, marginBottom: 14 }}>
               <Text style={{ fontSize: 12, fontWeight: "700", color: C.amber, marginBottom: 6 }}>
-                📋 Rules
+                📋 {t("Events.Rules", "Rules")}
               </Text>
               <Text style={{ fontSize: 12, color: C.gray700, lineHeight: 18 }}>
                 {event.rules}
@@ -618,7 +624,7 @@ const EventDetailView = ({ eventId, onBack, isAdmin }) => {
           {isAdmin && !event.isCancelled && (
             <Card style={{ marginBottom: 14 }}>
               <Text style={{ fontSize: 12, fontWeight: "700", color: C.gray700, marginBottom: 10 }}>
-                Admin Actions
+                {t("Events.AdminActions", "Admin Actions")}
               </Text>
               <View style={{ flexDirection: "row", gap: 8 }}>
                 {!event.isPublished && (
@@ -628,7 +634,7 @@ const EventDetailView = ({ eventId, onBack, isAdmin }) => {
                     loading={actionBusy === "publish"}
                     style={{ flex: 1 }}
                   >
-                    📢 Publish
+                    📢 {t("Events.Publish", "Publish")}
                   </Btn>
                 )}
                 <Btn
@@ -637,14 +643,16 @@ const EventDetailView = ({ eventId, onBack, isAdmin }) => {
                   loading={actionBusy === "cancel"}
                   style={{ flex: 1, backgroundColor: C.red + "20" }}
                 >
-                  <Text style={{ color: C.red, fontWeight: "700", fontSize: 11 }}>Cancel</Text>
+                  <Text style={{ color: C.red, fontWeight: "700", fontSize: 11 }}>
+                  {t("Events.Cancel", "Cancel")}
+                </Text>
                 </Btn>
               </View>
             </Card>
           )}
 
           <Text style={{ fontSize: 11, color: C.gray400, textAlign: "center" }}>
-            Posted {timeAgo(event.createdAt)}
+            {t("Events.Posted", "Posted")} {timeAgo(event.createdAt)}
           </Text>
         </View>
       </ScrollView>
@@ -658,19 +666,19 @@ const EventDetailView = ({ eventId, onBack, isAdmin }) => {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Cancel Event</Text>
+            <Text style={styles.modalTitle}>{t("Events.CancelEvent", "Cancel Event")}</Text>
 
             <View style={{ backgroundColor: C.red + "10", borderRadius: 10, padding: 10, marginBottom: 14 }}>
               <Text style={{ fontSize: 12, color: C.gray700 }}>
-                ⚠️ All RSVPs will be notified.
+                ⚠️ {t("Events.AllRsvpsNotified", "All RSVPs will be notified.")}
               </Text>
             </View>
 
             <Input
-              label="Reason (optional)"
+              label={t("Events.CancelReasonLabel", "Reason (optional)")}
               value={cancelReason}
               onChangeText={setCancelReason}
-              placeholder="Venue unavailable..."
+              placeholder={t("Events.CancelReasonPlaceholder", "Venue unavailable...")}
               multiline
               numberOfLines={3}
             />
@@ -680,14 +688,18 @@ const EventDetailView = ({ eventId, onBack, isAdmin }) => {
                 onPress={() => setShowCancelModal(false)}
                 style={{ flex: 1, backgroundColor: C.gray100 }}
               >
-                <Text style={{ color: C.gray700, fontWeight: "700", fontSize: 11 }}>Keep</Text>
+                <Text style={{ color: C.gray700, fontWeight: "700", fontSize: 11 }}>
+                  {t("Events.Keep", "Keep")}
+                </Text>
               </Btn>
               <Btn
                 onPress={handleCancel}
                 loading={actionBusy === "cancel"}
                 style={{ flex: 1, backgroundColor: C.red }}
               >
-                <Text style={{ color: "#fff", fontWeight: "700", fontSize: 11 }}>Cancel Event</Text>
+                <Text style={{ color: "#fff", fontWeight: "700", fontSize: 11 }}>
+                  {t("Events.CancelEventButton", "Cancel Event")}
+                </Text>
               </Btn>
             </View>
           </View>
@@ -704,6 +716,7 @@ const EventDetailView = ({ eventId, onBack, isAdmin }) => {
 // onChange: (newValue: "YYYY-MM-DD" | "") => void
 // ═══════════════════════════════════════════════════════
 const DatePickerRow = ({ label, value, onChange, optional = false }) => {
+  const { t } = useLanguage();
   const [show, setShow] = useState(false);
 
   // Convert "YYYY-MM-DD" string → Date object for the picker
@@ -722,7 +735,7 @@ const DatePickerRow = ({ label, value, onChange, optional = false }) => {
     ? new Date(value + "T00:00:00").toLocaleDateString("en-IN", {
         day: "numeric", month: "short", year: "numeric",
       })
-    : optional ? "Not set" : "Select date";
+    : optional ? t("Events.NotSet", "Not set") : t("Events.SelectDate", "Select date");
 
   return (
     <View style={{ marginBottom: 14 }}>
@@ -771,6 +784,7 @@ const DatePickerRow = ({ label, value, onChange, optional = false }) => {
 // onChange: (newValue: "HH:MM") => void
 // ═══════════════════════════════════════════════════════
 const TimePickerRow = ({ label, value, onChange }) => {
+  const { t } = useLanguage();
   const [show, setShow] = useState(false);
 
   const toDate = (hhmm) => {
@@ -789,7 +803,7 @@ const TimePickerRow = ({ label, value, onChange }) => {
   };
 
   const display = (() => {
-    if (!value) return "10:00 AM";
+    if (!value) return t("Events.DefaultTime", "10:00 AM");
     const [h, m] = value.split(":").map(Number);
     const ampm = h >= 12 ? "PM" : "AM";
     const h12  = h % 12 || 12;
@@ -828,6 +842,7 @@ const TimePickerRow = ({ label, value, onChange }) => {
 // CREATE / EDIT EVENT MODAL
 // ═══════════════════════════════════════════════════════
 const EventFormModal = ({ open, editing, onClose, onSaved }) => {
+  const { t } = useLanguage();
   const toast = useToast();
   const blank = {
     title: "",
@@ -869,8 +884,8 @@ const EventFormModal = ({ open, editing, onClose, onSaved }) => {
   }, [open, editing]);
 
   const handleSave = async () => {
-    if (!form.title.trim()) return toast.error("Title is required.");
-    if (!form.eventDate) return toast.error("Date is required.");
+    if (!form.title.trim()) return toast.error(t("Events.TitleRequired", "Title is required."));
+    if (!form.eventDate) return toast.error(t("Events.DateRequired", "Date is required."));
 
     const dateStr = form.isAllDay ? form.eventDate : `${form.eventDate}T${form.eventTime}:00`;
     const endDateStr = form.endDate
@@ -897,11 +912,11 @@ const EventFormModal = ({ open, editing, onClose, onSaved }) => {
       const res = editing
         ? await eventsApi.update(editing._id, payload)
         : await eventsApi.create(payload);
-      toast.success(editing ? "Event updated." : "Event created as draft.");
+      toast.success(editing ? t("Events.EventUpdated", "Event updated.") : t("Events.EventCreatedDraft", "Event created as draft."));
       onSaved(res.data?.event);
       onClose();
     } catch (e) {
-      setFormError(e?.response?.data?.message || "Save failed. Please try again.");
+      setFormError(e?.response?.data?.message || t("Events.SaveFailed", "Save failed. Please try again."));
     } finally {
       setSubmitting(false);
     }
@@ -912,7 +927,7 @@ const EventFormModal = ({ open, editing, onClose, onSaved }) => {
       <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
         <View style={{ padding: 16, borderBottomWidth: 1, borderBottomColor: C.gray100, flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
           <Text style={{ fontSize: 16, fontWeight: "700", color: C.navy }}>
-            {editing ? "Edit Event" : "Create Event"}
+            {editing ? t("Events.EditEvent", "Edit Event") : t("Events.CreateEvent", "Create Event")}
           </Text>
           <TouchableOpacity onPress={onClose}>
             <Text style={{ fontSize: 20, color: C.gray500 }}>✕</Text>
@@ -926,13 +941,13 @@ const EventFormModal = ({ open, editing, onClose, onSaved }) => {
           keyboardShouldPersistTaps="handled"
         >
           <Input
-            label="Title *"
+            label={t("Events.TitleLabel", "Title *")}
             value={form.title}
             onChangeText={(v) => setForm((p) => ({ ...p, title: v }))}
-            placeholder="Annual Diwali..."
+            placeholder={t("Events.TitlePlaceholder", "Annual Diwali...")}
           />
 
-          <Text style={styles.label}>Category</Text>
+          <Text style={styles.label}>{t("Events.CategoryLabel", "Category")}</Text>
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
             {EVENT_CATEGORIES.map((cat) => (
               <TouchableOpacity
@@ -955,17 +970,17 @@ const EventFormModal = ({ open, editing, onClose, onSaved }) => {
           </View>
 
           <Input
-            label="Description"
+            label={t("Events.DescriptionLabel", "Description")}
             value={form.description}
             onChangeText={(v) => setForm((p) => ({ ...p, description: v }))}
-            placeholder="Tell residents what to expect..."
+            placeholder={t("Events.DescriptionPlaceholder", "Tell residents what to expect...")}
             multiline
             numberOfLines={3}
           />
 
           {/* All-day toggle */}
           <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-            <Text style={{ fontSize: 12, fontWeight: "600", color: C.gray700 }}>All Day Event</Text>
+            <Text style={{ fontSize: 12, fontWeight: "600", color: C.gray700 }}>{t("Events.AllDayEvent", "All Day Event")}</Text>
             <TouchableOpacity
               onPress={() => setForm((p) => ({ ...p, isAllDay: !p.isAllDay }))}
               style={{
@@ -991,51 +1006,51 @@ const EventFormModal = ({ open, editing, onClose, onSaved }) => {
 
           {/* ── Date / Time pickers ──────────────────────────────────── */}
           <DatePickerRow
-            label="Start Date *"
+            label={t("Events.StartDateLabel", "Start Date *")}
             value={form.eventDate}
             onChange={(v) => setForm((p) => ({ ...p, eventDate: v }))}
           />
           {!form.isAllDay && (
             <TimePickerRow
-              label="Start Time"
+              label={t("Events.StartTimeLabel", "Start Time")}
               value={form.eventTime}
               onChange={(v) => setForm((p) => ({ ...p, eventTime: v }))}
             />
           )}
           <DatePickerRow
-            label="End Date (optional)"
+            label={t("Events.EndDateLabel", "End Date (optional)")}
             value={form.endDate}
             onChange={(v) => setForm((p) => ({ ...p, endDate: v }))}
             optional
           />
           {!form.isAllDay && form.endDate !== "" && (
             <TimePickerRow
-              label="End Time"
+              label={t("Events.EndTimeLabel", "End Time")}
               value={form.endTime}
               onChange={(v) => setForm((p) => ({ ...p, endTime: v }))}
             />
           )}
 
           <Input
-            label="Venue"
+            label={t("Events.VenueLabel", "Venue")}
             value={form.venue}
             onChangeText={(v) => setForm((p) => ({ ...p, venue: v }))}
-            placeholder="Clubhouse, Rooftop..."
+            placeholder={t("Events.VenuePlaceholder", "Clubhouse, Rooftop...")}
           />
 
           <Input
-            label="Max Attendees"
+            label={t("Events.MaxAttendeesLabel", "Max Attendees")}
             value={form.maxAttendees}
             onChangeText={(v) => setForm((p) => ({ ...p, maxAttendees: v }))}
-            placeholder="Leave blank for unlimited"
+            placeholder={t("Events.MaxAttendeesPlaceholder", "Leave blank for unlimited")}
             keyboardType="number-pad"
           />
 
           <Input
-            label="Rules / Notes"
+            label={t("Events.RulesNotesLabel", "Rules / Notes")}
             value={form.rules}
             onChangeText={(v) => setForm((p) => ({ ...p, rules: v }))}
-            placeholder="Dress code, entry time..."
+            placeholder={t("Events.RulesNotesPlaceholder", "Dress code, entry time...")}
             multiline
             numberOfLines={3}
           />
@@ -1052,7 +1067,7 @@ const EventFormModal = ({ open, editing, onClose, onSaved }) => {
             </View>
           )}
           <Btn onPress={handleSave} loading={submitting} style={{ width: "100%", marginTop: 20 }}>
-            {editing ? "Save Changes" : "Create Draft"}
+            {editing ? t("Events.SaveChanges", "Save Changes") : t("Events.CreateDraft", "Create Draft")}
           </Btn>
         </ScrollView>
       </SafeAreaView>
@@ -1064,6 +1079,7 @@ const EventFormModal = ({ open, editing, onClose, onSaved }) => {
 // ROOT SCREEN
 // ═══════════════════════════════════════════════════════
 export const EventsScreen = () => {
+  const { t } = useLanguage();
   const { isAdmin } = useAuth();
   const toast = useToast();
   const [view, setView] = useState("list");
@@ -1090,7 +1106,7 @@ export const EventsScreen = () => {
       );
       setEvents(filtered);
     } catch (e) {
-      setError(e?.response?.data?.message || "Failed to load events.");
+      setError(e?.response?.data?.message || t("Events.LoadEventsFailed", "Failed to load events."));
     } finally {
       setLoading(false);
     }
@@ -1135,7 +1151,7 @@ export const EventsScreen = () => {
       <View style={styles.header}>
         <View>
           <Text style={styles.headerSub}>SOCIETY</Text>
-          <Text style={styles.headerTitle}>🎉 Events</Text>
+          <Text style={styles.headerTitle}>{t("Events.HeaderTitle", "🎉 Events")}</Text>
         </View>
         {isAdmin && (
           <TouchableOpacity
@@ -1145,21 +1161,21 @@ export const EventsScreen = () => {
             }}
             style={styles.createBtn}
           >
-            <Text style={styles.createBtnText}>+ Create</Text>
+            <Text style={styles.createBtnText}>+ {t("Events.Create", "Create")}</Text>
           </TouchableOpacity>
         )}
       </View>
 
       {/* Tabs */}
       <View style={styles.tabBar}>
-        {["upcoming", "past"].map((t) => (
+        {["upcoming", "past"].map((tabName) => (
           <TouchableOpacity
-            key={t}
-            onPress={() => setTab(t)}
-            style={[styles.tabBtn, tab === t && styles.tabActive]}
+            key={tabName}
+            onPress={() => setTab(tabName)}
+            style={[styles.tabBtn, tab === tabName && styles.tabActive]}
           >
-            <Text style={[styles.tabText, tab === t && styles.tabTextActive]}>
-              {t.charAt(0).toUpperCase() + t.slice(1)}
+            <Text style={[styles.tabText, tab === tabName && styles.tabTextActive]}>
+              {t(`Events.Tab.${tabName}`, tabName.charAt(0).toUpperCase() + tabName.slice(1))}
             </Text>
           </TouchableOpacity>
         ))}
@@ -1204,9 +1220,9 @@ export const EventsScreen = () => {
                   message={
                     tab === "upcoming"
                       ? isAdmin
-                        ? "No upcoming events. Create one!"
-                        : "No upcoming events."
-                      : "No past events."
+                        ? t("Events.Empty.UpcomingAdmin", "No upcoming events. Create one!")
+                        : t("Events.Empty.Upcoming", "No upcoming events.")
+                      : t("Events.Empty.Past", "No past events.")
                   }
                 />
               </View>

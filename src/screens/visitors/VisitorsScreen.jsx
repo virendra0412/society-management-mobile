@@ -22,6 +22,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { visitorsApi as visitorApi } from "../../api/resources.api";
 import { useAuth }  from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
+import { useLanguage } from "../../context/LanguageContext";
 import {
   Badge, Btn, Card, EmptyState, ErrorState,
   FilterPill, Modal, Input, Spinner,
@@ -34,17 +35,17 @@ import { timeAgo } from "../../utils/timeago";
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const STATUS_LABELS = {
-  invited:  "Invited",
-  pending:  "Pending",
-  approved: "Inside",
-  rejected: "Rejected",
-  exited:   "Exited",
-  expired:  "Expired",
+  invited:  "visitor_status_invited",
+  pending:  "visitor_status_pending",
+  approved: "visitor_status_inside",
+  rejected: "visitor_status_rejected",
+  exited:   "visitor_status_exited",
+  expired:  "visitor_status_expired",
 };
 
 const TRUSTED_CATEGORIES = ["Maid","Cook","Driver","Security","Vendor","Delivery","Service","Other"];
 const PASS_TYPES         = ["daily","monthly","permanent"];
-const PASS_TYPE_LABELS   = { daily: "Today only", monthly: "30 days", permanent: "Permanent" };
+const PASS_TYPE_LABELS   = { daily: "visitor_pass_today_only", monthly: "visitor_pass_30_days", permanent: "visitor_pass_permanent" };
 const CATEGORY_ICON      = {
   Maid: "🧹", Cook: "🍳", Driver: "🚗", Security: "💂",
   Vendor: "🛒", Delivery: "📦", Service: "🔧", Other: "👤",
@@ -55,37 +56,37 @@ const ALL_DAYS   = [0,1,2,3,4,5,6];
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-const otpExpiryLabel = (expiresAt) => {
+const otpExpiryLabel = (expiresAt, t) => {
   if (!expiresAt) return null;
   const diff = new Date(expiresAt) - Date.now();
-  if (diff <= 0) return { label: "OTP expired", expired: true };
+  if (diff <= 0) return { label: t("visitor_otp_expired", "OTP expired"), expired: true };
   const mins = Math.floor(diff / 60000);
   const hrs  = Math.floor(mins / 60);
-  if (hrs >= 24) return { label: `OTP valid ~${Math.floor(hrs/24)}d`, expired: false };
-  if (hrs >= 1)  return { label: `OTP valid ~${hrs}h ${mins%60}m`, expired: false };
-  return { label: `OTP valid ${mins}m`, expired: false };
+  if (hrs >= 24) return { label: t("visitor_otp_valid_days", "OTP valid ~%dd", { count: Math.floor(hrs / 24), value: Math.floor(hrs / 24) }), expired: false };
+  if (hrs >= 1)  return { label: t("visitor_otp_valid_hours", "OTP valid ~%dh %dm", { hrs, mins: mins % 60 }), expired: false };
+  return { label: t("visitor_otp_valid_minutes", "OTP valid %dm", { mins }), expired: false };
 };
 
-const formatSchedule = (s) => {
-  if (!s) return "Any time";
+const formatSchedule = (s, t) => {
+  if (!s) return t("visitor_any_time", "Any time");
   const days = (s.days ?? ALL_DAYS).map((d) => DAYS_SHORT[d]).join(", ");
   const time = (s.fromTime === "00:00" && s.toTime === "23:59")
-    ? "Any time"
+    ? t("visitor_any_time", "Any time")
     : `${s.fromTime}–${s.toTime}`;
   return `${days} · ${time}`;
 };
 
-const validUntilLabel = (pass) => {
-  if (pass.passType === "permanent") return "Permanent pass";
+const validUntilLabel = (pass, t) => {
+  if (pass.passType === "permanent") return t("visitor_pass_permanent", "Permanent pass");
   if (!pass.validUntil) return "—";
   const d  = new Date(pass.validUntil);
   const now = new Date();
   const diff = d - now;
-  if (diff < 0) return "Expired";
+  if (diff < 0) return t("visitor_pass_expired", "Expired");
   const days = Math.ceil(diff / 86400000);
-  if (days === 0) return "Expires today";
-  if (days === 1) return "Expires tomorrow";
-  return `Expires in ${days} days`;
+  if (days === 0) return t("visitor_pass_expires_today", "Expires today");
+  if (days === 1) return t("visitor_pass_expires_tomorrow", "Expires tomorrow");
+  return t("visitor_pass_expires_in_days", "Expires in %d days", { count: days, value: days });
 };
 
 // ─── PillSelect ───────────────────────────────────────────────────────────────
@@ -179,7 +180,7 @@ const OTPModal = ({ otp, visitor, onClose }) => {
         )}
         {!QRCodeComp && (
           <View style={{ marginTop: 12, width: "100%" }}>
-            <Btn onPress={handleShare} style={{ width: "100%" }}>Share OTP</Btn>
+            <Btn onPress={handleShare} style={{ width: "100%" }}>{t("visitor_action_share_otp", "Share OTP")}</Btn>
           </View>
         )}
       </View>
@@ -189,10 +190,11 @@ const OTPModal = ({ otp, visitor, onClose }) => {
 
 // ─── Visitor Card (Flows A, B, D) ────────────────────────────────────────────
 const VisitorCard = ({ v, isAdmin, myFlat, onApprove, onReject, onVerifyOTP, onMarkExit, onCancelInvite, busy }) => {
+  const { t } = useLanguage();
   const purposeIcon = VISITOR_PURPOSE_ICON[v.purpose] || "🚶";
   const isBusy      = busy === v._id;
   const sc          = VISITOR_STATUS_COLOR[v.status] || VISITOR_STATUS_COLOR.exited;
-  const expiry      = v.status === "invited" ? otpExpiryLabel(v.entryOTPExpires) : null;
+  const expiry      = v.status === "invited" ? otpExpiryLabel(v.entryOTPExpires, t) : null;
   const isDelivery  = v.purpose === "Delivery";
 
   // Admin can only approve/reject walk-ins for their own flat.
@@ -209,7 +211,7 @@ const VisitorCard = ({ v, isAdmin, myFlat, onApprove, onReject, onVerifyOTP, onM
         <View style={{ flex: 1 }}>
           <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
             <Text style={{ fontSize: 15, fontWeight: "700", color: C.text, flex: 1 }} numberOfLines={1}>{v.name}</Text>
-            <Badge label={STATUS_LABELS[v.status] || v.status} bg={sc.bg} text={sc.text} dot={sc.dot} />
+            <Badge label={t(STATUS_LABELS[v.status] || v.status, v.status)} bg={sc.bg} text={sc.text} dot={sc.dot} />
           </View>
           <Text style={{ fontSize: 12, color: C.gray500, marginTop: 2 }}>{v.purpose}{v.phone ? ` · 📞 ${v.phone}` : ""}</Text>
         </View>
@@ -220,10 +222,10 @@ const VisitorCard = ({ v, isAdmin, myFlat, onApprove, onReject, onVerifyOTP, onM
         <Text style={{ fontSize: 11, color: C.gray500 }}>🏠 Flat {v.hostFlat || "—"}</Text>
         {!!v.vehicleNumber && <Text style={{ fontSize: 11, color: C.gray500 }}>🚗 {v.vehicleNumber}</Text>}
         <Text style={{ fontSize: 11, color: v.isWalkIn ? C.amber : C.blue, fontWeight: "600" }}>
-          {v.isWalkIn ? "Walk-in" : "Pre-invited"}
+          {t(v.isWalkIn ? "visitor_type_walk_in" : "visitor_type_pre_invited", v.isWalkIn ? "Walk-in" : "Pre-invited")}
         </Text>
         {isDelivery && v.status === "approved" && (
-          <Text style={{ fontSize: 11, color: "#7C3AED", fontWeight: "600" }}>⏱ Auto-exit on</Text>
+          <Text style={{ fontSize: 11, color: "#7C3AED", fontWeight: "600" }}>⏱ {t("visitor_auto_exit_on", "Auto-exit on")}</Text>
         )}
         {!!v.expectedAt && <Text style={{ fontSize: 11, color: C.gray500 }}>📅 {timeAgo(v.expectedAt)}</Text>}
         {!!v.entryTime  && <Text style={{ fontSize: 11, color: C.gray500 }}>🟢 In {timeAgo(v.entryTime)}</Text>}
@@ -253,14 +255,14 @@ const VisitorCard = ({ v, isAdmin, myFlat, onApprove, onReject, onVerifyOTP, onM
       {/* Resident actions */}
       {!isAdmin && v.status === "pending" && (
         <View style={{ flexDirection: "row", gap: 8 }}>
-          <Btn small variant="primary" onPress={() => onApprove(v._id)} loading={isBusy} style={{ flex: 1 }}>✓ Approve</Btn>
-          <Btn small variant="danger"  onPress={() => onReject(v._id)}  loading={isBusy} style={{ flex: 1 }}>✕ Reject</Btn>
+          <Btn small variant="primary" onPress={() => onApprove(v._id)} loading={isBusy} style={{ flex: 1 }}>✓ {t("visitor_action_approve", "Approve")}</Btn>
+          <Btn small variant="danger"  onPress={() => onReject(v._id)}  loading={isBusy} style={{ flex: 1 }}>✕ {t("visitor_action_reject", "Reject")}</Btn>
         </View>
       )}
       {!isAdmin && v.status === "invited" && (
         <Btn small variant="ghost" onPress={() => onCancelInvite(v._id)} loading={isBusy}
           style={{ width: "100%", borderColor: "#FCA5A5" }}>
-          ✕ Cancel Invite
+          ✕ {t("visitor_action_cancel_invite", "Cancel Invite")}
         </Btn>
       )}
 
@@ -268,25 +270,25 @@ const VisitorCard = ({ v, isAdmin, myFlat, onApprove, onReject, onVerifyOTP, onM
       {isAdmin && v.status === "invited" && (
         <Btn small onPress={() => onVerifyOTP(v)} loading={isBusy}
           style={{ width: "100%", backgroundColor: C.blue }}>
-          🔑 Verify OTP & Grant Entry
+          🔑 {t("visitor_action_verify_otp_grant", "Verify OTP & Grant Entry")}
         </Btn>
       )}
       {isAdmin && v.status === "pending" && canApproveReject && (
         <View style={{ flexDirection: "row", gap: 8 }}>
-          <Btn small variant="primary" onPress={() => onApprove(v._id)} loading={isBusy} style={{ flex: 1 }}>✓ Approve Entry</Btn>
-          <Btn small variant="danger"  onPress={() => onReject(v._id)}  loading={isBusy} style={{ flex: 1 }}>✕ Reject</Btn>
+          <Btn small variant="primary" onPress={() => onApprove(v._id)} loading={isBusy} style={{ flex: 1 }}>✓ {t("visitor_action_approve_entry", "Approve Entry")}</Btn>
+          <Btn small variant="danger"  onPress={() => onReject(v._id)}  loading={isBusy} style={{ flex: 1 }}>✕ {t("visitor_action_reject", "Reject")}</Btn>
         </View>
       )}
       {isAdmin && v.status === "pending" && !canApproveReject && (
         <View style={{ padding: 8, backgroundColor: C.gray50, borderRadius: 8 }}>
           <Text style={{ fontSize: 11, color: C.gray500, textAlign: "center" }}>
-            Awaiting approval from Flat {v.hostFlat} resident
+            {t("visitor_approval_waiting", "Awaiting approval from Flat %s resident", { value: v.hostFlat })}
           </Text>
         </View>
       )}
       {isAdmin && v.status === "approved" && (
         <Btn small variant="ghost" onPress={() => onMarkExit(v._id)} loading={isBusy} style={{ width: "100%" }}>
-          🚪 Mark Exit
+          🚪 {t("visitor_action_mark_exit", "Mark Exit")}
         </Btn>
       )}
     </Card>
@@ -295,10 +297,11 @@ const VisitorCard = ({ v, isAdmin, myFlat, onApprove, onReject, onVerifyOTP, onM
 
 // ─── Trusted Pass Card (Flow C) ───────────────────────────────────────────────
 const TrustedCard = ({ pass, isAdmin, onRevoke, onEntry, busy }) => {
+  const { t } = useLanguage();
   const isBusy   = busy === pass._id;
   const icon     = CATEGORY_ICON[pass.category] || "👤";
   const isActive = !["expired","rejected"].includes(pass.status);
-  const expLabel = validUntilLabel(pass);
+  const expLabel = validUntilLabel(pass, t);
   const expWarn  = expLabel.startsWith("Expires in") && parseInt(expLabel) <= 7;
 
   return (
@@ -315,7 +318,7 @@ const TrustedCard = ({ pass, isAdmin, onRevoke, onEntry, busy }) => {
               backgroundColor: isActive ? "#EDE9FE" : "#F3F4F6",
             }}>
               <Text style={{ fontSize: 11, fontWeight: "700", color: isActive ? "#7C3AED" : C.gray500 }}>
-                {isActive ? "Active" : "Expired"}
+                {t(isActive ? "visitor_trusted_status_active" : "visitor_trusted_status_expired", isActive ? "Active" : "Expired")}
               </Text>
             </View>
           </View>
@@ -327,12 +330,12 @@ const TrustedCard = ({ pass, isAdmin, onRevoke, onEntry, busy }) => {
 
       {/* Schedule + validity */}
       <View style={{ backgroundColor: C.gray50, borderRadius: 8, padding: 8, marginBottom: 10, gap: 4 }}>
-        <Text style={{ fontSize: 11, color: C.gray500 }}>📅 {formatSchedule(pass.accessSchedule)}</Text>
+        <Text style={{ fontSize: 11, color: C.gray500 }}>📅 {formatSchedule(pass.accessSchedule, t)}</Text>
         <Text style={{ fontSize: 11, fontWeight: "600", color: expWarn ? C.amber : C.gray500 }}>
           {expWarn ? "⚠️ " : "🎫 "}{expLabel}
         </Text>
         {pass.entryCount > 0 && (
-          <Text style={{ fontSize: 11, color: C.gray500 }}>🚪 {pass.entryCount} entries recorded</Text>
+          <Text style={{ fontSize: 11, color: C.gray500 }}>🚪 {t("visitor_pass_entries_recorded", "%s entries recorded", { value: pass.entryCount })}</Text>
         )}
         {!!pass.hostFlat && isAdmin && (
           <Text style={{ fontSize: 11, color: C.gray500 }}>🏠 Flat {pass.hostFlat}</Text>
@@ -744,6 +747,7 @@ const TrustedTab = ({ user }) => {
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 export const VisitorsScreen = () => {
   const { user, isAdmin, activeSocietyId, memberships, dataVersion } = useAuth(); // BUG-3
+  const { t } = useLanguage();
   const activeMembership = memberships?.find(
     (m) => m.society?._id?.toString() === activeSocietyId || m.society?.toString() === activeSocietyId
   );
@@ -769,8 +773,8 @@ export const VisitorsScreen = () => {
     : ["all","invited","pending","approved","exited"];
 
   const FILTER_LABELS = {
-    all:"All", invited:"Invited", pending:"Pending",
-    approved:"Inside", rejected:"Rejected", exited:"Exited",
+    all:"filter_all", invited:"visitor_status_invited", pending:"visitor_status_pending",
+    approved:"visitor_status_inside", rejected:"visitor_status_rejected", exited:"visitor_status_exited",
   };
 
   const fetchVisitors = useCallback(async () => {
@@ -794,29 +798,29 @@ export const VisitorsScreen = () => {
 
   const handleApprove = async (id) => {
     setBusy(id);
-    try { const r = await visitorApi.approveWalkIn(id); patchVisitor(r.data.visitor); toast.success("Visitor entry approved."); }
-    catch (e) { toast.error(e.response?.data?.message || "Approval failed."); }
+    try { const r = await visitorApi.approveWalkIn(id); patchVisitor(r.data.visitor); toast.success(t("visitor_approval_success", "Visitor entry approved.")); }
+    catch (e) { toast.error(e.response?.data?.message || t("visitor_error_approval", "Approval failed.")); }
     finally { setBusy(null); }
   };
 
   const handleReject = async (id) => {
     setBusy(id);
-    try { const r = await visitorApi.rejectWalkIn(id); patchVisitor(r.data.visitor); toast.success("Visitor rejected."); }
-    catch (e) { toast.error(e.response?.data?.message || "Rejection failed."); }
+    try { const r = await visitorApi.rejectWalkIn(id); patchVisitor(r.data.visitor); toast.success(t("visitor_rejection_success", "Visitor rejected.")); }
+    catch (e) { toast.error(e.response?.data?.message || t("visitor_error_rejection", "Rejection failed.")); }
     finally { setBusy(null); }
   };
 
   const handleMarkExit = async (id) => {
     setBusy(id);
-    try { const r = await visitorApi.markExit(id); patchVisitor(r.data.visitor); toast.success("Exit recorded."); }
-    catch (e) { toast.error(e.response?.data?.message || "Failed to mark exit."); }
+    try { const r = await visitorApi.markExit(id); patchVisitor(r.data.visitor); toast.success(t("visitor_exit_recorded", "Exit recorded.")); }
+    catch (e) { toast.error(e.response?.data?.message || t("visitor_error_exit", "Failed to mark exit.")); }
     finally { setBusy(null); }
   };
 
   const handleCancelInvite = async (id) => {
     setBusy(id);
-    try { const r = await visitorApi.cancelInvite(id); patchVisitor(r.data.visitor); toast.success("Invite cancelled."); }
-    catch (e) { toast.error(e.response?.data?.message || "Failed to cancel invite."); }
+    try { const r = await visitorApi.cancelInvite(id); patchVisitor(r.data.visitor); toast.success(t("visitor_invite_cancelled", "Invite cancelled.")); }
+    catch (e) { toast.error(e.response?.data?.message || t("visitor_error_cancel_invite", "Failed to cancel invite.")); }
     finally { setBusy(null); }
   };
 
@@ -827,23 +831,23 @@ export const VisitorsScreen = () => {
       {/* Header */}
       <View style={s.header}>
         <View style={{ flex: 1 }}>
-          <Text style={s.headerSub}>{isAdmin ? "Security Desk" : "My Visitors"}</Text>
-          <Text style={s.headerTitle}>🚶 Visitor Management</Text>
+          <Text style={s.headerSub}>{isAdmin ? t("visitor_header_security_desk", "Security Desk") : t("visitor_header_my_visitors", "My Visitors")}</Text>
+          <Text style={s.headerTitle}>🚶 {t("visitor_header_management", "Visitor Management")}</Text>
         </View>
         <View style={{ flexDirection: "row", gap: 8 }}>
           {isAdmin && (
             <>
               <TouchableOpacity onPress={() => setShowLookup(true)} style={[s.actionBtn, { backgroundColor: "#7C3AED" }]}>
-                <Text style={s.actionBtnText}>🔍 Trusted</Text>
+                <Text style={s.actionBtnText}>🔍 {t("visitor_action_trusted_lookup", "Trusted")}</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={() => setShowWalkIn(true)} style={[s.actionBtn, { backgroundColor: C.amber }]}>
-                <Text style={s.actionBtnText}>+ Walk-in</Text>
+                <Text style={s.actionBtnText}>+ {t("visitor_action_walk_in", "Walk-in")}</Text>
               </TouchableOpacity>
             </>
           )}
           {!isAdmin && tab === "visitors" && (
             <TouchableOpacity onPress={() => setShowInvite(true)} style={[s.actionBtn, { backgroundColor: C.teal }]}>
-              <Text style={s.actionBtnText}>+ Invite</Text>
+              <Text style={s.actionBtnText}>+ {t("visitor_action_invite", "Invite")}</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -855,7 +859,7 @@ export const VisitorsScreen = () => {
           <TouchableOpacity
             onPress={() => setTab("visitors")}
             style={[s.tab, tab === "visitors" && s.tabActive]}>
-            <Text style={[s.tabText, tab === "visitors" && s.tabTextActive]}>Visitors</Text>
+            <Text style={[s.tabText, tab === "visitors" && s.tabTextActive]}>{t("visitor_tab_visitors", "Visitors")}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => setTab("trusted")}
@@ -874,7 +878,7 @@ export const VisitorsScreen = () => {
           {!isAdmin && pendingCount > 0 && (
             <View style={s.pendingAlert}>
               <Text style={s.pendingAlertText}>
-                🔔 {pendingCount} walk-in{pendingCount > 1 ? "s" : ""} awaiting your approval
+                🔔 {t("visitor_pending_alert", "%d walk-in(s) awaiting your approval", { count: pendingCount, value: pendingCount })}
               </Text>
             </View>
           )}
@@ -883,7 +887,7 @@ export const VisitorsScreen = () => {
           <ScrollView horizontal showsHorizontalScrollIndicator={false}
             style={{ flexGrow: 0, flexShrink: 0 }} contentContainerStyle={s.filterRow}>
             {FILTERS.map((f) => (
-              <FilterPill key={f} label={FILTER_LABELS[f]} active={statusFilter === f} onPress={() => setFilter(f)} />
+              <FilterPill key={f} label={t(FILTER_LABELS[f], f)} active={statusFilter === f} onPress={() => setFilter(f)} />
             ))}
           </ScrollView>
 
@@ -897,8 +901,8 @@ export const VisitorsScreen = () => {
               icon="🚶"
               message={
                 statusFilter === "all"
-                  ? isAdmin ? "No visitor records yet." : "No visitors yet. Invite someone!"
-                  : `No ${FILTER_LABELS[statusFilter].toLowerCase()} visitors.`
+                  ? isAdmin ? t("visitor_empty_admin_all", "No visitor records yet.") : t("visitor_empty_resident_all", "No visitors yet. Invite someone!")
+                  : t("visitor_empty_status", "No visitors found.")
               }
             />
           ) : (

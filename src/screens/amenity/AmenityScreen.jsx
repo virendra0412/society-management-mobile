@@ -22,6 +22,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { amenitiesApi } from "../../api/resources.api";
 import { useAuth } from "../../context/AuthContext";
+import { useLanguage } from "../../context/LanguageContext";
 import { useToast } from "../../context/ToastContext";
 import {
   Badge, Btn, Card, EmptyState, ErrorState,
@@ -49,6 +50,7 @@ const amenityIcon = (cat) => AMENITY_CATEGORY_ICON[cat] || "🏢";
 // AMENITY CARD — browse view
 // ═══════════════════════════════════════════════════════
 const AmenityCard = ({ amenity, onBook, onDeactivate, onEdit, isAdmin }) => {
+  const { t } = useLanguage();
   const [busy, setBusy] = useState(false);
   const toast = useToast();
   const icon = amenityIcon(amenity.category);
@@ -57,10 +59,10 @@ const AmenityCard = ({ amenity, onBook, onDeactivate, onEdit, isAdmin }) => {
     setBusy(true);
     try {
       await amenitiesApi.deactivate(amenity._id);
-      toast.success("Amenity deactivated.");
+      toast.success(t("amenity_deactivated_success", "Amenity deactivated."));
       onDeactivate?.(amenity._id);
     } catch (e) {
-      toast.error(e.response?.data?.message || "Failed to deactivate.");
+      toast.error(e.response?.data?.message || t("amenity_deactivate_failed", "Failed to deactivate."));
     } finally {
       setBusy(false);
     }
@@ -95,7 +97,7 @@ const AmenityCard = ({ amenity, onBook, onDeactivate, onEdit, isAdmin }) => {
               <Text style={ac.meta}>💰 ₹{amenity.depositAmount}</Text>
             )}
             {amenity.requiresApproval && (
-              <Text style={[ac.meta, { color: C.amber }]}>⏳ Approval</Text>
+              <Text style={[ac.meta, { color: C.amber }]}>⏳ {t("amenity_requires_approval", "Approval")}</Text>
             )}
             {amenity.maxConcurrentBookings > 1 && (
               <Text style={ac.meta}>👥 {amenity.maxConcurrentBookings}</Text>
@@ -129,7 +131,7 @@ const AmenityCard = ({ amenity, onBook, onDeactivate, onEdit, isAdmin }) => {
       {/* Actions */}
       <View style={{ flexDirection: "row", gap: 8, marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: C.gray100 }}>
         <Btn small onPress={() => onBook(amenity)} style={{ flex: 1 }}>
-          📅 Book
+          📅 {t("amenity_action_book", "Book")}
         </Btn>
 
         {/* TC-AMEN-12 — Edit button, triggers AmenityFormModal pre-filled */}
@@ -138,7 +140,7 @@ const AmenityCard = ({ amenity, onBook, onDeactivate, onEdit, isAdmin }) => {
             onPress={() => onEdit(amenity)}
             style={ac.editBtn}
           >
-            <Text style={ac.editBtnText}>✏️ Edit</Text>
+            <Text style={ac.editBtnText}>✏️ {t("amenity_action_edit", "Edit")}</Text>
           </TouchableOpacity>
         )}
 
@@ -151,7 +153,7 @@ const AmenityCard = ({ amenity, onBook, onDeactivate, onEdit, isAdmin }) => {
             {busy ? (
               <Spinner size={11} />
             ) : (
-              <Text style={ac.deactivateBtnText}>Deactivate</Text>
+              <Text style={ac.deactivateBtnText}>{t("amenity_action_deactivate", "Deactivate")}</Text>
             )}
           </TouchableOpacity>
         )}
@@ -185,6 +187,7 @@ const resolveAmenityId = (booking) =>
 // BOOKING CARD — my bookings / all bookings
 // ═══════════════════════════════════════════════════════
 const BookingCard = ({ booking, isAdmin, onCancel, onConfirm, onReject }) => {
+  const { t } = useLanguage();
   const sc = BOOKING_STATUS_COLOR[booking.status] || {};
   const canCancel = ["pending", "confirmed"].includes(booking.status);
   const canReview = booking.status === "pending";
@@ -203,7 +206,7 @@ const BookingCard = ({ booking, isAdmin, onCancel, onConfirm, onReject }) => {
           {/* Name + Badge */}
           <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", gap: 8, marginBottom: 2 }}>
             <Text style={bc.amenityName} numberOfLines={1}>
-              {booking.amenity?.name || "Amenity"}
+              {booking.amenity?.name || t("amenity_unknown_name", "Amenity")}
             </Text>
             <Badge label={booking.status} bg={sc.bg} text={sc.text} dot={sc.dot} />
           </View>
@@ -252,24 +255,24 @@ const BookingCard = ({ booking, isAdmin, onCancel, onConfirm, onReject }) => {
       <View style={{ flexDirection: "row", gap: 6, marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: C.gray100 }}>
         {canCancel && !isAdmin && (
           <Btn small onPress={() => onCancel(booking)} style={{ flex: 1, backgroundColor: C.red + "10", borderColor: C.red }}>
-            <Text style={{ color: C.red, fontWeight: "700", fontSize: 11 }}>Cancel</Text>
+            <Text style={{ color: C.red, fontWeight: "700", fontSize: 11 }}>{t("amenity_action_cancel", "Cancel")}</Text>
           </Btn>
         )}
 
         {canReview && isAdmin && (
           <>
             <Btn small onPress={() => onConfirm(booking)} style={{ flex: 1, backgroundColor: C.green + "10" }}>
-              <Text style={{ color: C.green, fontWeight: "700", fontSize: 11 }}>✓ Confirm</Text>
+              <Text style={{ color: C.green, fontWeight: "700", fontSize: 11 }}>✓ {t("amenity_action_confirm", "Confirm")}</Text>
             </Btn>
             <Btn small onPress={() => onReject(booking)} style={{ flex: 1, backgroundColor: C.red + "10" }}>
-              <Text style={{ color: C.red, fontWeight: "700", fontSize: 11 }}>✕ Reject</Text>
+              <Text style={{ color: C.red, fontWeight: "700", fontSize: 11 }}>✕ {t("amenity_action_reject", "Reject")}</Text>
             </Btn>
           </>
         )}
 
         {!canCancel && !canReview && (
           <Text style={{ fontSize: 11, color: C.gray500, flex: 1, paddingVertical: 6 }}>
-            No actions available
+            {t("amenity_no_actions", "No actions available")}
           </Text>
         )}
       </View>
@@ -307,6 +310,7 @@ const BLANK_AMENITY = {
 };
 
 const AmenityFormModal = ({ open, editing, onClose, onSaved }) => {
+  const { t } = useLanguage();
   const toast = useToast();
 
   // Form fields
@@ -331,14 +335,14 @@ const AmenityFormModal = ({ open, editing, onClose, onSaved }) => {
   const fNum = (k) => (v) => setForm((p) => ({ ...p, [k]: Number(v) || 0 }));
 
   const handleSave = async () => {
-    if (!form.name.trim()) return toast.error("Name is required.");
+    if (!form.name.trim()) return toast.error(t("amenity_form_error_name", "Name is required."));
 
     // Parse comma-separated duration options
     const opts = durationInput
       .split(",")
       .map((s) => parseInt(s.trim(), 10))
       .filter((n) => n > 0);
-    if (opts.length === 0) return toast.error("Enter at least one slot duration (e.g. 60).");
+    if (opts.length === 0) return toast.error(t("amenity_form_error_duration", "Enter at least one slot duration (e.g. 60)."));
 
     const payload = { ...form, slotDurationOptions: opts };
 
@@ -347,11 +351,11 @@ const AmenityFormModal = ({ open, editing, onClose, onSaved }) => {
       const res = editing
         ? await amenitiesApi.update(editing._id, payload)   // TC-AMEN-12 — PATCH /amenities/:id
         : await amenitiesApi.create(payload);               // TC-AMEN-11 — POST /amenities
-      toast.success(editing ? "Amenity updated." : "Amenity created.");
+      toast.success(editing ? t("amenity_form_saved", "Amenity updated.") : t("amenity_form_created", "Amenity created."));
       onSaved(res.data?.amenity);
       onClose();
     } catch (e) {
-      toast.error(e.response?.data?.message || "Save failed.");
+      toast.error(e.response?.data?.message || t("amenity_form_save_failed", "Save failed."));
     } finally {
       setSubmitting(false);
     }
@@ -361,27 +365,27 @@ const AmenityFormModal = ({ open, editing, onClose, onSaved }) => {
     <Modal
       open={open}
       onClose={onClose}
-      title={editing ? "Edit Amenity" : "Add Amenity"}
+      title={editing ? t("amenity_form_title_edit", "Edit Amenity") : t("amenity_form_title_add", "Add Amenity")}
     >
       <Input
-        label="Name *"
+        label={t("amenity_form_label_name", "Name *")}
         value={form.name}
         onChangeText={f("name")}
-        placeholder="e.g. Rooftop Swimming Pool"
+        placeholder={t("amenity_form_placeholder_name", "e.g. Rooftop Swimming Pool")}
       />
 
       <Select
-        label="Category"
+        label={t("amenity_form_label_category", "Category")}
         value={form.category}
         options={AMENITY_CATEGORIES}
         onChange={f("category")}
       />
 
       <Input
-        label="Description"
+        label={t("amenity_form_label_description", "Description")}
         value={form.description}
         onChangeText={f("description")}
-        placeholder="Olympic-size pool on Level 5"
+        placeholder={t("amenity_form_placeholder_description", "Olympic-size pool on Level 5")}
         multiline
       />
 
@@ -389,7 +393,7 @@ const AmenityFormModal = ({ open, editing, onClose, onSaved }) => {
       <View style={{ flexDirection: "row", gap: 10 }}>
         <View style={{ flex: 1 }}>
           <Input
-            label="Opens at"
+            label={t("amenity_form_label_open_time", "Opens at")}
             value={form.openTime}
             onChangeText={f("openTime")}
             placeholder="06:00"
@@ -397,7 +401,7 @@ const AmenityFormModal = ({ open, editing, onClose, onSaved }) => {
         </View>
         <View style={{ flex: 1 }}>
           <Input
-            label="Closes at"
+            label={t("amenity_form_label_close_time", "Closes at")}
             value={form.closeTime}
             onChangeText={f("closeTime")}
             placeholder="22:00"
@@ -406,7 +410,7 @@ const AmenityFormModal = ({ open, editing, onClose, onSaved }) => {
       </View>
 
       <Input
-        label="Slot durations (min, comma-separated)"
+        label={t("amenity_form_label_slot_durations", "Slot durations (min, comma-separated)")}
         value={durationInput}
         onChangeText={setDurationInput}
         placeholder="60, 120"
@@ -416,7 +420,7 @@ const AmenityFormModal = ({ open, editing, onClose, onSaved }) => {
       <View style={{ flexDirection: "row", gap: 10 }}>
         <View style={{ flex: 1 }}>
           <Input
-            label="Max concurrent"
+            label={t("amenity_form_label_max_concurrent", "Max concurrent")}
             value={String(form.maxConcurrentBookings)}
             onChangeText={fNum("maxConcurrentBookings")}
             keyboardType="number-pad"
@@ -425,7 +429,7 @@ const AmenityFormModal = ({ open, editing, onClose, onSaved }) => {
         </View>
         <View style={{ flex: 1 }}>
           <Input
-            label="Advance days"
+            label={t("amenity_form_label_advance_days", "Advance days")}
             value={String(form.advanceBookingDays)}
             onChangeText={fNum("advanceBookingDays")}
             keyboardType="number-pad"
@@ -437,7 +441,7 @@ const AmenityFormModal = ({ open, editing, onClose, onSaved }) => {
       <View style={{ flexDirection: "row", gap: 10 }}>
         <View style={{ flex: 1 }}>
           <Input
-            label="Deposit (₹)"
+            label={t("amenity_form_label_deposit", "Deposit (₹)")}
             value={String(form.depositAmount)}
             onChangeText={fNum("depositAmount")}
             keyboardType="number-pad"
@@ -446,11 +450,11 @@ const AmenityFormModal = ({ open, editing, onClose, onSaved }) => {
         </View>
         <View style={{ flex: 1 }}>
           <Select
-            label="Approval"
+            label={t("amenity_form_label_approval", "Approval")}
             value={String(form.requiresApproval)}
             options={[
-              { label: "Auto-confirm", value: "false" },
-              { label: "Needs approval", value: "true" },
+              { label: t("amenity_form_option_auto_confirm", "Auto-confirm"), value: "false" },
+              { label: t("amenity_form_option_needs_approval", "Needs approval"), value: "true" },
             ]}
             onChange={(v) => setForm((p) => ({ ...p, requiresApproval: v === "true" }))}
           />
@@ -458,15 +462,15 @@ const AmenityFormModal = ({ open, editing, onClose, onSaved }) => {
       </View>
 
       <Input
-        label="House Rules"
+        label={t("amenity_form_label_rules", "House Rules")}
         value={form.rules}
         onChangeText={f("rules")}
-        placeholder="No loud music after 9pm…"
+        placeholder={t("amenity_form_placeholder_rules", "No loud music after 9pm…")}
         multiline
       />
 
       <Btn onPress={handleSave} loading={submitting} style={{ width: "100%", marginTop: 4 }}>
-        {editing ? "Save Changes" : "Create Amenity"}
+        {editing ? t("amenity_form_action_save", "Save Changes") : t("amenity_form_action_create", "Create Amenity")}
       </Btn>
     </Modal>
   );
@@ -476,6 +480,7 @@ const AmenityFormModal = ({ open, editing, onClose, onSaved }) => {
 // BROWSE TAB
 // ═══════════════════════════════════════════════════════
 const BrowseTab = ({ onBook, onDeactivate, onEdit, isAdmin }) => {
+  const { t } = useLanguage();
   const [amenities, setAmenities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -487,18 +492,11 @@ const BrowseTab = ({ onBook, onDeactivate, onEdit, isAdmin }) => {
       const res = await amenitiesApi.getAll();
       setAmenities(res.data?.amenities || []);
     } catch (e) {
-      setError(e.response?.data?.message || "Failed to load amenities.");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    load();
-  }, [load]);
-
-  const handleDeactivate = (amenityId) => {
-    setAmenities((p) => p.filter((a) => a._id !== amenityId));
+          setError(e.response?.data?.message || t("amenity_error_load", "Failed to load amenities."));
+        } finally {
+          setLoading(false);
+        }
+      }, [t]);
   };
 
   // TC-AMEN-12 — after edit, patch updated amenity in-place
@@ -525,7 +523,7 @@ const BrowseTab = ({ onBook, onDeactivate, onEdit, isAdmin }) => {
       <View style={styles.centerContainer}>
         <EmptyState
           icon="🏢"
-          message={isAdmin ? "No amenities yet. Add one!" : "No amenities available."}
+          message={isAdmin ? t("amenity_empty_admin", "No amenities yet. Add one!") : t("amenity_empty_resident", "No amenities available.")}
         />
       </View>
     );
@@ -552,6 +550,7 @@ const BrowseTab = ({ onBook, onDeactivate, onEdit, isAdmin }) => {
 // BOOKINGS TAB
 // ═══════════════════════════════════════════════════════
 const BookingsTab = ({ view, isAdmin, onCancel, onConfirm, onReject }) => {
+  const { t } = useLanguage();
   const [bookings, setBookings] = useState([]);
   const [statusFilter, setStatusFilter] = useState("all");
   const [loading, setLoading] = useState(true);
@@ -570,7 +569,7 @@ const BookingsTab = ({ view, isAdmin, onCancel, onConfirm, onReject }) => {
 
       setBookings(res.data?.bookings || []);
     } catch (e) {
-      setError(e.response?.data?.message || "Failed to load bookings.");
+      setError(e.response?.data?.message || t("amenity_error_load_bookings", "Failed to load bookings."));
     } finally {
       setLoading(false);
     }
@@ -628,7 +627,7 @@ const BookingsTab = ({ view, isAdmin, onCancel, onConfirm, onReject }) => {
               ]}
             >
               <Text style={[{ fontSize: 12, fontWeight: "700" }, isActive ? { color: "#fff" } : { color: C.gray600 }]}>
-                {s.charAt(0).toUpperCase() + s.slice(1)}
+                {t(`amenity_booking_status_${s}`, s.charAt(0).toUpperCase() + s.slice(1))}
               </Text>
               {count > 0 && (
                 <View style={[styles.filterBadge, isActive && { backgroundColor: "rgba(255,255,255,0.3)" }]}>
@@ -647,7 +646,7 @@ const BookingsTab = ({ view, isAdmin, onCancel, onConfirm, onReject }) => {
       {!error && bookings.length === 0 && (
         <EmptyState
           icon="📅"
-          message={statusFilter === "all" ? "No bookings yet." : `No ${statusFilter} bookings.`}
+          message={statusFilter === "all" ? t("amenity_bookings_empty_all", "No bookings yet.") : t("amenity_bookings_empty_status", "No bookings found.")}
         />
       )}
       {!error && bookings.length > 0 && (
@@ -672,6 +671,7 @@ const BookingsTab = ({ view, isAdmin, onCancel, onConfirm, onReject }) => {
 // BOOK SLOT MODAL
 // ═══════════════════════════════════════════════════════
 const BookSlotModal = ({ open, amenity, onClose, onBooked }) => {
+  const { t } = useLanguage();
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [startTime, setStartTime] = useState("10:00");
   const [duration, setDuration] = useState("60");
@@ -682,9 +682,7 @@ const BookSlotModal = ({ open, amenity, onClose, onBooked }) => {
 
   const submit = async () => {
     if (!date || !startTime || !duration) {
-      return toast.error("Please fill all required fields.");
-    }
-
+          return toast.error(t("amenity_booking_error_required_fields", "Please fill all required fields."));
     setBusy(true);
     try {
       const data = {
@@ -695,7 +693,7 @@ const BookSlotModal = ({ open, amenity, onClose, onBooked }) => {
       };
 
       const res = await amenitiesApi.book(amenity._id, data);
-      toast.success("Booking submitted!");
+      toast.success(t("amenity_booking_submitted", "Booking submitted!"));
       onBooked(res.data?.booking);
       onClose();
 
@@ -706,7 +704,7 @@ const BookSlotModal = ({ open, amenity, onClose, onBooked }) => {
       setGuestCount("1");
       setPurpose("");
     } catch (e) {
-      toast.error(e.response?.data?.message || "Booking failed.");
+      toast.error(e.response?.data?.message || t("amenity_booking_failed", "Booking failed."));
     } finally {
       setBusy(false);
     }
@@ -715,19 +713,20 @@ const BookSlotModal = ({ open, amenity, onClose, onBooked }) => {
   const durationOptions = amenity?.slotDurationOptions || ["30", "60", "120"];
 
   return (
-    <Modal open={open} onClose={onClose} title={`Book: ${amenity?.name || ""}`}>
+    <Modal open={open} onClose={onClose} title={t("amenity_booking_modal_title", "Book") + (amenity?.name ? `: ${amenity.name}` : "") }>
       <Input
-        label="Date *"
+        label={t("amenity_booking_label_date", "Date *")}
         value={date}
         onChangeText={setDate}
         placeholder="YYYY-MM-DD"
       />
       <Input
-        label="Time *"
+        label={t("amenity_booking_label_time", "Time *")}
         value={startTime}
         onChangeText={setStartTime}
         placeholder="HH:MM"
       />
+
 
       <Text style={styles.label}>Duration *</Text>
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
@@ -752,7 +751,7 @@ const BookSlotModal = ({ open, amenity, onClose, onBooked }) => {
       </View>
 
       <Input
-        label="Guests"
+        label={t("amenity_booking_label_guests", "Guests")}
         value={guestCount}
         onChangeText={setGuestCount}
         placeholder="1"
@@ -760,18 +759,19 @@ const BookSlotModal = ({ open, amenity, onClose, onBooked }) => {
       />
 
       <Input
-        label="Purpose (optional)"
+        label={t("amenity_booking_label_purpose", "Purpose (optional)")}
         value={purpose}
         onChangeText={setPurpose}
-        placeholder="e.g., Birthday party"
+        placeholder={t("amenity_booking_placeholder_purpose", "e.g., Birthday party")}
         multiline
         numberOfLines={3}
       />
 
+
       {amenity?.depositAmount > 0 && (
         <View style={styles.depositNote}>
           <Text style={{ fontSize: 12, color: C.amber, fontWeight: "600" }}>
-            💰 Deposit Required: ₹{amenity.depositAmount}
+            💰 {t("amenity_booking_deposit_required", "Deposit Required:")} ₹{amenity.depositAmount}
           </Text>
         </View>
       )}
@@ -779,13 +779,13 @@ const BookSlotModal = ({ open, amenity, onClose, onBooked }) => {
       {amenity?.requiresApproval && (
         <View style={styles.approvalNote}>
           <Text style={{ fontSize: 12, color: C.amber, fontWeight: "600" }}>
-            ⏳ This booking requires admin approval
+            ⏳ {t("amenity_booking_requires_admin_approval", "This booking requires admin approval")}
           </Text>
         </View>
       )}
 
       <Btn onPress={submit} loading={busy} style={{ width: "100%", marginTop: 16 }}>
-        Book Now
+        {t("amenity_booking_action_book_now", "Book Now")}
       </Btn>
     </Modal>
   );
@@ -795,6 +795,7 @@ const BookSlotModal = ({ open, amenity, onClose, onBooked }) => {
 // REVIEW MODAL (admin confirm/reject)
 // ═══════════════════════════════════════════════════════
 const ReviewModal = ({ open, booking, action, onClose, onDone }) => {
+  const { t } = useLanguage();
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
   const toast = useToast();
@@ -807,19 +808,11 @@ const ReviewModal = ({ open, booking, action, onClose, onDone }) => {
 
       if (action === "confirm") {
         await amenitiesApi.confirmBooking(amenityId, bookingId, note.trim() || undefined);
-        toast.success("Booking confirmed!");
-        onDone({ ...booking, status: "confirmed", adminNote: note });
-      } else if (action === "reject") {
-        await amenitiesApi.rejectBooking(amenityId, bookingId, note.trim() || undefined);
-        toast.success("Booking rejected!");
-        onDone({ ...booking, status: "rejected", adminNote: note });
-      }
-
-      setNote("");
-      onClose();
-    } catch (e) {
-      toast.error(e.response?.data?.message || "Action failed.");
-    } finally {
+            toast.success(t("amenity_review_confirmed", "Booking confirmed!"));
+            onDone({ ...booking, status: "confirmed", adminNote: note });
+          } else if (action === "reject") {
+            await amenitiesApi.rejectBooking(amenityId, bookingId, note.trim() || undefined);
+            toast.success(t("amenity_review_rejected", "Booking rejected!"));
       setBusy(false);
     }
   };
@@ -828,7 +821,7 @@ const ReviewModal = ({ open, booking, action, onClose, onDone }) => {
     <Modal
       open={open}
       onClose={onClose}
-      title={action === "confirm" ? "Confirm Booking" : "Reject Booking"}
+      title={action === "confirm" ? t("amenity_review_title_confirm", "Confirm Booking") : t("amenity_review_title_reject", "Reject Booking")}
     >
       <Text style={styles.modalMeta}>
         {booking?.amenity?.name || "Amenity"} · {booking?.bookedBy?.name}
@@ -838,10 +831,10 @@ const ReviewModal = ({ open, booking, action, onClose, onDone }) => {
       </Text>
 
       <Input
-        label="Admin Note (optional)"
+        label={t("amenity_review_label_note", "Admin Note (optional)")}
         value={note}
         onChangeText={setNote}
-        placeholder="e.g., Approved. Please confirm your attendance."
+        placeholder={t("amenity_review_placeholder_note", "e.g., Approved. Please confirm your attendance.")}
         multiline
         numberOfLines={3}
       />
@@ -855,7 +848,7 @@ const ReviewModal = ({ open, booking, action, onClose, onDone }) => {
         }}
       >
         <Text style={{ color: action === "confirm" ? C.green : C.red, fontWeight: "700" }}>
-          {action === "confirm" ? "✓ Confirm" : "✕ Reject"}
+          {action === "confirm" ? `✓ ${t("amenity_action_confirm", "Confirm")}` : `✕ ${t("amenity_action_reject", "Reject")}`}
         </Text>
       </Btn>
     </Modal>
@@ -866,32 +859,31 @@ const ReviewModal = ({ open, booking, action, onClose, onDone }) => {
 // CANCEL MODAL
 // ═══════════════════════════════════════════════════════
 const CancelModal = ({ open, booking, onClose, onCancelled }) => {
+  const { t } = useLanguage();
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
   const toast = useToast();
 
   const submit = async () => {
     if (!reason.trim()) {
-      return toast.error("Please provide a reason.");
-    }
-
+          return toast.error(t("amenity_cancel_error_reason", "Please provide a reason."));
     setBusy(true);
     try {
       const amenityId = resolveAmenityId(booking);
       const bookingId = booking._id;
-      toast.success("Booking cancelled.");
+      toast.success(t("amenity_cancelled", "Booking cancelled."));
       onCancelled({ ...booking, status: "cancelled", cancelReason: reason });
       setReason("");
       onClose();
     } catch (e) {
-      toast.error(e.response?.data?.message || "Cancellation failed.");
+      toast.error(e.response?.data?.message || t("amenity_cancel_failed", "Cancellation failed."));
     } finally {
       setBusy(false);
     }
   };
 
   return (
-    <Modal open={open} onClose={onClose} title="Cancel Booking">
+    <Modal open={open} onClose={onClose} title={t("amenity_cancel_title", "Cancel Booking")}>
       <Text style={styles.modalMeta}>
         {booking?.amenity?.name || "Amenity"}
       </Text>
@@ -900,10 +892,10 @@ const CancelModal = ({ open, booking, onClose, onCancelled }) => {
       </Text>
 
       <Input
-        label="Cancellation Reason *"
+        label={t("amenity_cancel_label_reason", "Cancellation Reason *")}
         value={reason}
         onChangeText={setReason}
-        placeholder="Why are you cancelling?"
+        placeholder={t("amenity_cancel_placeholder_reason", "Why are you cancelling?")}
         multiline
         numberOfLines={3}
       />
@@ -913,7 +905,7 @@ const CancelModal = ({ open, booking, onClose, onCancelled }) => {
         loading={busy}
         style={{ width: "100%", backgroundColor: C.red + "20" }}
       >
-        <Text style={{ color: C.red, fontWeight: "700" }}>Cancel Booking</Text>
+        <Text style={{ color: C.red, fontWeight: "700" }}>{t("amenity_cancel_action", "Cancel Booking")}</Text>
       </Btn>
     </Modal>
   );
@@ -923,6 +915,7 @@ const CancelModal = ({ open, booking, onClose, onCancelled }) => {
 // ROOT SCREEN
 // ═══════════════════════════════════════════════════════
 export const AmenityScreen = () => {
+  const { t } = useLanguage();
   const { isAdmin } = useAuth();
   const [view, setView] = useState("browse");
   const [bookTarget,    setBookTarget]    = useState(null);
@@ -935,9 +928,9 @@ export const AmenityScreen = () => {
   const [formTarget,  setFormTarget]  = useState(null); // null = create, amenity = edit
 
   const tabs = [
-    { id: "browse",      label: "Browse" },
-    { id: "mybookings",  label: "My Bookings" },
-    ...(isAdmin ? [{ id: "allbookings", label: "All Bookings" }] : []),
+    { id: "browse",      label: t("amenity_tab_browse", "Browse") },
+    { id: "mybookings",  label: t("amenity_tab_my_bookings", "My Bookings") },
+    ...(isAdmin ? [{ id: "allbookings", label: t("amenity_tab_all_bookings", "All Bookings") }] : []),
   ];
 
   const openCreate = () => { setFormTarget(null); setShowForm(true); };
@@ -955,11 +948,11 @@ export const AmenityScreen = () => {
       <View style={styles.header}>
         <View>
           <Text style={styles.headerSub}>SOCIETY</Text>
-          <Text style={styles.headerTitle}>🏊 Amenities</Text>
+          <Text style={styles.headerTitle}>🏊 {t("amenity_header_title", "Amenities")}</Text>
         </View>
         {isAdmin && (
           <TouchableOpacity onPress={openCreate} style={styles.addBtn}>
-            <Text style={styles.addBtnText}>+ Add Amenity</Text>
+            <Text style={styles.addBtnText}>+ {t("amenity_action_add_amenity", "Add Amenity")}</Text>
           </TouchableOpacity>
         )}
       </View>
