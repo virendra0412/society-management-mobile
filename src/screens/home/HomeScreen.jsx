@@ -30,7 +30,7 @@ import { useAuth }     from "../../context/AuthContext";
 import { useLanguage } from "../../context/LanguageContext";
 import { issuesApi, helpApi, noticesApi, maintenanceApi } from "../../api/resources.api";
 import {
-  Badge, Card, Spinner, EmptyState,
+  Badge, Card, Spinner, EmptyState, Modal,
 } from "../../components/ui";
 import LanguageDropdown from "../../components/ui/LanguageDropdown";
 import {
@@ -117,12 +117,12 @@ const QuickActionGrid = ({ actions }) => {
 };
 
 // ─── Section header ───────────────────────────────────────────────────────────
-const SectionHeader = ({ title, onSeeAll }) => (
+const SectionHeader = ({ title, onSeeAll, t }) => (
   <View style={styles.sectionHeader}>
     <Text style={styles.sectionTitle}>{title}</Text>
     {onSeeAll && (
       <TouchableOpacity onPress={onSeeAll}>
-        <Text style={styles.seeAll}>See all →</Text>
+        <Text style={styles.seeAll}>{t("home_see_all")}</Text>
       </TouchableOpacity>
     )}
   </View>
@@ -132,16 +132,17 @@ const SectionHeader = ({ title, onSeeAll }) => (
 // Shows when the resident has one or more unpaid/overdue bills.
 // dueBills: array of { title, dueDate, totalDue, status, isOverdue }
 const DueBillBanner = ({ dueBills, onPress }) => {
+  const { t } = useLanguage();
   if (!dueBills || dueBills.length === 0) return null;
 
   const hasOverdue  = dueBills.some((b) => b.isOverdue);
   const totalDue    = dueBills.reduce((s, b) => s + (b.totalDue || 0), 0);
   const accent      = hasOverdue ? C.red : C.amber;
   const eyebrow     = hasOverdue ? "⚠️  OVERDUE BILL" : "💰  DUE BILL";
-  const countLabel  = dueBills.length > 1 ? `${dueBills.length} bills pending` : dueBills[0].title;
+  const countLabel  = dueBills.length > 1 ? `${dueBills.length} ${t("home_bills_pending", "bills pending")}` : dueBills[0].title;
   const dueDateText = dueBills.length === 1
-    ? `Due ${fmtDate(dueBills[0].dueDate)}`
-    : `Earliest due ${fmtDate(dueBills.reduce((min, b) => b.dueDate < min ? b.dueDate : min, dueBills[0].dueDate))}`;
+    ? `${t("home_due", "Due")} ${fmtDate(dueBills[0].dueDate)}`
+    : `${t("home_earliest_due", "Earliest due")} ${fmtDate(dueBills.reduce((min, b) => b.dueDate < min ? b.dueDate : min, dueBills[0].dueDate))}`;
 
   return (
     <TouchableOpacity
@@ -283,8 +284,8 @@ export const HomeScreen = () => {
             style={styles.heroSocietyButton}
           >
             <Text style={styles.heroSub} numberOfLines={1}>
-              {user?.society?.name || user?.activeSocietyId?.name || "No society"}
-              {user?.flat ? ` · Flat ${user.flat}` : ""}
+              {user?.society?.name || user?.activeSocietyId?.name || t("home_no_society", "No society")}
+              {user?.flat ? ` · ${t("home_flat", "Flat")} ${user.flat}` : ""}
             </Text>
             <Ionicons name="chevron-down" size={14} color="rgba(255,255,255,0.55)" />
           </TouchableOpacity>
@@ -303,7 +304,7 @@ export const HomeScreen = () => {
             >
               <View style={styles.switcherSheet}>
                 <View style={styles.switcherHandle} />
-                <Text style={styles.switcherTitle}>Your Societies</Text>
+                <Text style={styles.switcherTitle}>{t("home_your_societies", "Your Societies")}</Text>
                 {memberships.map((m) => {
                   const soc  = m.society || {};
                   const sid  = soc?._id?.toString() || m.society?.toString();
@@ -330,8 +331,8 @@ export const HomeScreen = () => {
                       <View style={{ flex: 1 }}>
                         <Text style={styles.switcherName} numberOfLines={1}>{soc?.name || "Unknown"}</Text>
                         <Text style={styles.switcherMeta}>
-                          {[m.flat && `Flat ${m.flat}`, m.wing && `Wing ${m.wing}`].filter(Boolean).join(" · ")}
-                          {!m.isApproved ? " · Pending" : ""}
+                          {[m.flat && `${t("home_flat", "Flat")} ${m.flat}`, m.wing && `${t("home_wing", "Wing")} ${m.wing}`].filter(Boolean).join(" · ")}
+                          {!m.isApproved ? ` · ${t("home_pending", "Pending")}` : ""}
                         </Text>
                       </View>
                       {isActive
@@ -348,7 +349,7 @@ export const HomeScreen = () => {
                   onPress={() => { setShowSwitcher(false); goMore("Profile"); }}
                 >
                   <Ionicons name="add-circle-outline" size={18} color={C.teal} />
-                  <Text style={styles.switcherAddText}>Join another society</Text>
+                  <Text style={styles.switcherAddText}>{t("home_join_society", "Join another society")}</Text>
                 </TouchableOpacity>
               </View>
             </TouchableOpacity>
@@ -392,18 +393,18 @@ export const HomeScreen = () => {
               { icon: "🗳️", label: t("nav_polls"),                  color: C.purple,  onPress: () => goMore("Polls") },
               { icon: "🎉", label: t("nav_events",  "Events"),      color: "#D97706", onPress: () => goMore("Events") },
               { icon: "🚗", label: t("nav_parking", "Parking"),     color: C.navy,    onPress: () => goMore("Parking") },
-              { icon: "🏊", label: t("nav_amenity", "Amenity"),     color: C.teal,    onPress: () => goMore("Amenity") },
+              { icon: "🏊", label: t("nav_amenities", "Amenities"), color: C.teal,    onPress: () => goMore("Amenity") },
               { icon: "👤", label: t("btn_profile", "Profile"),     color: C.gray700, onPress: () => goMore("Profile") },
               // Committee-aware actions — shown based on module permissions
               ...(hasPermission("notices", "write") ? [
-                { icon: "📋", label: "Post Notice", color: C.navy,  onPress: () => goMore("Notices") },
+                { icon: "📋", label: t("home_post_notice", "Post Notice"), color: C.navy,  onPress: () => goMore("Notices") },
               ] : []),
               ...(hasPermission("maintenance", "read") ? [
-                { icon: "💰", label: "Billing",     color: C.teal,  onPress: () => go("Maintenance") },
+                { icon: "💰", label: t("home_billing", "Billing"),     color: C.teal,  onPress: () => go("Maintenance") },
               ] : []),
               ...(isAdmin ? [
-                { icon: "👑", label: "Approvals",   color: C.amber, onPress: () => go("Admin") },
-                { icon: "🛡️", label: "Committee",   color: C.purple, onPress: () => goMore("Committee") },
+                { icon: "👑", label: t("nav_admin", "Approvals"),   color: C.amber, onPress: () => go("Admin") },
+                { icon: "🛡️", label: t("home_committee", "Committee"),   color: C.purple, onPress: () => goMore("Committee") },
               ] : []),
             ]}
           />
@@ -418,7 +419,7 @@ export const HomeScreen = () => {
               <Text style={styles.urgentIcon}>📢</Text>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.urgentEyebrow, { color: NOTICE_TAG_COLOR[urgentNotice.tag] || C.red }]}>
-                  {urgentNotice.tag === "Urgent" ? "URGENT NOTICE" : "LATEST NOTICE"}
+                  {urgentNotice.tag === "Urgent" ? t("home_urgent_notice", "URGENT NOTICE") : t("home_latest_notice", "LATEST NOTICE")}
                 </Text>
                 <Text style={styles.urgentTitle} numberOfLines={1}>{urgentNotice.title}</Text>
                 <Text style={styles.urgentBody} numberOfLines={2}>{urgentNotice.body}</Text>
@@ -428,7 +429,7 @@ export const HomeScreen = () => {
           )}
 
           {/* ── Recent Issues ── */}
-          <SectionHeader title={t("home_recent_issues")} onSeeAll={() => go("Issues")} />
+          <SectionHeader title={t("home_recent_issues")} onSeeAll={() => go("Issues")} t={t} />
           {loading
             ? <View style={styles.skeleton} />
             : issues.length === 0
@@ -440,7 +441,7 @@ export const HomeScreen = () => {
                     <View style={{ flex: 1, marginLeft: 10 }}>
                       <Text style={styles.issueTitle} numberOfLines={1}>{issue.title}</Text>
                       <Text style={styles.issueSub}>
-                        {issue.isAnonymous ? "Anonymous" : (issue.flat || issue.reporter?.flat || "—")}
+                        {issue.isAnonymous ? t("home_anonymous", "Anonymous") : (issue.flat || issue.reporter?.flat || "—")}
                         {" · "}{timeAgo(issue.createdAt)}
                       </Text>
                     </View>
@@ -454,7 +455,7 @@ export const HomeScreen = () => {
           }
 
           {/* ── Community Help ── */}
-          <SectionHeader title={t("home_community")} onSeeAll={() => goMore("Help")} />
+          <SectionHeader title={t("home_community")} onSeeAll={() => goMore("Help")} t={t} />
           {loading
             ? <View style={[styles.skeleton, { height: 64 }]} />
             : help.length === 0
@@ -469,7 +470,7 @@ export const HomeScreen = () => {
                       <Text style={styles.helpTitle} numberOfLines={1}>{h.title}</Text>
                       <Text style={styles.helpSub}>
                         {h.flat || h.author?.flat || "—"}
-                        {" · "}{h.replyCount ?? 0} replies
+                        {" · "}{h.replyCount ?? 0} {t("home_replies", "replies")}
                       </Text>
                     </View>
                   </View>

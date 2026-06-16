@@ -157,6 +157,10 @@ export const LoginScreen = ({ navigation }) => {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+        {/* Scroll hint: subtle indicator that more content exists below */}
+        <View style={styles.scrollHint} pointerEvents="none">
+          <Text style={styles.scrollHintText}>▾ Swipe for more</Text>
+        </View>
     </SafeAreaView>
   );
 };
@@ -183,4 +187,6 @@ const styles = StyleSheet.create({
   },
   registerSocietyText: { fontSize: 12, color: C.gray500, marginBottom: 4 },
   registerSocietyLink: { fontSize: 13, color: C.navy, fontWeight: "800" },
+  scrollHint: { position: "absolute", left: 0, right: 0, bottom: 24, alignItems: "center" },
+  scrollHintText: { fontSize: 12, color: "rgba(255,255,255,0.85)", backgroundColor: "rgba(0,0,0,0.12)", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
 });

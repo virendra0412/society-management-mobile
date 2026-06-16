@@ -7,6 +7,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { userApi }  from "../../api/resources.api";
 import { useToast } from "../../context/ToastContext";
+import { useLanguage } from "../../context/LanguageContext";
 import {
   Badge, Btn, Card, EmptyState, Spinner,
 } from "../../components/ui";
@@ -600,6 +601,7 @@ const invStyles = StyleSheet.create({
 
 
 export const AdminScreen = () => {
+  const { t } = useLanguage();
   const [activeTab, setActiveTab]   = useState("approvals");
   // We need activeSocietyId for the committee tab — read from context via prop drilling
   const [activeSocietyId, setActiveSocietyId] = useState(null);
@@ -621,9 +623,9 @@ export const AdminScreen = () => {
     <SafeAreaView style={s.safe} edges={["top"]}>
       {/* Header */}
       <View style={s.header}>
-        <Text style={s.headerSub}>Admin Panel</Text>
-        <Text style={s.headerTitle}>👑 Society Management</Text>
-        <Text style={s.headerDesc}>Manage members and committee roles</Text>
+        <Text style={s.headerSub}>{t("admin_panel_title", "Admin Panel")}</Text>
+        <Text style={s.headerTitle}>👑 {t("admin_panel_subtitle", "Society Management")}</Text>
+        <Text style={s.headerDesc}>{t("admin_panel_body", "Manage members and committee roles")}</Text>
 
         {/* Tab switcher */}
         <View style={s.tabRow}>
@@ -632,7 +634,7 @@ export const AdminScreen = () => {
             onPress={() => setActiveTab("approvals")}
           >
             <Text style={[s.tabBtnText, activeTab === "approvals" && s.tabBtnTextActive]}>
-              👤 Approvals
+              👤 {t("admin_tab_approvals", "Approvals")}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -640,7 +642,7 @@ export const AdminScreen = () => {
             onPress={() => setActiveTab("committee")}
           >
             <Text style={[s.tabBtnText, activeTab === "committee" && s.tabBtnTextActive]}>
-              🛡️ Committee
+              🛡️ {t("admin_tab_committee", "Committee")}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -648,7 +650,7 @@ export const AdminScreen = () => {
             onPress={() => setActiveTab("invite")}
           >
             <Text style={[s.tabBtnText, activeTab === "invite" && s.tabBtnTextActive]}>
-              🔗 Invite
+              🔗 {t("admin_tab_invite", "Invite")}
             </Text>
           </TouchableOpacity>
         </View>

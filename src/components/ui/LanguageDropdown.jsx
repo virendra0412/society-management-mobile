@@ -65,9 +65,9 @@ const LanguageDropdown = () => {
 };
 
 const styles = StyleSheet.create({
-  pill:         { flexDirection: "row", alignItems: "center", gap: 4, flexWrap: "nowrap", backgroundColor: "rgba(255,255,255,0.15)", borderWidth: 1.5, borderColor: "rgba(255,255,255,0.25)", borderRadius: 20, paddingHorizontal: 10, paddingVertical: 5 },
-  pillText:     { fontSize: 12, fontWeight: "700", color: "#fff", flexShrink: 1, flexWrap: "nowrap" },
-  arrow:        { fontSize: 9, color: "rgba(255,255,255,0.7)", marginTop: 1, marginLeft: 4 },
+  pill:         { flexDirection: "row", alignItems: "center", gap: 4, flexWrap: "nowrap", backgroundColor: C.gray100, borderWidth: 1.5, borderColor: C.gray300, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 5 },
+  pillText:     { fontSize: 12, fontWeight: "700", color: C.text, flexShrink: 1, flexWrap: "nowrap" },
+  arrow:        { fontSize: 9, color: C.gray500, marginTop: 1, marginLeft: 4 },
   backdrop:     { flex: 1, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "flex-end" },
   sheet:        { backgroundColor: "#fff", borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, paddingBottom: 36 },
   sheetTitle:   { fontSize: 13, fontWeight: "700", color: C.gray500, textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 14 },

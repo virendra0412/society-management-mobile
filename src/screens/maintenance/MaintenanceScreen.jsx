@@ -34,6 +34,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { maintenanceApi } from "../../api/resources.api";
 import { useAuth }        from "../../context/AuthContext";
 import { useToast }       from "../../context/ToastContext";
+import { useLanguage }    from "../../context/LanguageContext";
 import {
   Card, Badge, Modal, Input, Btn, Spinner,
   EmptyState, ErrorState, FilterPill, ScreenHeader,
@@ -85,6 +86,7 @@ const StatBox = ({ icon, label, value, color = "#fff" }) => (
 // Shows collected (green) vs pending (amber) bars for last 6 published bills.
 // Uses View-based bars instead of SVG — works identically on iOS + Android.
 const CollectionChart = ({ bills }) => {
+  const { t } = useLanguage();
   const data = bills
     .filter((b) => b.isPublished && b.collectionSummary?.total > 0)
     .map((b) => ({
@@ -106,12 +108,12 @@ const CollectionChart = ({ bills }) => {
     <View style={chartStyles.card}>
       {/* Header row */}
       <View style={chartStyles.headerRow}>
-        <Text style={chartStyles.chartTitle}>📊 Collection Analytics</Text>
+        <Text style={chartStyles.chartTitle}>📊 {t("payments_collection_analytics", "Collection Analytics")}</Text>
         <View style={chartStyles.legendRow}>
           <View style={[chartStyles.legendDot, { backgroundColor: C.green }]} />
-          <Text style={chartStyles.legendText}>Collected</Text>
+          <Text style={chartStyles.legendText}>{t("payments_collected", "Collected")}</Text>
           <View style={[chartStyles.legendDot, { backgroundColor: C.amber, marginLeft: 8 }]} />
-          <Text style={chartStyles.legendText}>Pending</Text>
+          <Text style={chartStyles.legendText}>{t("payments_pending", "Pending")}</Text>
         </View>
       </View>
 
@@ -202,7 +204,7 @@ const TargetPicker = ({ value, onChange }) => (
         style={[S.targetBtn, value === m && S.targetBtnActive]}
       >
         <Text style={[S.targetBtnText, value === m && S.targetBtnTextActive]}>
-          {m === "all" ? "All Flats" : "Specific Flats"}
+          {m === "all" ? t("payments_all_flats", "All Flats") : t("payments_specific_flats", "Specific Flats")}
         </Text>
       </TouchableOpacity>
     ))}
@@ -226,7 +228,7 @@ const MonthPicker = ({ value, onChange }) => {
         activeOpacity={0.75}
         style={[S.monthChip, !value && S.monthChipActive]}
       >
-        <Text style={[S.monthChipText, !value && S.monthChipTextActive]}>All</Text>
+        <Text style={[S.monthChipText, !value && S.monthChipTextActive]}>{t("payments_month_all", "All")}</Text>
       </TouchableOpacity>
       {months.map(({ key, label }) => (
         <TouchableOpacity
@@ -932,6 +934,7 @@ const DefaulterView = ({ onBack }) => {
 const BILL_STATUS_FILTERS = ["All", "Draft", "Published", "Closed"];
 
 const MaintenanceDashboard = ({ isAdmin, onOpenBill, onOpenMyPayments, onOpenDefaulters }) => {
+  const { t } = useLanguage();
   const toast = useToast();
   const [bills,        setBills]        = useState([]);
   const [loading,      setLoading]      = useState(true);
@@ -943,12 +946,12 @@ const MaintenanceDashboard = ({ isAdmin, onOpenBill, onOpenMyPayments, onOpenDef
 
   const handleDeleteBill = useCallback((billId) => {
     Alert.alert(
-      "Delete Draft Bill",
-      "This draft bill will be permanently deleted. This cannot be undone.",
+      t("payments_delete_bill_title", "Delete Draft Bill"),
+      t("payments_delete_bill_body", "This draft bill will be permanently deleted. This cannot be undone."),
       [
-        { text: "Cancel", style: "cancel" },
+        { text: t("btn_cancel", "Cancel"), style: "cancel" },
         {
-          text: "Delete",
+          text: t("btn_delete", "Delete"),
           style: "destructive",
           onPress: async () => {
             try {
@@ -997,13 +1000,13 @@ const MaintenanceDashboard = ({ isAdmin, onOpenBill, onOpenMyPayments, onOpenDef
     <SafeAreaView style={S.safe} edges={["top"]}>
       {/* Header */}
       <View style={S.header}>
-        <Text style={S.headerLabel}>MAINTENANCE</Text>
-        <Text style={S.headerTitle}>💰 Payments</Text>
+        <Text style={S.headerLabel}>{t("payments_header_label", "MAINTENANCE")}</Text>
+        <Text style={S.headerTitle}>💰 {t("payments_title", "Payments")}</Text>
         {isAdmin && bills.length > 0 && (
           <View style={S.headerStats}>
-            <StatBox icon="✅" label="Collected"     value={fmt(totalCollected)} color={C.green}             />
-            <StatBox icon="⏳" label="Pending"       value={fmt(totalPending)}   color={totalPending > 0 ? C.amber : "#fff"} />
-            <StatBox icon="⚠️" label="Overdue Bills" value={overdueCount}        color={overdueCount > 0 ? "#FC8181" : "#fff"} />
+            <StatBox icon="✅" label={t("payments_collected", "Collected")}     value={fmt(totalCollected)} color={C.green}             />
+            <StatBox icon="⏳" label={t("payments_pending", "Pending")}       value={fmt(totalPending)}   color={totalPending > 0 ? C.amber : "#fff"} />
+            <StatBox icon="⚠️" label={t("payments_overdue_bills", "Overdue Bills")} value={overdueCount}        color={overdueCount > 0 ? "#FC8181" : "#fff"} />
           </View>
         )}
       </View>

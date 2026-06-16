@@ -20,6 +20,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { noticesApi } from "../../api/resources.api";
 import { useAuth }    from "../../context/AuthContext";
 import { useToast }   from "../../context/ToastContext";
+import { useLanguage } from "../../context/LanguageContext";
 import {
   Badge, Btn, Card, EmptyState, ErrorState,
   FilterPill, Modal, Input, Spinner, ScreenHeader,
@@ -138,6 +139,7 @@ const BLANK_FORM = { title: "", body: "", tag: "Notice" };
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 export const NoticesScreen = ({ navigation }) => {
   const { isAdmin, hasPermission } = useAuth();
+  const { t } = useLanguage();
   const canWrite = isAdmin || hasPermission("notices", "write");
   const toast = useToast();
 
@@ -250,10 +252,10 @@ export const NoticesScreen = ({ navigation }) => {
   return (
     <SafeAreaView style={s.safe} edges={["top"]}>
       <ScreenHeader
-        title="Notices"
+        title={t("nav_notices", "Notices")}
         action={canWrite && (
           <TouchableOpacity onPress={openCreate} style={s.headerBtn}>
-            <Text style={s.headerBtnText}>+ Post</Text>
+            <Text style={s.headerBtnText}>+ {t("btn_post", "Post")}</Text>
           </TouchableOpacity>
         )}
       />
@@ -263,7 +265,7 @@ export const NoticesScreen = ({ navigation }) => {
       ) : error ? (
         <ErrorState message={error} onRetry={fetchNotices} />
       ) : notices.length === 0 ? (
-        <EmptyState icon="📢" message="No notices posted yet." />
+        <EmptyState icon="📢" message={t("notice_no_posts", "No notices posted yet.")} />
       ) : (
         <FlatList
           data={notices}
@@ -288,29 +290,29 @@ export const NoticesScreen = ({ navigation }) => {
       <Modal
         open={showModal}
         onClose={closeModal}
-        title={editTarget ? "Edit Notice" : "Post a Notice"}
+        title={editTarget ? t("notice_edit_title", "Edit Notice") : t("notice_create_title", "Post a Notice")}
       >
         <Input
-          label="Title *"
+          label={t("notice_title_label", "Title *")}
           value={form.title}
           onChangeText={set("title")}
-          placeholder="e.g. Water shutdown on Thursday"
+          placeholder={t("notice_title_ph", "e.g. Water shutdown on Thursday")}
         />
         <Input
-          label="Message *"
+          label={t("notice_body_label", "Message *")}
           value={form.body}
           onChangeText={set("body")}
-          placeholder="Full notice details…"
+          placeholder={t("notice_body_ph", "Full notice details…")}
           multiline
         />
         <PillSelect
-          label="Tag"
+          label={t("notice_tag_label", "Tag")}
           value={form.tag}
           options={NOTICE_TAGS}
           onSelect={set("tag")}
         />
         <Btn onPress={handleSave} loading={submitting} style={{ width: "100%" }}>
-          {editTarget ? "Save Changes" : "Post Notice"}
+          {editTarget ? t("notice_save_changes", "Save Changes") : t("notice_post_btn", "Post Notice")}
         </Btn>
       </Modal>
     </SafeAreaView>

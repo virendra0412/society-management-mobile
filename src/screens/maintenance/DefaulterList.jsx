@@ -27,6 +27,7 @@ import { useState, useEffect, useCallback } from "react";
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
 } from "react-native";
+import { useLanguage } from "../../../context/LanguageContext";
 
 import { maintenanceApi }      from "../../../api/resources.api";
 import { useToast }            from "../../../context/ToastContext";
@@ -58,6 +59,7 @@ const totalForDefaulter = (defaulter) =>
  *   🏠 Defaulting Flats  |  ⚠️ Overdue  |  💰 Total Outstanding
  */
 const SummaryStrip = ({ defaulters }) => {
+  const { t } = useLanguage();
   const totalFlats       = defaulters.length;
   const totalOverdue     = defaulters.filter((d) =>
     (d.records || []).some((r) => r.status === "overdue")
@@ -67,9 +69,9 @@ const SummaryStrip = ({ defaulters }) => {
   );
 
   const TILES = [
-    { icon: "🏠", label: "Defaulting Flats", value: String(totalFlats),       color: C.amber },
-    { icon: "⚠️", label: "Overdue",          value: String(totalOverdue),     color: C.red   },
-    { icon: "💰", label: "Outstanding",       value: fmt(totalOutstanding),    color: C.red   },
+    { icon: "🏠", label: t("defaulters_defaulting_flats", "Defaulting Flats"), value: String(totalFlats),       color: C.amber },
+    { icon: "⚠️", label: t("defaulters_overdue", "Overdue"),          value: String(totalOverdue),     color: C.red   },
+    { icon: "💰", label: t("defaulters_outstanding", "Outstanding"),       value: fmt(totalOutstanding),    color: C.red   },
   ];
 
   return (
@@ -90,15 +92,17 @@ const SummaryStrip = ({ defaulters }) => {
 
 // ─── Sort Controls ─────────────────────────────────────────────────────────────
 const SORT_OPTIONS = [
-  { key: "amount", label: "Amount" },
-  { key: "count",  label: "Bills"  },
-  { key: "flat",   label: "Flat"   },
+  { key: "amount", label: "Amount",  translationKey: "defaulters_sort_amount" },
+  { key: "count",  label: "Bills",   translationKey: "defaulters_sort_bills"  },
+  { key: "flat",   label: "Flat",    translationKey: "defaulters_sort_flat"   },
 ];
 
-const SortBar = ({ value, onChange }) => (
-  <View style={S.sortRow}>
-    <Text style={S.sortLabel}>Sort by:</Text>
-    {SORT_OPTIONS.map(({ key, label }) => {
+const SortBar = ({ value, onChange }) => {
+  const { t } = useLanguage();
+  return (
+    <View style={S.sortRow}>
+      <Text style={S.sortLabel}>{t("defaulters_sort_by", "Sort by:")}</Text>
+    {SORT_OPTIONS.map(({ key, label, translationKey }) => {
       const active = value === key;
       return (
         <TouchableOpacity
@@ -108,13 +112,14 @@ const SortBar = ({ value, onChange }) => (
           style={[S.sortBtn, active && S.sortBtnActive]}
         >
           <Text style={[S.sortBtnText, active && S.sortBtnTextActive]}>
-            {label}
+            {t(translationKey, label)}
           </Text>
         </TouchableOpacity>
       );
     })}
   </View>
-);
+  );
+};
 
 // ─── DefaulterCard ─────────────────────────────────────────────────────────────
 /**
@@ -122,6 +127,7 @@ const SortBar = ({ value, onChange }) => (
  * Expanded:    + per-bill breakdown rows + total outstanding row
  */
 const DefaulterCard = ({ defaulter }) => {
+  const { t } = useLanguage();
   const [expanded, setExpanded] = useState(false);
 
   const records      = defaulter.records || [];
@@ -165,13 +171,13 @@ const DefaulterCard = ({ defaulter }) => {
           <View style={S.pillRow}>
             <View style={[S.pill, { backgroundColor: C.red + "15" }]}>
               <Text style={[S.pillText, { color: C.red }]}>
-                {records.length} bill{records.length !== 1 ? "s" : ""} unpaid
+                {records.length} {t("defaulters_unpaid_bills", "bill")}{records.length !== 1 ? "s" : ""} {t("defaulters_unpaid", "unpaid")}
               </Text>
             </View>
             {hasOverdue && (
               <View style={[S.pill, { backgroundColor: C.red + "25" }]}>
                 <Text style={[S.pillText, { color: C.red }]}>
-                  ⚠️ {overdueCount} overdue
+                  ⚠️ {overdueCount} {t("defaulters_overdue", "overdue")}
                 </Text>
               </View>
             )}
@@ -195,10 +201,10 @@ const DefaulterCard = ({ defaulter }) => {
                 {/* Left: bill title + due date */}
                 <View style={S.billBreakLeft}>
                   <Text style={S.billBreakTitle} numberOfLines={1}>
-                    {r.bill?.title || "Bill"}
+                    {r.bill?.title || t("defaulters_bill_title", "Bill")}
                   </Text>
                   <Text style={S.billBreakMeta}>
-                    Due {fmtDate(r.bill?.dueDate || r.dueDate)}
+                    {t("defaulters_due", "Due")} {fmtDate(r.bill?.dueDate || r.dueDate)}
                     {r.bill?.billMonth ? `  ·  ${r.bill.billMonth}` : ""}
                   </Text>
                 </View>
@@ -214,7 +220,7 @@ const DefaulterCard = ({ defaulter }) => {
                   <Text style={S.billBreakAmt}>{fmt(r.totalDue)}</Text>
                   {r.penalty > 0 && (
                     <Text style={S.penaltyTag}>
-                      +{fmt(r.penalty)} penalty
+                      +{fmt(r.penalty)} {t("defaulters_penalty", "penalty")}
                     </Text>
                   )}
                 </View>
@@ -224,7 +230,7 @@ const DefaulterCard = ({ defaulter }) => {
 
           {/* Total outstanding row */}
           <View style={S.totalRow}>
-            <Text style={S.totalLabel}>Total Outstanding</Text>
+            <Text style={S.totalLabel}>{t("defaulters_total_outstanding", "Total Outstanding")}</Text>
             <Text style={S.totalValue}>{fmt(total)}</Text>
           </View>
         </View>
@@ -275,9 +281,11 @@ export const DefaulterList = () => {
     return <ErrorState message={error} onRetry={load} />;
   }
 
+  const { t } = useLanguage();
+
   if (defaulters.length === 0) {
     return (
-      <EmptyState icon="🎉" message="No defaulters! All flats are up to date." />
+      <EmptyState icon="🎉" message={t("defaulters_empty", "No defaulters! All flats are up to date.")} />
     );
   }
 

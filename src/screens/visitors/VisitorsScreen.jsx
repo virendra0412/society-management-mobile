@@ -15,7 +15,7 @@
  */
 import { useState, useEffect, useCallback } from "react";
 import {
-  View, Text, StyleSheet, FlatList, TouchableOpacity, ScrollView, Switch,
+  View, Text, StyleSheet, FlatList, TouchableOpacity, ScrollView, Switch, Share,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -143,25 +143,49 @@ const DayPicker = ({ value = ALL_DAYS, onChange }) => (
 );
 
 // ─── OTP Display Modal ────────────────────────────────────────────────────────
-const OTPModal = ({ otp, visitor, onClose }) => (
-  <Modal open={!!otp} onClose={onClose} title="Share this OTP with your visitor">
-    <View style={{ alignItems: "center", paddingVertical: 8 }}>
-      <Text style={{ fontSize: 13, color: C.gray500, textAlign: "center", lineHeight: 20, marginBottom: 16 }}>
-        Your visitor <Text style={{ fontWeight: "700", color: C.text }}>{visitor?.name}</Text> will need this OTP at the gate.{"\n"}
-        It will <Text style={{ fontWeight: "700", color: C.text }}>not</Text> be shown again.
-      </Text>
-      <View style={{ backgroundColor: C.navy, borderRadius: 16, paddingHorizontal: 28, paddingVertical: 20, marginBottom: 12, alignItems: "center" }}>
-        <Text style={{ fontSize: 10, color: "rgba(255,255,255,0.5)", fontWeight: "700", letterSpacing: 1.2, marginBottom: 8 }}>ENTRY OTP</Text>
-        <Text style={{ fontSize: 38, fontWeight: "800", color: C.amber, letterSpacing: 10 }}>{otp}</Text>
-      </View>
-      {visitor?.expectedAt && (
-        <Text style={{ fontSize: 12, color: C.gray500 }}>
-          Expected: {new Date(visitor.expectedAt).toLocaleString()}
+const OTPModal = ({ otp, visitor, onClose }) => {
+  // Try to load QR code component dynamically; fall back gracefully if not installed
+  let QRCodeComp = null;
+  try { QRCodeComp = require("react-native-qrcode-svg").default; } catch (e) { QRCodeComp = null; }
+
+  const handleShare = async () => {
+    const message = `Entry OTP: ${otp}\nVisitor: ${visitor?.name || ""}\nShow this at the gate to enter.`;
+    try { await Share.share({ message }); } catch (e) { /* ignore */ }
+  };
+
+  return (
+    <Modal open={!!otp} onClose={onClose} title="Share this OTP with your visitor">
+      <View style={{ alignItems: "center", paddingVertical: 8 }}>
+        <Text style={{ fontSize: 13, color: C.gray500, textAlign: "center", lineHeight: 20, marginBottom: 16 }}>
+          Your visitor <Text style={{ fontWeight: "700", color: C.text }}>{visitor?.name}</Text> will need this OTP at the gate.{"\n"}
+          It will <Text style={{ fontWeight: "700", color: C.text }}>not</Text> be shown again.
         </Text>
-      )}
-    </View>
-  </Modal>
-);
+        <View style={{ backgroundColor: C.navy, borderRadius: 16, paddingHorizontal: 28, paddingVertical: 20, marginBottom: 12, alignItems: "center" }}>
+          <Text style={{ fontSize: 10, color: "rgba(255,255,255,0.5)", fontWeight: "700", letterSpacing: 1.2, marginBottom: 8 }}>ENTRY OTP</Text>
+          <Text style={{ fontSize: 38, fontWeight: "800", color: C.amber, letterSpacing: 10 }}>{otp}</Text>
+        </View>
+        {visitor?.expectedAt && (
+          <Text style={{ fontSize: 12, color: C.gray500 }}>
+            Expected: {new Date(visitor.expectedAt).toLocaleString()}
+          </Text>
+        )}
+
+        {/* QR code + share actions. QR is optional — install react-native-qrcode-svg for image QR */}
+        {QRCodeComp && (
+          <View style={{ alignItems: "center", marginTop: 12, width: "100%" }}>
+            <QRCodeComp value={String(otp)} size={140} />
+            <Btn onPress={handleShare} style={{ marginTop: 12, width: "100%" }}>Share OTP</Btn>
+          </View>
+        )}
+        {!QRCodeComp && (
+          <View style={{ marginTop: 12, width: "100%" }}>
+            <Btn onPress={handleShare} style={{ width: "100%" }}>Share OTP</Btn>
+          </View>
+        )}
+      </View>
+    </Modal>
+  );
+};
 
 // ─── Visitor Card (Flows A, B, D) ────────────────────────────────────────────
 const VisitorCard = ({ v, isAdmin, myFlat, onApprove, onReject, onVerifyOTP, onMarkExit, onCancelInvite, busy }) => {

@@ -15,6 +15,24 @@ import { authEvents, holdRequests, releaseRequests } from "../api/client";
 
 const AuthContext = createContext(null);
 
+const normalizeId = (value) => {
+  if (!value && value !== 0) return null;
+  if (typeof value === "string") return value;
+  if (typeof value === "number") return String(value);
+  if (typeof value === "object") {
+    if (value._id || value.id) return normalizeId(value._id || value.id);
+    if (value.$oid) return normalizeId(value.$oid);
+    const str = value.toString?.();
+    if (typeof str === "string" && str !== "[object Object]") return str;
+    try {
+      return JSON.stringify(value);
+    } catch {
+      return null;
+    }
+  }
+  return String(value);
+}
+
 export const AuthProvider = ({ children }) => {
   const [user,        setUser]        = useState(null);
   const [loading,     setLoading]     = useState(true);
@@ -43,6 +61,11 @@ export const AuthProvider = ({ children }) => {
 
       const meRes = await authApi.getMe();
       const fresh = meRes.data.user;
+      // Debug: log refreshed user active society and membership count
+      try {
+        console.warn('[AuthContext] restoreSession: refreshed user activeSocietyId=', JSON.stringify(fresh?.activeSocietyId));
+        console.warn('[AuthContext] restoreSession: refreshed user memberships=', (fresh?.memberships || []).length);
+      } catch (e) {}
       setUser(fresh);
       await tokenStorage.setUser(fresh);
       bumpDataVersion();
@@ -57,6 +80,11 @@ export const AuthProvider = ({ children }) => {
         bumpDataVersion();
       } else {
         const cached = await tokenStorage.getUser();
+        // Debug: log cached user details when refresh fails
+        try {
+          console.warn('[AuthContext] restoreSession: refresh failed (non-auth). cached user activeSocietyId=', JSON.stringify(cached?.activeSocietyId));
+          console.warn('[AuthContext] restoreSession: cached user memberships=', (cached?.memberships || []).length);
+        } catch (e) {}
         setUser(cached || null);
         if (cached) bumpDataVersion();
       }
@@ -214,10 +242,7 @@ export const AuthProvider = ({ children }) => {
   const isLogged = !!user;
 
   // Convenience: resolve activeSocietyId whether populated or raw ObjectId
-  const activeSocietyId =
-    user?.activeSocietyId?._id?.toString() ||
-    user?.activeSocietyId?.toString() ||
-    null;
+  const activeSocietyId = normalizeId(user?.activeSocietyId);
 
   const memberships = user?.memberships || [];
 
