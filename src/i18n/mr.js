@@ -577,6 +577,31 @@ const mr = {
   loading:       "लोड होत आहे…",
   no_data:       "अद्याप येथे काहीही नाही.",
   error_generic: "काहीतरी चूक झाली.",
+
+  // ── Contacts screen strings ───────────────────────────────────────────────
+  contacts_header_title: "संपर्क",
+  contacts_add_btn: "+ जोडा",
+  contacts_empty: "अद्याप कोणते संपर्क जोडले नाहीत.",
+  contacts_load_failed: "संपर्क लोड अयशस्वी.",
+  contacts_name_phone_required: "नाव आणि फोन आवश्यक.",
+  contacts_updated: "संपर्क अद्यावत झाला.",
+  contacts_added: "संपर्क जोडला.",
+  contacts_save_failed: "संपर्क जतन अयशस्वी.",
+  contacts_deleted: "संपर्क हटवला.",
+  contacts_delete_failed: "संपर्क हटवणे अयशस्वी.",
+  contacts_modal_add_title: "संपर्क जोडा",
+  contacts_modal_edit_title: "संपर्क संपादित करा",
+  contacts_name_label: "नाव *",
+  contacts_name_ph: "राजू इलेक्ट्रिशियन",
+  contacts_phone_label: "फोन *",
+  contacts_phone_ph: "9876543210",
+  contacts_designation_label: "पदनाम",
+  contacts_designation_ph: "समिती खजिनदार",
+  contacts_icon_label: "चिन्ह (इमोजी)",
+  contacts_icon_ph: "⚡",
+  contacts_group_label: "गट",
+  contacts_save_changes: "बदल जतन करा",
+  contacts_add_contact_btn: "संपर्क जोडा",
 };
 
 export default mr;

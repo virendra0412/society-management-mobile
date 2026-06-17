@@ -564,6 +564,32 @@ const gu = {
   loading:       "લોડ થઈ રહ્યું છે…",
   no_data:       "હજી કંઈ નથી.",
   error_generic: "કંઈક ખોટું થયું.",
+
+  // ── Contacts screen strings ───────────────────────────────────────────────
+  contacts_header_title: "સંપર્કો",
+  contacts_add_btn: "+ ઉમેરો",
+  contacts_empty: "હજી કોઈ સંપર્ક ઉમેર્યો નથી.",
+  contacts_load_failed: "સંપર્કો લોડ કરવામાં નિષ્ફળ.",
+  contacts_name_phone_required: "નામ અને ફોન જરૂરી છે.",
+  contacts_updated: "સંપર્ક અપડેટ થયો.",
+  contacts_added: "સંપર્ક ઉમેર્યો.",
+  contacts_save_failed: "સંપર્ક સહેજવામાં નિષ્ફળ.",
+  contacts_deleted: "સંપર્ક કાઢી નાખ્યો.",
+  contacts_delete_failed: "સંપર્ક કાઢવામાં નિષ્ફળ.",
+  contacts_modal_add_title: "સંપર્ક ઉમેરો",
+  contacts_modal_edit_title: "સંપર્ક સંપાદિત કરો",
+  contacts_name_label: "નામ *",
+  contacts_name_ph: "રાજુ ઈલેક્ટ્રિશ્યન",
+  contacts_phone_label: "ફોન *",
+  contacts_phone_ph: "9876543210",
+  contacts_designation_label: "હોદ્દો",
+  contacts_designation_ph: "સમિતિ ખજાનચી",
+  contacts_icon_label: "આઇકૉન (ઇમોજી)",
+  contacts_icon_ph: "⚡",
+  contacts_group_label: "જૂથ",
+  contacts_save_changes: "ફેરફારો સહેજો",
+  contacts_add_contact_btn: "સંપર્ક ઉમેરો",
+
 };
 
 export default gu;

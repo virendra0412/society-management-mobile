@@ -521,6 +521,31 @@ const ta = {
   loading:       "ஏற்றப்பட்டு வருகிறது…",
   no_data:       "இங்கே இன்னும் ஒன்றும் இல்லை.",
   error_generic: "ஏதோ தவறு ஏற்பட்டுவிட்டது.",
+
+  // ── Contacts screen strings ───────────────────────────────────────────────
+  contacts_header_title: "தொடர்புகள்",
+  contacts_add_btn: "+ சேர்",
+  contacts_empty: "இன்னும் தொடர்புகள் சேர்க்கப்படவில்லை.",
+  contacts_load_failed: "தொடர்புகள் ஏற்றல் தோல்வி.",
+  contacts_name_phone_required: "பெயர் மற்றும் தொலைபேசி தேவை.",
+  contacts_updated: "தொடர்பு புதுப்பிக்கப்பட்டது.",
+  contacts_added: "தொடர்பு சேர்க்கப்பட்டது.",
+  contacts_save_failed: "தொடர்பு சேமிப்பு தோல்வி.",
+  contacts_deleted: "தொடர்பு நீக்கப்பட்டது.",
+  contacts_delete_failed: "தொடர்பு நீக்கல் தோல்வி.",
+  contacts_modal_add_title: "தொடர்பு சேர்",
+  contacts_modal_edit_title: "தொடர்பு திருத்து",
+  contacts_name_label: "பெயர் *",
+  contacts_name_ph: "ராஜு மின்சாரி",
+  contacts_phone_label: "தொலைபேசி *",
+  contacts_phone_ph: "9876543210",
+  contacts_designation_label: "பதவி",
+  contacts_designation_ph: "குழு பொருளாளர்",
+  contacts_icon_label: "சின்னம் (இமோஜி)",
+  contacts_icon_ph: "⚡",
+  contacts_group_label: "குழு",
+  contacts_save_changes: "மாற்றங்களை சேமி",
+  contacts_add_contact_btn: "தொடர்பு சேர்",
 };
 
 export default ta;

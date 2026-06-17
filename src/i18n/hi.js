@@ -576,6 +576,31 @@ const hi = {
   polls_create_success:         "मतदान बनाया गया।",
   polls_create_failed:          "मतदान बनाने में विफल।",
 
+   // ── Contacts screen strings ───────────────────────────────────────────────
+  contacts_header_title: "संपर्क",
+  contacts_add_btn: "+ जोड़ें",
+  contacts_empty: "अभी कोई संपर्क नहीं जोड़ा गया।",
+  contacts_load_failed: "संपर्क लोड करने में विफल।",
+  contacts_name_phone_required: "नाम और फ़ोन आवश्यक हैं।",
+  contacts_updated: "संपर्क अपडेट हो गया।",
+  contacts_added: "संपर्क जोड़ा गया।",
+  contacts_save_failed: "संपर्क सहेजने में विफल।",
+  contacts_deleted: "संपर्क हटा दिया गया।",
+  contacts_delete_failed: "संपर्क हटाने में विफल।",
+  contacts_modal_add_title: "संपर्क जोड़ें",
+  contacts_modal_edit_title: "संपर्क संपादित करें",
+  contacts_name_label: "नाम *",
+  contacts_name_ph: "राजू इलेक्ट्रीशियन",
+  contacts_phone_label: "फ़ोन *",
+  contacts_phone_ph: "9876543210",
+  contacts_designation_label: "पदनाम",
+  contacts_designation_ph: "समिति कोषाध्यक्ष",
+  contacts_icon_label: "आइकन (इमोजी)",
+  contacts_icon_ph: "⚡",
+  contacts_group_label: "समूह",
+  contacts_save_changes: "बदलाव सहेजें",
+  contacts_add_contact_btn: "संपर्क जोड़ें",
+
 };
 
 export default hi;

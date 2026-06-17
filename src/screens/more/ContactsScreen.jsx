@@ -10,7 +10,7 @@
 import { useState, useEffect, useCallback, useLayoutEffect } from "react";
 import { useFocusEffect } from "@react-navigation/native";
 import {
-  View, Text, StyleSheet, FlatList, SectionList, TouchableOpacity,
+  View, Text, StyleSheet, FlatList, TouchableOpacity,
   Linking, ScrollView,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -18,6 +18,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { contactsApi } from "../../api/resources.api";
 import { useAuth }     from "../../context/AuthContext";
 import { useToast }    from "../../context/ToastContext";
+import { useLanguage } from "../../context/LanguageContext";
 import {
   Btn, Card, EmptyState, ErrorState,
   Modal, Input, Spinner,
@@ -104,7 +105,8 @@ const ContactCard = ({ contact, isAdmin, onEdit, onDelete, delBusy }) => {
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 export const ContactsScreen = ({ navigation }) => {
   const { isAdmin } = useAuth();
-  const toast = useToast();
+  const toast       = useToast();
+  const { t }       = useLanguage();
 
   const [grouped,    setGrouped]    = useState({});
   const [loading,    setLoading]    = useState(true);
@@ -122,7 +124,7 @@ export const ContactsScreen = ({ navigation }) => {
       const res = await contactsApi.getAll();
       setGrouped(res.data?.contacts || {});
     } catch (e) {
-      setError(e.response?.data?.message || "Failed to load contacts.");
+      setError(e.response?.data?.message || t("contacts_load_failed", "Failed to load contacts."));
     } finally { setLoading(false); }
   }, []);
 
@@ -134,27 +136,29 @@ export const ContactsScreen = ({ navigation }) => {
     }, [fetchContacts])
   );
 
-  const openAdd = () => {
+  const openAdd = useCallback(() => {
     setEditTarget(null);
     setForm({ name: "", phone: "", group: "Emergency", designation: "", icon: "📞" });
     setShowModal(true);
-  };
+  }, []);
 
   useLayoutEffect(() => {
     navigation.setOptions({
-      title: "Contacts",
+      title: t("contacts_header_title", "Contacts"),
       headerRight: isAdmin
         ? () => (
             <TouchableOpacity
               onPress={openAdd}
               style={{ backgroundColor: C.teal + "15", borderRadius: 8, paddingHorizontal: 12, paddingVertical: 5 }}
             >
-              <Text style={{ fontSize: 12, fontWeight: "700", color: C.teal }}>+ Add</Text>
+              <Text style={{ fontSize: 12, fontWeight: "700", color: C.teal }}>
+                {t("contacts_add_btn", "+ Add")}
+              </Text>
             </TouchableOpacity>
           )
         : undefined,
     });
-  }, [navigation, isAdmin, openAdd]);
+  }, [navigation, isAdmin, openAdd, t]);
 
   const openEdit = (contact) => {
     setEditTarget(contact);
@@ -167,7 +171,8 @@ export const ContactsScreen = ({ navigation }) => {
   };
 
   const handleSave = async () => {
-    if (!form.name.trim() || !form.phone.trim()) return toast.error("Name and phone are required.");
+    if (!form.name.trim() || !form.phone.trim())
+      return toast.error(t("contacts_name_phone_required", "Name and phone are required."));
     setSubmitting(true);
     try {
       if (editTarget) {
@@ -182,15 +187,15 @@ export const ContactsScreen = ({ navigation }) => {
             return next;
           });
         } else { fetchContacts(); }
-        toast.success("Contact updated.");
+        toast.success(t("contacts_updated", "Contact updated."));
       } else {
         await contactsApi.create(form);
-        toast.success("Contact added.");
+        toast.success(t("contacts_added", "Contact added."));
         fetchContacts();
       }
       setShowModal(false); setEditTarget(null);
     } catch (e) {
-      toast.error(e.response?.data?.message || "Failed to save contact.");
+      toast.error(e.response?.data?.message || t("contacts_save_failed", "Failed to save contact."));
     } finally { setSubmitting(false); }
   };
 
@@ -207,9 +212,9 @@ export const ContactsScreen = ({ navigation }) => {
         });
         return next;
       });
-      toast.success("Contact deleted.");
+      toast.success(t("contacts_deleted", "Contact deleted."));
     } catch (e) {
-      toast.error(e.response?.data?.message || "Failed to delete contact.");
+      toast.error(e.response?.data?.message || t("contacts_delete_failed", "Failed to delete contact."));
     } finally { setDelBusy((d) => ({ ...d, [contactId]: false })); }
   };
 
@@ -222,7 +227,7 @@ export const ContactsScreen = ({ navigation }) => {
       ) : error ? (
         <ErrorState message={error} onRetry={fetchContacts} />
       ) : groups.length === 0 ? (
-        <EmptyState icon="📞" message="No contacts added yet." />
+        <EmptyState icon="📞" message={t("contacts_empty", "No contacts added yet.")} />
       ) : (
         <FlatList
           data={groups}
@@ -254,15 +259,45 @@ export const ContactsScreen = ({ navigation }) => {
       <Modal
         open={showModal}
         onClose={() => { setShowModal(false); setEditTarget(null); }}
-        title={editTarget ? "Edit Contact" : "Add Contact"}
+        title={editTarget
+          ? t("contacts_modal_edit_title", "Edit Contact")
+          : t("contacts_modal_add_title", "Add Contact")}
       >
-        <Input label="Name *"        value={form.name}        onChangeText={set("name")}        placeholder="Raju Electrician" />
-        <Input label="Phone *"       value={form.phone}       onChangeText={set("phone")}       placeholder="9876543210" keyboardType="phone-pad" />
-        <Input label="Designation"   value={form.designation} onChangeText={set("designation")} placeholder="Committee Treasurer" />
-        <Input label="Icon (emoji)"  value={form.icon}        onChangeText={set("icon")}        placeholder="⚡" />
-        <PillSelect label="Group" value={form.group} options={CONTACT_GROUPS} onSelect={set("group")} />
+        <Input
+          label={t("contacts_name_label", "Name *")}
+          value={form.name}
+          onChangeText={set("name")}
+          placeholder={t("contacts_name_ph", "Raju Electrician")}
+        />
+        <Input
+          label={t("contacts_phone_label", "Phone *")}
+          value={form.phone}
+          onChangeText={set("phone")}
+          placeholder={t("contacts_phone_ph", "9876543210")}
+          keyboardType="phone-pad"
+        />
+        <Input
+          label={t("contacts_designation_label", "Designation")}
+          value={form.designation}
+          onChangeText={set("designation")}
+          placeholder={t("contacts_designation_ph", "Committee Treasurer")}
+        />
+        <Input
+          label={t("contacts_icon_label", "Icon (emoji)")}
+          value={form.icon}
+          onChangeText={set("icon")}
+          placeholder={t("contacts_icon_ph", "⚡")}
+        />
+        <PillSelect
+          label={t("contacts_group_label", "Group")}
+          value={form.group}
+          options={CONTACT_GROUPS}
+          onSelect={set("group")}
+        />
         <Btn onPress={handleSave} loading={submitting} style={{ width: "100%" }}>
-          {editTarget ? "Save Changes" : "Add Contact"}
+          {editTarget
+            ? t("contacts_save_changes", "Save Changes")
+            : t("contacts_add_contact_btn", "Add Contact")}
         </Btn>
       </Modal>
     </SafeAreaView>

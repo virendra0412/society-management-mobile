@@ -589,6 +589,31 @@ const pa = {
   loading:       "ਲੋਡ ਹੋ ਰਿਹਾ ਹੈ…",
   no_data:       "ਹਾਲੇ ਤਕ ਕੁਝ ਨਹੀਂ।",
   error_generic: "ਕੋਈ ਗੱਲ ਗਲਤ ਹੋਈ।",
+
+  // ── Contacts screen strings ───────────────────────────────────────────────
+  contacts_header_title: "ਸੰਪਰਕ",
+  contacts_add_btn: "+ ਜੋੜੋ",
+  contacts_empty: "ਅਜੇ ਕੋਈ ਸੰਪਰਕ ਨਹੀਂ ਜੋੜਿਆ।",
+  contacts_load_failed: "ਸੰਪਰਕ ਲੋਡ ਅਸਫ਼ਲ।",
+  contacts_name_phone_required: "ਨਾਮ ਅਤੇ ਫੋਨ ਜ਼ਰੂਰੀ।",
+  contacts_updated: "ਸੰਪਰਕ ਅਪਡੇਟ ਹੋਇਆ।",
+  contacts_added: "ਸੰਪਰਕ ਜੋੜਿਆ।",
+  contacts_save_failed: "ਸੰਪਰਕ ਸੁਰੱਖਿਅਤ ਕਰਨਾ ਅਸਫ਼ਲ।",
+  contacts_deleted: "ਸੰਪਰਕ ਹਟਾਇਆ।",
+  contacts_delete_failed: "ਸੰਪਰਕ ਹਟਾਉਣਾ ਅਸਫ਼ਲ।",
+  contacts_modal_add_title: "ਸੰਪਰਕ ਜੋੜੋ",
+  contacts_modal_edit_title: "ਸੰਪਰਕ ਸੰਪਾਦਿਤ ਕਰੋ",
+  contacts_name_label: "ਨਾਮ *",
+  contacts_name_ph: "ਰਾਜੂ ਇਲੈਕਟ੍ਰੀਸ਼ੀਅਨ",
+  contacts_phone_label: "ਫੋਨ *",
+  contacts_phone_ph: "9876543210",
+  contacts_designation_label: "ਅਹੁਦਾ",
+  contacts_designation_ph: "ਕਮੇਟੀ ਖਜ਼ਾਨਚੀ",
+  contacts_icon_label: "ਆਈਕਨ (ਇਮੋਜੀ)",
+  contacts_icon_ph: "⚡",
+  contacts_group_label: "ਸਮੂਹ",
+  contacts_save_changes: "ਬਦਲਾਅ ਸੁਰੱਖਿਅਤ ਕਰੋ",
+  contacts_add_contact_btn: "ਸੰਪਰਕ ਜੋੜੋ",
 };
 
 export default pa;
