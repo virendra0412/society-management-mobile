@@ -8,7 +8,7 @@
  *   • Admin: create / close polls
  *   • Anonymous voting support
  */
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useLayoutEffect } from "react";
 import { useFocusEffect } from "@react-navigation/native";
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity, ScrollView, TextInput, Alert,
@@ -21,7 +21,7 @@ import { useToast } from "../../context/ToastContext";
 import { useLanguage } from "../../context/LanguageContext";
 import {
   Btn, Card, EmptyState, ErrorState,
-  Modal, Input, Spinner, ScreenHeader,
+  Modal, Input, Spinner,
 } from "../../components/ui";
 import { C } from "../../constants/theme";
 import { timeAgo } from "../../utils/timeago";
@@ -231,6 +231,24 @@ export const PollsScreen = ({ navigation }) => {
     }, [fetchPolls])
   );
 
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      title: t("polls_header_title", "Polls & Voting"),
+      headerRight: isAdmin
+        ? () => (
+            <TouchableOpacity
+              onPress={() => setShowNew(true)}
+              style={{ backgroundColor: C.teal + "15", borderRadius: 8, paddingHorizontal: 12, paddingVertical: 5 }}
+            >
+              <Text style={{ fontSize: 12, fontWeight: "700", color: C.teal }}>
+                {t("polls_create_btn", "+ Create")}
+              </Text>
+            </TouchableOpacity>
+          )
+        : undefined,
+    });
+  }, [navigation, isAdmin, setShowNew, t]);
+
   const handleVote = async (pollId, optionId) => {
     if (voting[pollId]) return;
     // Check if user already voted in this poll (client-side, avoids needless API call)
@@ -278,18 +296,6 @@ export const PollsScreen = ({ navigation }) => {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }} edges={["top"]}>
-      <ScreenHeader
-        title={t("polls_header_title", "Polls & Voting")}
-        action={isAdmin && (
-          <TouchableOpacity
-            onPress={() => setShowNew(true)}
-            style={{ backgroundColor: C.teal + "15", borderRadius: 8, paddingHorizontal: 12, paddingVertical: 5 }}
-          >
-            <Text style={{ fontSize: 12, fontWeight: "700", color: C.teal }}>{t("polls_create_btn", "+ Create")}</Text>
-          </TouchableOpacity>
-        )}
-      />
-
       {loading ? (
         <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}><Spinner size={32} /></View>
       ) : error ? (

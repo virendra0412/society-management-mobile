@@ -11,7 +11,7 @@
  *   Added editTarget state — tapping "Edit" on a card pre-fills the modal
  *   and calls noticesApi.update(id, form) on save instead of create.
  */
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useLayoutEffect } from "react";
 import { useFocusEffect } from "@react-navigation/native";
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity, ScrollView,
@@ -24,7 +24,7 @@ import { useToast }   from "../../context/ToastContext";
 import { useLanguage } from "../../context/LanguageContext";
 import {
   Badge, Btn, Card, EmptyState, ErrorState,
-  FilterPill, Modal, Input, Spinner, ScreenHeader,
+  FilterPill, Modal, Input, Spinner,
 } from "../../components/ui";
 import {
   C, NOTICE_TAG_COLOR, NOTICE_TAG_ICON, NOTICE_TAGS,
@@ -197,6 +197,19 @@ export const NoticesScreen = ({ navigation }) => {
     setForm(BLANK_FORM);
   };
 
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      title: t("nav_notices", "Notices"),
+      headerRight: canWrite
+        ? () => (
+            <TouchableOpacity onPress={openCreate} style={s.headerBtn}>
+              <Text style={s.headerBtnText}>+ {t("btn_post", "Post")}</Text>
+            </TouchableOpacity>
+          )
+        : undefined,
+    });
+  }, [navigation, canWrite, openCreate, t]);
+
   // ── Save (create OR update) ───────────────────────────────────────────────
   const handleSave = async () => {            // TC-NOTICE-04 — unified save handler
     if (!form.title.trim() || !form.body.trim())
@@ -258,15 +271,6 @@ export const NoticesScreen = ({ navigation }) => {
 
   return (
     <SafeAreaView style={s.safe} edges={["top"]}>
-      <ScreenHeader
-        title={t("nav_notices", "Notices")}
-        action={canWrite && (
-          <TouchableOpacity onPress={openCreate} style={s.headerBtn}>
-            <Text style={s.headerBtnText}>+ {t("btn_post", "Post")}</Text>
-          </TouchableOpacity>
-        )}
-      />
-
       {loading ? (
         <View style={s.center}><Spinner size={32} /></View>
       ) : error ? (

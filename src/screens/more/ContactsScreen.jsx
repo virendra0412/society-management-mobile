@@ -7,7 +7,7 @@
  *   • Committee / Vendor / Other groups
  *   • Admin: add / edit / delete contacts
  */
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useLayoutEffect } from "react";
 import { useFocusEffect } from "@react-navigation/native";
 import {
   View, Text, StyleSheet, FlatList, SectionList, TouchableOpacity,
@@ -20,7 +20,7 @@ import { useAuth }     from "../../context/AuthContext";
 import { useToast }    from "../../context/ToastContext";
 import {
   Btn, Card, EmptyState, ErrorState,
-  Modal, Input, Spinner, ScreenHeader,
+  Modal, Input, Spinner,
 } from "../../components/ui";
 import { C, CONTACT_GROUPS } from "../../constants/theme";
 
@@ -140,6 +140,22 @@ export const ContactsScreen = ({ navigation }) => {
     setShowModal(true);
   };
 
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      title: "Contacts",
+      headerRight: isAdmin
+        ? () => (
+            <TouchableOpacity
+              onPress={openAdd}
+              style={{ backgroundColor: C.teal + "15", borderRadius: 8, paddingHorizontal: 12, paddingVertical: 5 }}
+            >
+              <Text style={{ fontSize: 12, fontWeight: "700", color: C.teal }}>+ Add</Text>
+            </TouchableOpacity>
+          )
+        : undefined,
+    });
+  }, [navigation, isAdmin, openAdd]);
+
   const openEdit = (contact) => {
     setEditTarget(contact);
     setForm({
@@ -201,18 +217,6 @@ export const ContactsScreen = ({ navigation }) => {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }} edges={["top"]}>
-      <ScreenHeader
-        title="Contacts"
-        action={isAdmin && (
-          <TouchableOpacity
-            onPress={openAdd}
-            style={{ backgroundColor: C.teal + "15", borderRadius: 8, paddingHorizontal: 12, paddingVertical: 5 }}
-          >
-            <Text style={{ fontSize: 12, fontWeight: "700", color: C.teal }}>+ Add</Text>
-          </TouchableOpacity>
-        )}
-      />
-
       {loading ? (
         <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}><Spinner size={32} /></View>
       ) : error ? (

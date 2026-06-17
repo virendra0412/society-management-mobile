@@ -19,6 +19,7 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import { eventsApi } from "../../api/resources.api";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
+import { useLanguage } from "../../context/LanguageContext";
 import {
   Badge, Btn, Card, EmptyState, ErrorState,
   Spinner, Input,

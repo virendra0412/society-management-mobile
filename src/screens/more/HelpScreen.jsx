@@ -12,7 +12,7 @@ import { useToast }    from "../../context/ToastContext";
 import { useLanguage } from "../../context/LanguageContext";
 import {
   Badge, Btn, Card, EmptyState, ErrorState,
-  FilterPill, Modal, Input, Spinner, ScreenHeader,
+  FilterPill, Modal, Input, Spinner,
 } from "../../components/ui";
 import { C, HELP_CAT_ICON, HELP_CATEGORIES } from "../../constants/theme";
 import { timeAgo } from "../../utils/timeago";
@@ -52,7 +52,7 @@ const strip = StyleSheet.create({
 });
 
 // ─── Post card ────────────────────────────────────────────────────────────────
-const PostCard = ({ item, onPress }) => (
+const PostCard = ({ item, onPress, t }) => (
   <Card onPress={() => onPress(item)} style={pc.card}>
     <View style={pc.row}>
       <View style={pc.iconBox}>
@@ -298,14 +298,7 @@ export const HelpScreen = ({ navigation }) => {
 
   return (
     <SafeAreaView style={s.safe} edges={["top"]}>
-      {/* Header */}
-      <View style={s.headerRow}>
-        {navigation?.canGoBack?.() && (
-          <TouchableOpacity onPress={() => navigation.goBack()} style={s.back} hitSlop={8}>
-            <Text style={s.backTxt}>←</Text>
-          </TouchableOpacity>
-        )}
-        <Text style={s.headerTitle}>{t("help_header_title", "Community Help")}</Text>
+      <View style={s.actionRow}>
         <Btn small onPress={() => setShowNew(true)} style={s.askBtn}>{t("help_ask_btn", "+ Ask")}</Btn>
       </View>
 
@@ -320,7 +313,7 @@ export const HelpScreen = ({ navigation }) => {
         <FlatList
           data={posts}
           keyExtractor={(i) => i._id}
-          renderItem={({ item }) => <PostCard item={item} onPress={openDetail} />}
+          renderItem={({ item }) => <PostCard item={item} onPress={openDetail} t={t} />}
           ListEmptyComponent={<EmptyState icon="🤝" message={t("help_empty", "No help posts yet. Be the first to ask!")} />}
           contentContainerStyle={s.list}
           showsVerticalScrollIndicator={false}
@@ -491,6 +484,7 @@ const s = StyleSheet.create({
   back:        { marginRight: 10 },
   backTxt:     { fontSize: 20, color: C.teal, fontWeight: "700" },
   headerTitle: { flex: 1, fontSize: 22, fontWeight: "800", color: C.navy },
+  actionRow:   { paddingHorizontal: 16, paddingTop: 10, paddingBottom: 8, alignItems: "flex-end" },
   askBtn:      { backgroundColor: C.amber },
   list:        { paddingHorizontal: 16, paddingBottom: 24 },
   center:      { flex: 1, alignItems: "center", justifyContent: "center" },
