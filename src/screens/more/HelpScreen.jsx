@@ -297,7 +297,7 @@ export const HelpScreen = ({ navigation }) => {
   };
 
   return (
-    <SafeAreaView style={s.safe} edges={["top"]}>
+    <SafeAreaView style={s.safe} edges={["bottom"]}>
       <View style={s.actionRow}>
         <Btn small onPress={() => setShowNew(true)} style={s.askBtn}>{t("help_ask_btn", "+ Ask")}</Btn>
       </View>

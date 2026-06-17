@@ -98,7 +98,7 @@ const UpgradeScreen = () => {
   const lockedPaid  = Object.keys(MODULE_META).filter((k) => !modules[k]?.isFree && !modules[k]?.enabled);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={["bottom"]}>
       <ScrollView
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchStatus(); }} />}
         contentContainerStyle={styles.scroll}

@@ -270,7 +270,7 @@ export const NoticesScreen = ({ navigation }) => {
   };
 
   return (
-    <SafeAreaView style={s.safe} edges={["top"]}>
+    <SafeAreaView style={s.safe} edges={["bottom"]}>
       {loading ? (
         <View style={s.center}><Spinner size={32} /></View>
       ) : error ? (

@@ -588,7 +588,7 @@ export const ProfileScreen = ({ navigation }) => {
     activeSocietyId;
 
   return (
-    <SafeAreaView style={styles.safe} edges={["top"]}>
+    <SafeAreaView style={styles.safe} edges={["bottom"]}>
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={styles.scroll}

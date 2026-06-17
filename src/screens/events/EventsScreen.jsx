@@ -1147,7 +1147,7 @@ export const EventsScreen = () => {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }} edges={["top"]}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }} edges={["bottom"]}>
       {/* Header */}
       <View style={styles.header}>
         <View>

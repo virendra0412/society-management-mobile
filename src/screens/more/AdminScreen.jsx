@@ -620,7 +620,7 @@ export const AdminScreen = () => {
   }, []);
 
   return (
-    <SafeAreaView style={s.safe} edges={["top"]}>
+    <SafeAreaView style={s.safe} edges={["bottom"]}>
       {/* Header */}
       <View style={s.header}>
         <Text style={s.headerSub}>{t("admin_panel_title", "Admin Panel")}</Text>

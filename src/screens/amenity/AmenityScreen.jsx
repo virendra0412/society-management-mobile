@@ -947,7 +947,7 @@ export const AmenityScreen = () => {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }} edges={["top"]}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }} edges={["bottom"]}>
       {/* Header — TC-AMEN-11: "+ Add Amenity" button for admins */}
       <View style={styles.header}>
         <View>

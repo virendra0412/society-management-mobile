@@ -973,7 +973,7 @@ export const ParkingScreen = () => {
   const TABS = isAdmin ? TABS_ADMIN : TABS_RES;
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }} edges={["top"]}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }} edges={["bottom"]}>
       {/* Header */}
       <View style={ps.header}>
         <View>
