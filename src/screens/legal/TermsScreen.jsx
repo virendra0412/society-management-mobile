@@ -27,6 +27,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
+import { Ionicons } from "@expo/vector-icons";
 import { C } from "../../constants/theme";
 
 const CONTACT_EMAIL = "support@societyapp.in";
@@ -69,11 +70,15 @@ export const TermsScreen = () => {
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn} hitSlop={12}>
-          <Text style={styles.backText}>← Back</Text>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={styles.backBtn}
+          hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+        >
+          <Ionicons name="chevron-back" size={22} color={C.navy} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Terms & Conditions</Text>
-        <View style={{ width: 60 }} />
+        <View style={styles.backBtn} />
       </View>
 
       <ScrollView
@@ -277,27 +282,25 @@ const styles = StyleSheet.create({
     backgroundColor: C.bg,
   },
   header: {
+    height:            44,
     flexDirection:     "row",
     alignItems:        "center",
-    justifyContent:    "space-between",
-    paddingHorizontal: 16,
-    paddingVertical:   14,
-    backgroundColor:   C.card,
-    borderBottomWidth: 1,
-    borderBottomColor: "#EEECE8",
+    paddingHorizontal: 4,
+    backgroundColor:   C.bg,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "rgba(0,0,0,0.08)",
   },
   backBtn: {
-    width: 60,
-  },
-  backText: {
-    fontSize:   15,
-    color:      C.teal,
-    fontWeight: "500",
+    width: 42,
+    alignItems: "center",
+    justifyContent: "center",
   },
   headerTitle: {
-    fontSize:   17,
+    flex:       1,
+    fontSize:   16,
     fontWeight: "700",
     color:      C.navy,
+    textAlign:  "center",
   },
   scroll: {
     paddingHorizontal: 20,

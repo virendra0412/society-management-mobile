@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
@@ -44,7 +44,67 @@ const SCREEN_TITLES = {
   Terms:            "Terms & Conditions",
 };
 
-// ─── MoreScreen ───────────────────────────────────────────────────────────────
+// ─── Compact custom header (replaces native stack header) ─────────────────────
+//
+// Why: @react-navigation/native-stack's native header does NOT zero out
+// insets.top for the content area below it. Every sub-screen wraps its
+// content in <SafeAreaView edges={["top"]}>, which re-adds the full
+// status-bar height as padding — creating double spacing at the top.
+//
+// A React-rendered custom `header` component DOES correctly zero out
+// insets.top for all content rendered below it, so every screen's
+// SafeAreaView adds 0 extra top padding automatically.
+//
+// It also reads options.headerRight set by screens via navigation.setOptions
+// (e.g. NoticesScreen's "+ Post" button), so no screen files need changing.
+// ─────────────────────────────────────────────────────────────────────────────
+const SubScreenHeader = ({ navigation, route, options, back }) => {
+  const insets = useSafeAreaInsets();
+
+  // Resolve title: screens may override via navigation.setOptions({ title })
+  const title =
+    typeof options.headerTitle === "string"
+      ? options.headerTitle
+      : options.title ?? SCREEN_TITLES[route.name] ?? route.name;
+
+  return (
+    <View style={[hdr.wrap, { paddingTop: insets.top }]}>
+      <View style={hdr.row}>
+
+        {/* ← Back button — same icon & colour as before */}
+        {back ? (
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={hdr.backBtn}
+            hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+          >
+            <Ionicons name="chevron-back" size={22} color={C.navy} />
+          </TouchableOpacity>
+        ) : (
+          // placeholder keeps title centred when there is no back button
+          <View style={hdr.sideSlot} />
+        )}
+
+        {/* Title — centred */}
+        <Text style={hdr.title} numberOfLines={1}>{title}</Text>
+
+        {/* Right action (e.g. NoticesScreen "+ Post") or balancer */}
+        <View style={hdr.sideSlot}>
+          {options.headerRight ? options.headerRight({ tintColor: C.navy }) : null}
+        </View>
+
+      </View>
+    </View>
+  );
+};
+
+const hdr = StyleSheet.create({
+  wrap:     { backgroundColor: C.bg, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "rgba(0,0,0,0.08)" },
+  row:      { height: 44, flexDirection: "row", alignItems: "center", paddingHorizontal: 4 },
+  backBtn:  { width: 42, alignItems: "center", justifyContent: "center" },
+  sideSlot: { width: 42, alignItems: "flex-end", justifyContent: "center" },
+  title:    { flex: 1, fontSize: 16, fontWeight: "700", color: C.navy, textAlign: "center" },
+});
 
 // ─── Module tile ──────────────────────────────────────────────────────────────
 const ModuleTile = ({ icon, label, color, onPress }) => (
@@ -120,41 +180,32 @@ const Stack = createNativeStackNavigator();
 
 export const MoreScreen = () => (
   <Stack.Navigator
-    screenOptions={({ navigation, route }) => {
-      const showHeader = route.name !== "MoreGrid";
+    screenOptions={({ route }) => {
+      // MoreGrid needs no header (it has its own title row).
+      // TermsScreen + PrivacyPolicyScreen own their entire header row
+      // (chevron-back + title) — giving them a navigator header too
+      // would produce a double back button. Let them self-manage.
+      const selfManaged = route.name === "PrivacyPolicy" || route.name === "Terms";
+      const isRoot      = route.name === "MoreGrid";
       return {
-        headerShown: showHeader,
-        headerTitle: SCREEN_TITLES[route.name] || route.name,
-        headerTitleAlign: "center",
-        headerTitleStyle: { fontSize: 16, fontWeight: "700", color: C.navy },
-        headerStyle: {
-          backgroundColor: C.bg,
-          shadowColor: "transparent",
-          elevation: 0,
-          borderBottomColor: "rgba(0,0,0,0.08)",
-          borderBottomWidth: StyleSheet.hairlineWidth,
-        },
-        headerLeft: showHeader
-          ? () => (
-              <TouchableOpacity onPress={() => navigation.goBack()} style={{ paddingHorizontal: 10 }}>
-                <Ionicons name="chevron-back" size={22} color={C.navy} />
-              </TouchableOpacity>
-            )
-          : undefined,
+        headerShown: !isRoot && !selfManaged,
+        // Custom React header — fixes the double safe-area-padding that
+        // the native header causes (insets.top is not zeroed for content).
+        header: (props) => <SubScreenHeader {...props} />,
       };
     }}
   >
-    <Stack.Screen name="MoreGrid"   component={MoreGrid} />
-    <Stack.Screen name="Notices"    component={NoticesScreen} />
-    <Stack.Screen name="Help"       component={HelpScreen} />
-    <Stack.Screen name="Contacts"   component={ContactsScreen} />
-    <Stack.Screen name="Polls"      component={PollsScreen} />
-    <Stack.Screen name="Events"     component={EventsScreen} />
-    <Stack.Screen name="Parking"    component={ParkingScreen} />
-    <Stack.Screen name="Amenity"    component={AmenityScreen} />
-    <Stack.Screen name="Profile"    component={ProfileScreen} />
-    <Stack.Screen name="Committee"  component={AdminScreen} />
-    <Stack.Screen name="Upgrade"    component={UpgradeScreen} />
+    <Stack.Screen name="MoreGrid"      component={MoreGrid} />
+    <Stack.Screen name="Notices"       component={NoticesScreen} />
+    <Stack.Screen name="Help"          component={HelpScreen} />
+    <Stack.Screen name="Contacts"      component={ContactsScreen} />
+    <Stack.Screen name="Polls"         component={PollsScreen} />
+    <Stack.Screen name="Events"        component={EventsScreen} />
+    <Stack.Screen name="Parking"       component={ParkingScreen} />
+    <Stack.Screen name="Amenity"       component={AmenityScreen} />
+    <Stack.Screen name="Profile"       component={ProfileScreen} />
+    <Stack.Screen name="Committee"     component={AdminScreen} />
+    <Stack.Screen name="Upgrade"       component={UpgradeScreen} />
     <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} />
     <Stack.Screen name="Terms"         component={TermsScreen} />
   </Stack.Navigator>
