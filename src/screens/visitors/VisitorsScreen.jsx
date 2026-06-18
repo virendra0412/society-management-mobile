@@ -2,16 +2,10 @@
  * screens/visitors/VisitorsScreen.jsx
  *
  * Visitor Management — all four flows:
- *   Flow A — Pre-approved Invite (resident creates OTP)
- *   Flow B — Walk-in (guard logs, resident approves/rejects)
- *   Flow C — Trusted / Frequent Visitors (maid, cook, driver — schedule-based auto-entry)
- *   Flow D — Delivery (walk-in with auto-exit badge)
- *
- * Screen has two tabs for residents:
- *   "Visitors"  — Flows A & B (single-visit records)
- *   "Trusted"   — Flow C (standing passes)
- *
- * Guards/admin see a single list + lookup panel for trusted visitors.
+ * Flow A — Pre-approved Invite (resident creates OTP)
+ * Flow B — Walk-in (guard logs, resident approves/rejects)
+ * Flow C — Trusted / Frequent Visitors (maid, cook, driver — schedule-based auto-entry)
+ * Flow D — Delivery (walk-in with auto-exit badge)
  */
 import { useState, useEffect, useCallback } from "react";
 import {
@@ -20,9 +14,9 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { visitorsApi as visitorApi } from "../../api/resources.api";
-import { useAuth }  from "../../context/AuthContext";
-import { useToast } from "../../context/ToastContext";
-import { useLanguage } from "../../context/LanguageContext";
+import { useAuth }    from "../../context/AuthContext";
+import { useToast }   from "../../context/ToastContext";
+import { useLanguage as useBaseLanguage } from "../../context/LanguageContext";
 import {
   Badge, Btn, Card, EmptyState, ErrorState,
   FilterPill, Modal, Input, Spinner,
@@ -45,8 +39,12 @@ const STATUS_LABELS = {
 
 const TRUSTED_CATEGORIES = ["Maid","Cook","Driver","Security","Vendor","Delivery","Service","Other"];
 const PASS_TYPES         = ["daily","monthly","permanent"];
-const PASS_TYPE_LABELS   = { daily: "visitor_pass_today_only", monthly: "visitor_pass_30_days", permanent: "visitor_pass_permanent" };
-const CATEGORY_ICON      = {
+const PASS_TYPE_LABELS   = {
+  daily:     "visitor_pass_today_only",
+  monthly:   "visitor_pass_30_days",
+  permanent: "visitor_pass_permanent",
+};
+const CATEGORY_ICON = {
   Maid: "🧹", Cook: "🍳", Driver: "🚗", Security: "💂",
   Vendor: "🛒", Delivery: "📦", Service: "🔧", Other: "👤",
 };
@@ -62,9 +60,18 @@ const otpExpiryLabel = (expiresAt, t) => {
   if (diff <= 0) return { label: t("visitor_otp_expired", "OTP expired"), expired: true };
   const mins = Math.floor(diff / 60000);
   const hrs  = Math.floor(mins / 60);
-  if (hrs >= 24) return { label: t("visitor_otp_valid_days", "OTP valid ~%dd", { count: Math.floor(hrs / 24), value: Math.floor(hrs / 24) }), expired: false };
-  if (hrs >= 1)  return { label: t("visitor_otp_valid_hours", "OTP valid ~%dh %dm", { hrs, mins: mins % 60 }), expired: false };
-  return { label: t("visitor_otp_valid_minutes", "OTP valid %dm", { mins }), expired: false };
+  if (hrs >= 24) return {
+    label: t("visitor_otp_valid_days", "OTP valid ~{count}d", { count: Math.floor(hrs / 24) }),
+    expired: false,
+  };
+  if (hrs >= 1) return {
+    label: t("visitor_otp_valid_hours", "OTP valid ~{hrs}h {mins}m", { hrs, mins: mins % 60 }),
+    expired: false,
+  };
+  return {
+    label: t("visitor_otp_valid_minutes", "OTP valid {mins}m", { mins }),
+    expired: false,
+  };
 };
 
 const formatSchedule = (s, t) => {
@@ -86,14 +93,29 @@ const validUntilDays = (pass) => {
 const validUntilLabel = (pass, t) => {
   if (pass.passType === "permanent") return t("visitor_pass_permanent", "Permanent pass");
   if (!pass.validUntil) return "—";
-  const d  = new Date(pass.validUntil);
-  const now = new Date();
-  const diff = d - now;
+  const diff = new Date(pass.validUntil) - new Date();
   if (diff < 0) return t("visitor_pass_expired", "Expired");
   const days = Math.ceil(diff / 86400000);
   if (days === 0) return t("visitor_pass_expires_today", "Expires today");
   if (days === 1) return t("visitor_pass_expires_tomorrow", "Expires tomorrow");
-  return t("visitor_pass_expires_in_days", "Expires in %d days", { count: days, value: days });
+  return t("visitor_pass_expires_in_days", "Expires in {count} days", { count: days });
+};
+
+// ─── Custom Local Wrapper for Language Hook ──────────────────────────────────
+// Keeps the rest of the codebase untouched while resolving parameter placeholders
+const useLanguage = () => {
+  const { t: baseT, ...rest } = useBaseLanguage();
+
+  const t = useCallback((key, defaultValue, params) => {
+    const translated = baseT(key, defaultValue);
+    if (!params) return translated;
+
+    return translated.replace(/\{(\w+)\}/g, (match, paramKey) => {
+      return params[paramKey] !== undefined ? String(params[paramKey]) : match;
+    });
+  }, [baseT]);
+
+  return { t, ...rest };
 };
 
 // ─── PillSelect ───────────────────────────────────────────────────────────────
@@ -142,7 +164,7 @@ const DayPicker = ({ value = ALL_DAYS, onChange }) => {
             <TouchableOpacity
               key={d}
               onPress={() => {
-                if (active && value.length === 1) return; // keep at least 1
+                if (active && value.length === 1) return;
                 onChange(active ? value.filter((x) => x !== d) : [...value, d].sort());
               }}
               style={[ps.pill, active && ps.pillActive, { paddingHorizontal: 10 }]}
@@ -159,12 +181,15 @@ const DayPicker = ({ value = ALL_DAYS, onChange }) => {
 // ─── OTP Display Modal ────────────────────────────────────────────────────────
 const OTPModal = ({ otp, visitor, onClose }) => {
   const { t } = useLanguage();
-  // Try to load QR code component dynamically; fall back gracefully if not installed
   let QRCodeComp = null;
   try { QRCodeComp = require("react-native-qrcode-svg").default; } catch (e) { QRCodeComp = null; }
 
   const handleShare = async () => {
-    const message = t("visitor_otp_share_message", "Entry OTP: %s\nVisitor: %s\nShow this at the gate to enter.", { otp, name: visitor?.name || "" });
+    const message = t(
+      "visitor_otp_share_message",
+      "Entry OTP: {otp}\nVisitor: {name}\nShow this at the gate to enter.",
+      { otp, name: visitor?.name || "" }
+    );
     try { await Share.share({ message }); } catch (e) { /* ignore */ }
   };
 
@@ -172,11 +197,17 @@ const OTPModal = ({ otp, visitor, onClose }) => {
     <Modal open={!!otp} onClose={onClose} title={t("visitor_otp_modal_title", "Share this OTP with your visitor")}>
       <View style={{ alignItems: "center", paddingVertical: 8 }}>
         <Text style={{ fontSize: 13, color: C.gray500, textAlign: "center", lineHeight: 20, marginBottom: 16 }}>
-          {t("visitor_otp_modal_lead", "Your visitor")} <Text style={{ fontWeight: "700", color: C.text }}>{visitor?.name}</Text> {t("visitor_otp_modal_need", "will need this OTP at the gate.")}{"\n"}
-          {t("visitor_otp_modal_not_shown_prefix", "It will")} <Text style={{ fontWeight: "700", color: C.text }}>{t("visitor_otp_modal_not_shown_bold", "not")}</Text> {t("visitor_otp_modal_not_shown_suffix", "be shown again.")}
+          {t("visitor_otp_modal_lead", "Your visitor")}{" "}
+          <Text style={{ fontWeight: "700", color: C.text }}>{visitor?.name}</Text>
+          {" "}{t("visitor_otp_modal_need", "will need this OTP at the gate.")}{"\n"}
+          {t("visitor_otp_modal_not_shown_prefix", "It will")}{" "}
+          <Text style={{ fontWeight: "700", color: C.text }}>{t("visitor_otp_modal_not_shown_bold", "not")}</Text>
+          {" "}{t("visitor_otp_modal_not_shown_suffix", "be shown again.")}
         </Text>
         <View style={{ backgroundColor: C.navy, borderRadius: 16, paddingHorizontal: 28, paddingVertical: 20, marginBottom: 12, alignItems: "center" }}>
-          <Text style={{ fontSize: 10, color: "rgba(255,255,255,0.5)", fontWeight: "700", letterSpacing: 1.2, marginBottom: 8 }}>{t("visitor_otp_label", "ENTRY OTP")}</Text>
+          <Text style={{ fontSize: 10, color: "rgba(255,255,255,0.5)", fontWeight: "700", letterSpacing: 1.2, marginBottom: 8 }}>
+            {t("visitor_otp_label", "ENTRY OTP")}
+          </Text>
           <Text style={{ fontSize: 38, fontWeight: "800", color: C.amber, letterSpacing: 10 }}>{otp}</Text>
         </View>
         {visitor?.expectedAt && (
@@ -184,17 +215,19 @@ const OTPModal = ({ otp, visitor, onClose }) => {
             {t("visitor_otp_expected_label", "Expected:")} {new Date(visitor.expectedAt).toLocaleString()}
           </Text>
         )}
-
-        {/* QR code + share actions. QR is optional — install react-native-qrcode-svg for image QR */}
         {QRCodeComp && (
           <View style={{ alignItems: "center", marginTop: 12, width: "100%" }}>
             <QRCodeComp value={String(otp)} size={140} />
-            <Btn onPress={handleShare} style={{ marginTop: 12, width: "100%" }}>{t("visitor_action_share_otp", "Share OTP")}</Btn>
+            <Btn onPress={handleShare} style={{ marginTop: 12, width: "100%" }}>
+              {t("visitor_action_share_otp", "Share OTP")}
+            </Btn>
           </View>
         )}
         {!QRCodeComp && (
           <View style={{ marginTop: 12, width: "100%" }}>
-            <Btn onPress={handleShare} style={{ width: "100%" }}>{t("visitor_action_share_otp", "Share OTP")}</Btn>
+            <Btn onPress={handleShare} style={{ width: "100%" }}>
+              {t("visitor_action_share_otp", "Share OTP")}
+            </Btn>
           </View>
         )}
       </View>
@@ -204,15 +237,12 @@ const OTPModal = ({ otp, visitor, onClose }) => {
 
 // ─── Visitor Card (Flows A, B, D) ────────────────────────────────────────────
 const VisitorCard = ({ v, isAdmin, myFlat, onApprove, onReject, onVerifyOTP, onMarkExit, onCancelInvite, busy }) => {
-  const { t } = useLanguage();
+  const { t }       = useLanguage();
   const purposeIcon = VISITOR_PURPOSE_ICON[v.purpose] || "🚶";
   const isBusy      = busy === v._id;
   const sc          = VISITOR_STATUS_COLOR[v.status] || VISITOR_STATUS_COLOR.exited;
   const expiry      = v.status === "invited" ? otpExpiryLabel(v.entryOTPExpires, t) : null;
   const isDelivery  = v.purpose === "Delivery";
-
-  // Admin can only approve/reject walk-ins for their own flat.
-  // For other flats they can still verify OTP and mark exit (gate operations).
   const isOwnFlat   = !v.hostFlat || !myFlat || v.hostFlat === myFlat;
   const canApproveReject = !isAdmin || isOwnFlat;
 
@@ -227,19 +257,25 @@ const VisitorCard = ({ v, isAdmin, myFlat, onApprove, onReject, onVerifyOTP, onM
             <Text style={{ fontSize: 15, fontWeight: "700", color: C.text, flex: 1 }} numberOfLines={1}>{v.name}</Text>
             <Badge label={t(STATUS_LABELS[v.status] || v.status, v.status)} bg={sc.bg} text={sc.text} dot={sc.dot} />
           </View>
-          <Text style={{ fontSize: 12, color: C.gray500, marginTop: 2 }}>{v.purpose}{v.phone ? ` · 📞 ${v.phone}` : ""}</Text>
+          <Text style={{ fontSize: 12, color: C.gray500, marginTop: 2 }}>
+            {v.purpose}{v.phone ? ` · 📞 ${v.phone}` : ""}
+          </Text>
         </View>
       </View>
 
       {/* Meta row */}
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, backgroundColor: C.gray50, borderRadius: 8, padding: 8, marginBottom: 10 }}>
-        <Text style={{ fontSize: 11, color: C.gray500 }}>🏠 {t("visitor_flat_label", "Flat %s", { value: v.hostFlat || "—" })}</Text>
+        <Text style={{ fontSize: 11, color: C.gray500 }}>
+          🏠 {t("visitor_flat_label", "Flat {value}", { value: v.hostFlat || "—" })}
+        </Text>
         {!!v.vehicleNumber && <Text style={{ fontSize: 11, color: C.gray500 }}>🚗 {v.vehicleNumber}</Text>}
         <Text style={{ fontSize: 11, color: v.isWalkIn ? C.amber : C.blue, fontWeight: "600" }}>
           {t(v.isWalkIn ? "visitor_type_walk_in" : "visitor_type_pre_invited", v.isWalkIn ? "Walk-in" : "Pre-invited")}
         </Text>
         {isDelivery && v.status === "approved" && (
-          <Text style={{ fontSize: 11, color: "#7C3AED", fontWeight: "600" }}>⏱ {t("visitor_auto_exit_on", "Auto-exit on")}</Text>
+          <Text style={{ fontSize: 11, color: "#7C3AED", fontWeight: "600" }}>
+            ⏱ {t("visitor_auto_exit_on", "Auto-exit on")}
+          </Text>
         )}
         {!!v.expectedAt && <Text style={{ fontSize: 11, color: C.gray500 }}>📅 {timeAgo(v.expectedAt)}</Text>}
         {!!v.entryTime  && <Text style={{ fontSize: 11, color: C.gray500 }}>🟢 In {timeAgo(v.entryTime)}</Text>}
@@ -269,8 +305,12 @@ const VisitorCard = ({ v, isAdmin, myFlat, onApprove, onReject, onVerifyOTP, onM
       {/* Resident actions */}
       {!isAdmin && v.status === "pending" && (
         <View style={{ flexDirection: "row", gap: 8 }}>
-          <Btn small variant="primary" onPress={() => onApprove(v._id)} loading={isBusy} style={{ flex: 1 }}>✓ {t("visitor_action_approve", "Approve")}</Btn>
-          <Btn small variant="danger"  onPress={() => onReject(v._id)}  loading={isBusy} style={{ flex: 1 }}>✕ {t("visitor_action_reject", "Reject")}</Btn>
+          <Btn small variant="primary" onPress={() => onApprove(v._id)} loading={isBusy} style={{ flex: 1 }}>
+            ✓ {t("visitor_action_approve", "Approve")}
+          </Btn>
+          <Btn small variant="danger"  onPress={() => onReject(v._id)}  loading={isBusy} style={{ flex: 1 }}>
+            ✕ {t("visitor_action_reject", "Reject")}
+          </Btn>
         </View>
       )}
       {!isAdmin && v.status === "invited" && (
@@ -289,14 +329,18 @@ const VisitorCard = ({ v, isAdmin, myFlat, onApprove, onReject, onVerifyOTP, onM
       )}
       {isAdmin && v.status === "pending" && canApproveReject && (
         <View style={{ flexDirection: "row", gap: 8 }}>
-          <Btn small variant="primary" onPress={() => onApprove(v._id)} loading={isBusy} style={{ flex: 1 }}>✓ {t("visitor_action_approve_entry", "Approve Entry")}</Btn>
-          <Btn small variant="danger"  onPress={() => onReject(v._id)}  loading={isBusy} style={{ flex: 1 }}>✕ {t("visitor_action_reject", "Reject")}</Btn>
+          <Btn small variant="primary" onPress={() => onApprove(v._id)} loading={isBusy} style={{ flex: 1 }}>
+            ✓ {t("visitor_action_approve_entry", "Approve Entry")}
+          </Btn>
+          <Btn small variant="danger"  onPress={() => onReject(v._id)}  loading={isBusy} style={{ flex: 1 }}>
+            ✕ {t("visitor_action_reject", "Reject")}
+          </Btn>
         </View>
       )}
       {isAdmin && v.status === "pending" && !canApproveReject && (
         <View style={{ padding: 8, backgroundColor: C.gray50, borderRadius: 8 }}>
           <Text style={{ fontSize: 11, color: C.gray500, textAlign: "center" }}>
-            {t("visitor_approval_waiting", "Awaiting approval from Flat %s resident", { value: v.hostFlat })}
+            {t("visitor_approval_waiting", "Awaiting approval from Flat {value} resident", { value: v.hostFlat })}
           </Text>
         </View>
       )}
@@ -311,7 +355,7 @@ const VisitorCard = ({ v, isAdmin, myFlat, onApprove, onReject, onVerifyOTP, onM
 
 // ─── Trusted Pass Card (Flow C) ───────────────────────────────────────────────
 const TrustedCard = ({ pass, isAdmin, onRevoke, onEntry, busy }) => {
-  const { t } = useLanguage();
+  const { t }    = useLanguage();
   const isBusy   = busy === pass._id;
   const icon     = CATEGORY_ICON[pass.category] || "👤";
   const isActive = !["expired","rejected"].includes(pass.status);
@@ -350,10 +394,14 @@ const TrustedCard = ({ pass, isAdmin, onRevoke, onEntry, busy }) => {
           {expWarn ? "⚠️ " : "🎫 "}{expLabel}
         </Text>
         {pass.entryCount > 0 && (
-          <Text style={{ fontSize: 11, color: C.gray500 }}>🚪 {t("visitor_pass_entries_recorded", "%s entries recorded", { value: pass.entryCount })}</Text>
+          <Text style={{ fontSize: 11, color: C.gray500 }}>
+            🚪 {t("visitor_pass_entries_recorded", "{value} entries recorded", { value: pass.entryCount })}
+          </Text>
         )}
         {!!pass.hostFlat && isAdmin && (
-          <Text style={{ fontSize: 11, color: C.gray500 }}>🏠 {t("visitor_flat_label", "Flat %s", { value: pass.hostFlat })}</Text>
+          <Text style={{ fontSize: 11, color: C.gray500 }}>
+            🏠 {t("visitor_flat_label", "Flat {value}", { value: pass.hostFlat })}
+          </Text>
         )}
       </View>
 
@@ -361,7 +409,6 @@ const TrustedCard = ({ pass, isAdmin, onRevoke, onEntry, busy }) => {
         <Text style={{ fontSize: 12, color: C.gray700, fontStyle: "italic", marginBottom: 10 }}>"{pass.note}"</Text>
       )}
 
-      {/* Actions */}
       {isAdmin && isActive && (
         <Btn small onPress={() => onEntry(pass._id)} loading={isBusy}
           style={{ width: "100%", backgroundColor: "#7C3AED" }}>
@@ -382,10 +429,10 @@ const TrustedCard = ({ pass, isAdmin, onRevoke, onEntry, busy }) => {
 const CreateInviteModal = ({ open, onClose, onCreated }) => {
   const { t } = useLanguage();
   const toast = useToast();
-  const [form, setForm]       = useState({ name: "", phone: "", purpose: "Guest", vehicleNumber: "", note: "" });
-  const [errors, setErrors]   = useState({});
+  const [form, setForm]         = useState({ name: "", phone: "", purpose: "Guest", vehicleNumber: "", note: "" });
+  const [errors, setErrors]     = useState({});
   const [apiError, setApiError] = useState("");
-  const [submitting, setSub]  = useState(false);
+  const [submitting, setSub]    = useState(false);
   const reset = () => { setForm({ name: "", phone: "", purpose: "Guest", vehicleNumber: "", note: "" }); setErrors({}); setApiError(""); };
   const set = (k) => (v) => { setForm((p) => ({ ...p, [k]: v })); setErrors((p) => ({ ...p, [k]: undefined })); };
 
@@ -409,13 +456,37 @@ const CreateInviteModal = ({ open, onClose, onCreated }) => {
   };
 
   return (
-    <Modal open={open} onClose={() => { onClose(); reset(); }} onOpen={reset} apiError={apiError} title={t("visitor_invite_modal_title", "Invite a Visitor")}>
-      <Input label={t("visitor_form_name_label", "Visitor Name *")}         value={form.name}          onChangeText={set("name")}          placeholder={t("visitor_form_name_ph_guest", "e.g. Amit Shah")} error={errors.name} />
-      <Input label={t("visitor_form_phone_label", "Phone (optional)")}       value={form.phone}         onChangeText={set("phone")}         placeholder="9876543210" keyboardType="phone-pad" />
-      <PillSelect label={t("visitor_form_purpose_label", "Purpose")}           value={form.purpose}       options={VISIT_PURPOSES}             onSelect={set("purpose")} />
-      <Input label={t("visitor_form_vehicle_label", "Vehicle No. (optional)")} value={form.vehicleNumber} onChangeText={set("vehicleNumber")} placeholder="GJ01AB1234" />
-      <Input label={t("visitor_form_note_label", "Note (optional)")}        value={form.note}          onChangeText={set("note")}          placeholder={t("visitor_form_note_ph_invite", "Coming to help shift things")} multiline />
-      <Btn onPress={handleSubmit} loading={submitting} style={{ width: "100%" }}>{t("visitor_invite_submit_btn", "Generate OTP & Invite")}</Btn>
+    <Modal open={open} onClose={() => { onClose(); reset(); }} onOpen={reset} apiError={apiError}
+      title={t("visitor_invite_modal_title", "Invite a Visitor")}>
+      <Input
+        label={t("visitor_form_name_label", "Visitor Name *")}
+        value={form.name} onChangeText={set("name")}
+        placeholder={t("visitor_form_name_ph_guest", "e.g. Amit Shah")}
+        error={errors.name}
+      />
+      <Input
+        label={t("visitor_form_phone_label", "Phone (optional)")}
+        value={form.phone} onChangeText={set("phone")}
+        placeholder="9876543210" keyboardType="phone-pad"
+      />
+      <PillSelect
+        label={t("visitor_form_purpose_label", "Purpose")}
+        value={form.purpose} options={VISIT_PURPOSES} onSelect={set("purpose")}
+      />
+      <Input
+        label={t("visitor_form_vehicle_label", "Vehicle No. (optional)")}
+        value={form.vehicleNumber} onChangeText={set("vehicleNumber")}
+        placeholder="GJ01AB1234"
+      />
+      <Input
+        label={t("visitor_form_note_label", "Note (optional)")}
+        value={form.note} onChangeText={set("note")}
+        placeholder={t("visitor_form_note_ph_invite", "Coming to help shift things")}
+        multiline
+      />
+      <Btn onPress={handleSubmit} loading={submitting} style={{ width: "100%" }}>
+        {t("visitor_invite_submit_btn", "Generate OTP & Invite")}
+      </Btn>
     </Modal>
   );
 };
@@ -424,10 +495,10 @@ const CreateInviteModal = ({ open, onClose, onCreated }) => {
 const LogWalkInModal = ({ open, onClose, onLogged }) => {
   const { t } = useLanguage();
   const toast = useToast();
-  const [form, setForm]       = useState({ name: "", phone: "", purpose: "Guest", vehicleNumber: "", note: "", hostFlat: "" });
-  const [errors, setErrors]   = useState({});
+  const [form, setForm]         = useState({ name: "", phone: "", purpose: "Guest", vehicleNumber: "", note: "", hostFlat: "" });
+  const [errors, setErrors]     = useState({});
   const [apiError, setApiError] = useState("");
-  const [submitting, setSub]  = useState(false);
+  const [submitting, setSub]    = useState(false);
   const reset = () => { setForm({ name: "", phone: "", purpose: "Guest", vehicleNumber: "", note: "", hostFlat: "" }); setErrors({}); setApiError(""); };
   const set = (k) => (v) => { setForm((p) => ({ ...p, [k]: v })); setErrors((p) => ({ ...p, [k]: undefined })); };
 
@@ -453,17 +524,45 @@ const LogWalkInModal = ({ open, onClose, onLogged }) => {
   };
 
   return (
-    <Modal open={open} onClose={() => { onClose(); reset(); }} onOpen={reset} apiError={apiError} title={t("visitor_walkin_modal_title", "Log Walk-in Visitor")}>
-      <Input label={t("visitor_form_name_label", "Visitor Name *")}            value={form.name}          onChangeText={set("name")}          placeholder={t("visitor_form_name_ph_delivery", "e.g. Delivery Person")} error={errors.name} />
-      <Input label={t("visitor_form_phone_label", "Phone (optional)")}          value={form.phone}         onChangeText={set("phone")}         placeholder="9876543210" keyboardType="phone-pad" />
-      <PillSelect label={t("visitor_form_purpose_label", "Purpose")}              value={form.purpose}       options={VISIT_PURPOSES}             onSelect={set("purpose")} />
-      <Input label={t("visitor_form_vehicle_label", "Vehicle No. (optional)")}    value={form.vehicleNumber} onChangeText={set("vehicleNumber")} placeholder="GJ01AB1234" />
-      <Input label={t("visitor_form_note_label", "Note (optional)")}           value={form.note}          onChangeText={set("note")}          placeholder={t("visitor_form_note_ph_walkin", "Any note for resident")} multiline />
-      <Input label={t("visitor_form_host_flat_label", "Resident Flat (optional)")}  value={form.hostFlat}      onChangeText={set("hostFlat")}      placeholder="e.g. A-101" />
+    <Modal open={open} onClose={() => { onClose(); reset(); }} onOpen={reset} apiError={apiError}
+      title={t("visitor_walkin_modal_title", "Log Walk-in Visitor")}>
+      <Input
+        label={t("visitor_form_name_label", "Visitor Name *")}
+        value={form.name} onChangeText={set("name")}
+        placeholder={t("visitor_form_name_ph_delivery", "e.g. Delivery Person")}
+        error={errors.name}
+      />
+      <Input
+        label={t("visitor_form_phone_label", "Phone (optional)")}
+        value={form.phone} onChangeText={set("phone")}
+        placeholder="9876543210" keyboardType="phone-pad"
+      />
+      <PillSelect
+        label={t("visitor_form_purpose_label", "Purpose")}
+        value={form.purpose} options={VISIT_PURPOSES} onSelect={set("purpose")}
+      />
+      <Input
+        label={t("visitor_form_vehicle_label", "Vehicle No. (optional)")}
+        value={form.vehicleNumber} onChangeText={set("vehicleNumber")}
+        placeholder="GJ01AB1234"
+      />
+      <Input
+        label={t("visitor_form_note_label", "Note (optional)")}
+        value={form.note} onChangeText={set("note")}
+        placeholder={t("visitor_form_note_ph_walkin", "Any note for resident")}
+        multiline
+      />
+      <Input
+        label={t("visitor_form_host_flat_label", "Resident Flat (optional)")}
+        value={form.hostFlat} onChangeText={set("hostFlat")}
+        placeholder="e.g. A-101"
+      />
       <Text style={{ fontSize: 11, color: C.gray500, marginTop: -8, marginBottom: 14, lineHeight: 16 }}>
         {t("visitor_walkin_host_flat_hint", "Enter the flat number to notify the resident immediately.")}
       </Text>
-      <Btn onPress={handleSubmit} loading={submitting} style={{ width: "100%" }}>{t("visitor_walkin_submit_btn", "Log Walk-in")}</Btn>
+      <Btn onPress={handleSubmit} loading={submitting} style={{ width: "100%" }}>
+        {t("visitor_walkin_submit_btn", "Log Walk-in")}
+      </Btn>
     </Modal>
   );
 };
@@ -472,10 +571,10 @@ const LogWalkInModal = ({ open, onClose, onLogged }) => {
 const VerifyOTPModal = ({ open, visitor, onClose, onVerified }) => {
   const { t } = useLanguage();
   const toast = useToast();
-  const [otp, setOtp]         = useState("");
+  const [otp, setOtp]           = useState("");
   const [otpError, setOtpError] = useState("");
   const [apiError, setApiError] = useState("");
-  const [verifying, setVer]   = useState(false);
+  const [verifying, setVer]     = useState(false);
   useEffect(() => { if (open) { setOtp(""); setOtpError(""); setApiError(""); } }, [open]);
 
   const handleVerify = async () => {
@@ -492,7 +591,8 @@ const VerifyOTPModal = ({ open, visitor, onClose, onVerified }) => {
   };
 
   return (
-    <Modal open={open} onClose={onClose} apiError={apiError} title={t("visitor_verify_otp_modal_title", "Verify Entry OTP")}>
+    <Modal open={open} onClose={onClose} apiError={apiError}
+      title={t("visitor_verify_otp_modal_title", "Verify Entry OTP")}>
       {visitor && (
         <View>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 12,
@@ -500,7 +600,9 @@ const VerifyOTPModal = ({ open, visitor, onClose, onVerified }) => {
             <Text style={{ fontSize: 28 }}>{VISITOR_PURPOSE_ICON[visitor.purpose] || "🚶"}</Text>
             <View>
               <Text style={{ fontSize: 14, fontWeight: "700", color: C.text }}>{visitor.name}</Text>
-              <Text style={{ fontSize: 12, color: C.gray500 }}>{visitor.purpose} · {t("visitor_flat_label", "Flat %s", { value: visitor.hostFlat })}</Text>
+              <Text style={{ fontSize: 12, color: C.gray500 }}>
+                {visitor.purpose} · {t("visitor_flat_label", "Flat {value}", { value: visitor.hostFlat })}
+              </Text>
             </View>
           </View>
           <Input
@@ -529,14 +631,13 @@ const RegisterTrustedModal = ({ open, onClose, onRegistered }) => {
     passType: "monthly", note: "",
     accessSchedule: { days: [1,2,3,4,5,6], fromTime: "07:00", toTime: "10:00" },
   };
-  const [form, setForm]      = useState(INIT);
-  const [submitting, setSub] = useState(false);
+  const [form, setForm]         = useState(INIT);
+  const [submitting, setSub]    = useState(false);
+  const [errors, setErrors]     = useState({});
+  const [apiError, setApiError] = useState("");
   const set = (k) => (v) => setForm((p) => ({ ...p, [k]: v }));
   const setSchedule = (k) => (v) =>
     setForm((p) => ({ ...p, accessSchedule: { ...p.accessSchedule, [k]: v } }));
-
-  const [errors, setErrors]     = useState({});
-  const [apiError, setApiError] = useState("");
   const resetAll = () => { setErrors({}); setApiError(""); };
 
   const handleSubmit = async () => {
@@ -561,30 +662,58 @@ const RegisterTrustedModal = ({ open, onClose, onRegistered }) => {
   };
 
   return (
-    <Modal open={open} onClose={() => { onClose(); setForm(INIT); resetAll(); }} onOpen={resetAll} apiError={apiError} title={t("visitor_trusted_register_modal_title", "Register Trusted Visitor")}>
-      <Input label={t("visitor_form_trusted_name_label", "Name *")}                value={form.name}          onChangeText={set("name")}          placeholder="e.g. Sunita Devi" error={errors.name} />
-      <Input label={t("visitor_form_phone_label", "Phone (optional)")}      value={form.phone}         onChangeText={set("phone")}         placeholder="9876543210" keyboardType="phone-pad" />
-      <PillSelect label={t("visitor_form_category_label", "Category *")}       value={form.category}      options={TRUSTED_CATEGORIES}         onSelect={set("category")} />
-      <PillSelect label={t("visitor_form_pass_validity_label", "Pass Validity")}    value={form.passType}      options={PASS_TYPES}                 onSelect={set("passType")} labelMap={PASS_TYPE_LABELS} />
-      <Input label={t("visitor_form_vehicle_label", "Vehicle No. (optional)")}value={form.vehicleNumber} onChangeText={set("vehicleNumber")} placeholder="GJ01AB1234" />
+    <Modal open={open} onClose={() => { onClose(); setForm(INIT); resetAll(); }} onOpen={resetAll}
+      apiError={apiError} title={t("visitor_trusted_register_modal_title", "Register Trusted Visitor")}>
+      <Input
+        label={t("visitor_form_trusted_name_label", "Name *")}
+        value={form.name} onChangeText={set("name")}
+        placeholder="e.g. Sunita Devi" error={errors.name}
+      />
+      <Input
+        label={t("visitor_form_phone_label", "Phone (optional)")}
+        value={form.phone} onChangeText={set("phone")}
+        placeholder="9876543210" keyboardType="phone-pad"
+      />
+      <PillSelect
+        label={t("visitor_form_category_label", "Category *")}
+        value={form.category} options={TRUSTED_CATEGORIES} onSelect={set("category")}
+      />
+      <PillSelect
+        label={t("visitor_form_pass_validity_label", "Pass Validity")}
+        value={form.passType} options={PASS_TYPES} onSelect={set("passType")} labelMap={PASS_TYPE_LABELS}
+      />
+      <Input
+        label={t("visitor_form_vehicle_label", "Vehicle No. (optional)")}
+        value={form.vehicleNumber} onChangeText={set("vehicleNumber")}
+        placeholder="GJ01AB1234"
+      />
 
-      {/* Schedule */}
       <DayPicker value={form.accessSchedule.days} onChange={setSchedule("days")} />
       <View style={{ flexDirection: "row", gap: 10 }}>
         <View style={{ flex: 1 }}>
-          <Input label={t("visitor_form_from_time_label", "From Time")} value={form.accessSchedule.fromTime}
-            onChangeText={setSchedule("fromTime")} placeholder="07:00" />
+          <Input
+            label={t("visitor_form_from_time_label", "From Time")}
+            value={form.accessSchedule.fromTime} onChangeText={setSchedule("fromTime")}
+            placeholder="07:00"
+          />
         </View>
         <View style={{ flex: 1 }}>
-          <Input label={t("visitor_form_to_time_label", "To Time")} value={form.accessSchedule.toTime}
-            onChangeText={setSchedule("toTime")} placeholder="10:00" />
+          <Input
+            label={t("visitor_form_to_time_label", "To Time")}
+            value={form.accessSchedule.toTime} onChangeText={setSchedule("toTime")}
+            placeholder="10:00"
+          />
         </View>
       </View>
       <Text style={{ fontSize: 11, color: C.gray500, marginTop: -8, marginBottom: 14 }}>
         {t("visitor_trusted_schedule_hint", "Entry will be auto-approved within this time window. Use 00:00–23:59 for any time.")}
       </Text>
-
-      <Input label={t("visitor_form_note_label", "Note (optional)")} value={form.note} onChangeText={set("note")} placeholder={t("visitor_form_note_ph_trusted", "e.g. Morning maid, has key")} multiline />
+      <Input
+        label={t("visitor_form_note_label", "Note (optional)")}
+        value={form.note} onChangeText={set("note")}
+        placeholder={t("visitor_form_note_ph_trusted", "e.g. Morning maid, has key")}
+        multiline
+      />
       <Btn onPress={handleSubmit} loading={submitting} style={{ width: "100%", backgroundColor: "#7C3AED" }}>
         {t("visitor_trusted_register_submit_btn", "Register Trusted Visitor")}
       </Btn>
@@ -593,14 +722,13 @@ const RegisterTrustedModal = ({ open, onClose, onRegistered }) => {
 };
 
 // ─── Guard Lookup Modal (Flow C, guard) ───────────────────────────────────────
-const TrustedLookupModal = ({ open, onClose, societyId, onEntryRecorded }) => {
-  const { t } = useLanguage();
-  const toast = useToast();
-  const [query, setQuery]     = useState("");
-  const [results, setResults] = useState([]);
-  const [searching, setSrch]  = useState(false);
-  const [busy, setBusy]       = useState(null);
-
+const TrustedLookupModal = ({ open, onClose, onEntryRecorded }) => {
+  const { t }  = useLanguage();
+  const toast  = useToast();
+  const [query, setQuery]       = useState("");
+  const [results, setResults]   = useState([]);
+  const [searching, setSrch]    = useState(false);
+  const [busy, setBusy]         = useState(null);
   const [searchError, setSearchError] = useState("");
   const [entryError, setEntryError]   = useState("");
 
@@ -612,7 +740,8 @@ const TrustedLookupModal = ({ open, onClose, societyId, onEntryRecorded }) => {
       const params  = isPhone ? { phone: query.trim() } : { name: query.trim() };
       const res     = await visitorApi.lookupTrusted(params);
       setResults(res.data.visitors || []);
-      if ((res.data.visitors || []).length === 0) setSearchError(t("visitor_lookup_no_match", "No matching trusted visitor found."));
+      if ((res.data.visitors || []).length === 0)
+        setSearchError(t("visitor_lookup_no_match", "No matching trusted visitor found."));
     } catch (e) {
       setSearchError(e.response?.data?.message || t("visitor_lookup_failed", "Lookup failed."));
     } finally { setSrch(false); }
@@ -631,14 +760,17 @@ const TrustedLookupModal = ({ open, onClose, societyId, onEntryRecorded }) => {
   };
 
   return (
-    <Modal open={open} onClose={() => { onClose(); setQuery(""); setResults([]); setSearchError(""); setEntryError(""); }}
-      apiError={searchError || entryError} title={t("visitor_lookup_modal_title", "Trusted Visitor Lookup")}>
+    <Modal
+      open={open}
+      onClose={() => { onClose(); setQuery(""); setResults([]); setSearchError(""); setEntryError(""); }}
+      apiError={searchError || entryError}
+      title={t("visitor_lookup_modal_title", "Trusted Visitor Lookup")}
+    >
       <View style={{ flexDirection: "row", gap: 8, marginBottom: 12 }}>
         <View style={{ flex: 1 }}>
           <Input
             label={t("visitor_lookup_input_label", "Phone or Name")}
-            value={query}
-            onChangeText={setQuery}
+            value={query} onChangeText={setQuery}
             placeholder={t("visitor_lookup_input_ph", "9876543210 or Sunita")}
           />
         </View>
@@ -658,7 +790,7 @@ const TrustedLookupModal = ({ open, onClose, societyId, onEntryRecorded }) => {
           <View style={{ flex: 1 }}>
             <Text style={{ fontSize: 14, fontWeight: "700", color: C.text }}>{pass.name}</Text>
             <Text style={{ fontSize: 12, color: C.gray500 }}>
-              {pass.category} · {t("visitor_flat_label", "Flat %s", { value: pass.host?.flat || pass.hostFlat || "—" })}
+              {pass.category} · {t("visitor_flat_label", "Flat {value}", { value: pass.host?.flat || pass.hostFlat || "—" })}
             </Text>
             <Text style={{ fontSize: 11, color: C.gray500, marginTop: 2 }}>
               {formatSchedule(pass.accessSchedule, t)}
@@ -682,13 +814,14 @@ const TrustedLookupModal = ({ open, onClose, societyId, onEntryRecorded }) => {
 
 // ─── Trusted Visitors Tab (resident) ─────────────────────────────────────────
 const TrustedTab = ({ user }) => {
+  const { t } = useLanguage();
   const toast = useToast();
-  const [passes, setPasses]        = useState([]);
-  const [loading, setLoading]      = useState(true);
-  const [error, setError]          = useState(null);
+  const [passes, setPasses]         = useState([]);
+  const [loading, setLoading]       = useState(true);
+  const [error, setError]           = useState(null);
   const [activeOnly, setActiveOnly] = useState(true);
-  const [showRegister, setShowReg] = useState(false);
-  const [busy, setBusy]            = useState(null);
+  const [showRegister, setShowReg]  = useState(false);
+  const [busy, setBusy]             = useState(null);
 
   const fetchPasses = useCallback(async () => {
     setLoading(true); setError(null);
@@ -696,7 +829,7 @@ const TrustedTab = ({ user }) => {
       const res = await visitorApi.getMyTrusted({ activeOnly });
       setPasses(res.data.visitors || []);
     } catch (e) {
-      setError(e.response?.data?.message || "Failed to load trusted visitors.");
+      setError(e.response?.data?.message || t("visitor_trusted_load_failed", "Failed to load trusted visitors."));
     } finally { setLoading(false); }
   }, [activeOnly]);
 
@@ -706,31 +839,30 @@ const TrustedTab = ({ user }) => {
     setBusy(id);
     try {
       await visitorApi.revokeTrusted(id);
-      toast.success("Pass revoked.");
+      toast.success(t("visitor_trusted_revoke_success", "Pass revoked."));
       fetchPasses();
     } catch (e) {
-      toast.error(e.response?.data?.message || "Revoke failed.");
+      toast.error(e.response?.data?.message || t("visitor_trusted_revoke_failed", "Revoke failed."));
     } finally { setBusy(null); }
   };
 
   return (
     <View style={{ flex: 1 }}>
-      {/* Sub-header */}
-      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+      <View style={{ flexDirection: "row", alignItems: "center", justifySpaceBetween: "space-between",
         paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: C.gray100 }}>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-          <Text style={{ fontSize: 12, color: C.gray500 }}>Active only</Text>
-          <Switch
-            value={activeOnly}
-            onValueChange={setActiveOnly}
-            trackColor={{ true: "#7C3AED" }}
-            thumbColor="#fff"
-          />
+          <Text style={{ fontSize: 12, color: C.gray500 }}>
+            {t("visitor_trusted_active_only_label", "Active only")}
+          </Text>
+          <Switch value={activeOnly} onValueChange={setActiveOnly}
+            trackColor={{ true: "#7C3AED" }} thumbColor="#fff" />
         </View>
         <TouchableOpacity
           onPress={() => setShowReg(true)}
           style={{ backgroundColor: "#7C3AED", borderRadius: 10, paddingHorizontal: 12, paddingVertical: 7 }}>
-          <Text style={{ fontSize: 12, fontWeight: "700", color: "#fff" }}>+ Register</Text>
+          <Text style={{ fontSize: 12, fontWeight: "700", color: "#fff" }}>
+            {t("visitor_trusted_register_btn", "+ Register")}
+          </Text>
         </TouchableOpacity>
       </View>
 
@@ -741,7 +873,9 @@ const TrustedTab = ({ user }) => {
       ) : passes.length === 0 ? (
         <EmptyState
           icon="🧹"
-          message={activeOnly ? "No active trusted visitors. Register your maid, cook or driver." : "No trusted visitor records yet."}
+          message={activeOnly
+            ? t("visitor_trusted_empty_active", "No active trusted visitors. Register your maid, cook or driver.")
+            : t("visitor_trusted_empty_all", "No trusted visitor records yet.")}
         />
       ) : (
         <FlatList
@@ -766,35 +900,38 @@ const TrustedTab = ({ user }) => {
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 export const VisitorsScreen = () => {
-  const { user, isAdmin, activeSocietyId, memberships, dataVersion } = useAuth(); // BUG-3
+  const { user, isAdmin, activeSocietyId, memberships, dataVersion } = useAuth();
   const { t } = useLanguage();
   const activeMembership = memberships?.find(
     (m) => m.society?._id?.toString() === activeSocietyId || m.society?.toString() === activeSocietyId
   );
   const myFlat = activeMembership?.flat || user?.flat || null;
-  const toast = useToast();
+  const toast  = useToast();
 
-  // Residents see two tabs; guards see single list
-  const [tab, setTab]              = useState("visitors"); // "visitors" | "trusted"
-  const [visitors, setVisitors]    = useState([]);
-  const [loading, setLoading]      = useState(true);
-  const [error, setError]          = useState(null);
-  const [statusFilter, setFilter]  = useState("all");
+  const [tab, setTab]            = useState("visitors");
+  const [visitors, setVisitors]  = useState([]);
+  const [loading, setLoading]    = useState(true);
+  const [error, setError]        = useState(null);
+  const [statusFilter, setFilter] = useState("all");
 
-  const [showInvite, setShowInvite]   = useState(false);
-  const [showWalkIn, setShowWalkIn]   = useState(false);
-  const [showLookup, setShowLookup]   = useState(false);
-  const [otpData,   setOtpData]       = useState(null);
-  const [otpTarget, setOtpTarget]     = useState(null);
-  const [busy, setBusy]               = useState(null);
+  const [showInvite, setShowInvite] = useState(false);
+  const [showWalkIn, setShowWalkIn] = useState(false);
+  const [showLookup, setShowLookup] = useState(false);
+  const [otpData,   setOtpData]     = useState(null);
+  const [otpTarget, setOtpTarget]   = useState(null);
+  const [busy, setBusy]             = useState(null);
 
   const FILTERS = isAdmin
     ? ["all","invited","pending","approved","rejected","exited"]
     : ["all","invited","pending","approved","exited"];
 
   const FILTER_LABELS = {
-    all:"visitor_filter_all", invited:"visitor_status_invited", pending:"visitor_status_pending",
-    approved:"visitor_status_inside", rejected:"visitor_status_rejected", exited:"visitor_status_exited",
+    all:      "visitor_filter_all",
+    invited:  "visitor_status_invited",
+    pending:  "visitor_status_pending",
+    approved: "visitor_status_inside",
+    rejected: "visitor_status_rejected",
+    exited:   "visitor_status_exited",
   };
 
   const fetchVisitors = useCallback(async () => {
@@ -807,41 +944,57 @@ export const VisitorsScreen = () => {
         : await visitorApi.getMyVisitors(params);
       setVisitors(res.data?.visitors || []);
     } catch (e) {
-      setError(e.response?.data?.message || "Failed to load visitors.");
+      setError(e.response?.data?.message || t("visitor_load_failed", "Failed to load visitors."));
     } finally { setLoading(false); }
   }, [isAdmin, statusFilter]);
 
-  useEffect(() => { fetchVisitors(); }, [fetchVisitors, dataVersion]); // BUG-3: re-fetch on resume
+  useEffect(() => { fetchVisitors(); }, [fetchVisitors, dataVersion]);
 
   const patchVisitor = (updated) =>
     setVisitors((p) => p.map((v) => v._id === updated._id ? updated : v));
 
   const handleApprove = async (id) => {
     setBusy(id);
-    try { const r = await visitorApi.approveWalkIn(id); patchVisitor(r.data.visitor); toast.success(t("visitor_approval_success", "Visitor entry approved.")); }
-    catch (e) { toast.error(e.response?.data?.message || t("visitor_error_approval", "Approval failed.")); }
-    finally { setBusy(null); }
+    try {
+      const r = await visitorApi.approveWalkIn(id);
+      patchVisitor(r.data.visitor);
+      toast.success(t("visitor_approval_success", "Visitor entry approved."));
+    } catch (e) {
+      toast.error(e.response?.data?.message || t("visitor_error_approval", "Approval failed."));
+    } finally { setBusy(null); }
   };
 
   const handleReject = async (id) => {
     setBusy(id);
-    try { const r = await visitorApi.rejectWalkIn(id); patchVisitor(r.data.visitor); toast.success(t("visitor_rejection_success", "Visitor rejected.")); }
-    catch (e) { toast.error(e.response?.data?.message || t("visitor_error_rejection", "Rejection failed.")); }
-    finally { setBusy(null); }
+    try {
+      const r = await visitorApi.rejectWalkIn(id);
+      patchVisitor(r.data.visitor);
+      toast.success(t("visitor_rejection_success", "Visitor rejected."));
+    } catch (e) {
+      toast.error(e.response?.data?.message || t("visitor_error_rejection", "Rejection failed."));
+    } finally { setBusy(null); }
   };
 
   const handleMarkExit = async (id) => {
     setBusy(id);
-    try { const r = await visitorApi.markExit(id); patchVisitor(r.data.visitor); toast.success(t("visitor_exit_recorded", "Exit recorded.")); }
-    catch (e) { toast.error(e.response?.data?.message || t("visitor_error_exit", "Failed to mark exit.")); }
-    finally { setBusy(null); }
+    try {
+      const r = await visitorApi.markExit(id);
+      patchVisitor(r.data.visitor);
+      toast.success(t("visitor_exit_recorded", "Exit recorded."));
+    } catch (e) {
+      toast.error(e.response?.data?.message || t("visitor_error_exit", "Failed to mark exit."));
+    } finally { setBusy(null); }
   };
 
   const handleCancelInvite = async (id) => {
     setBusy(id);
-    try { const r = await visitorApi.cancelInvite(id); patchVisitor(r.data.visitor); toast.success(t("visitor_invite_cancelled", "Invite cancelled.")); }
-    catch (e) { toast.error(e.response?.data?.message || t("visitor_error_cancel_invite", "Failed to cancel invite.")); }
-    finally { setBusy(null); }
+    try {
+      const r = await visitorApi.cancelInvite(id);
+      patchVisitor(r.data.visitor);
+      toast.success(t("visitor_invite_cancelled", "Invite cancelled."));
+    } catch (e) {
+      toast.error(e.response?.data?.message || t("visitor_error_cancel_invite", "Failed to cancel invite."));
+    } finally { setBusy(null); }
   };
 
   const pendingCount = visitors.filter((v) => v.status === "pending").length;
@@ -851,7 +1004,9 @@ export const VisitorsScreen = () => {
       {/* Header */}
       <View style={s.header}>
         <View style={{ flex: 1 }}>
-          <Text style={s.headerSub}>{isAdmin ? t("visitor_header_security_desk", "Security Desk") : t("visitor_header_my_visitors", "My Visitors")}</Text>
+          <Text style={s.headerSub}>
+            {isAdmin ? t("visitor_header_security_desk", "Security Desk") : t("visitor_header_my_visitors", "My Visitors")}
+          </Text>
           <Text style={s.headerTitle}>🚶 {t("visitor_header_management", "Visitor Management")}</Text>
         </View>
         <View style={{ flexDirection: "row", gap: 8 }}>
@@ -876,20 +1031,20 @@ export const VisitorsScreen = () => {
       {/* Resident Tabs */}
       {!isAdmin && (
         <View style={s.tabRow}>
-          <TouchableOpacity
-            onPress={() => setTab("visitors")}
-            style={[s.tab, tab === "visitors" && s.tabActive]}>
-            <Text style={[s.tabText, tab === "visitors" && s.tabTextActive]}>{t("visitor_tab_visitors", "Visitors")}</Text>
+          <TouchableOpacity onPress={() => setTab("visitors")} style={[s.tab, tab === "visitors" && s.tabActive]}>
+            <Text style={[s.tabText, tab === "visitors" && s.tabTextActive]}>
+              {t("visitor_tab_visitors", "Visitors")}
+            </Text>
           </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => setTab("trusted")}
-            style={[s.tab, tab === "trusted" && s.tabActive]}>
-            <Text style={[s.tabText, tab === "trusted" && s.tabTextActive]}>🧹 Trusted</Text>
+          <TouchableOpacity onPress={() => setTab("trusted")} style={[s.tab, tab === "trusted" && s.tabActive]}>
+            <Text style={[s.tabText, tab === "trusted" && s.tabTextActive]}>
+              🧹 {t("visitor_tab_trusted", "Trusted")}
+            </Text>
           </TouchableOpacity>
         </View>
       )}
 
-      {/* Trusted tab for residents */}
+      {/* Trusted tab */}
       {!isAdmin && tab === "trusted" ? (
         <TrustedTab user={user} />
       ) : (
@@ -898,7 +1053,7 @@ export const VisitorsScreen = () => {
           {!isAdmin && pendingCount > 0 && (
             <View style={s.pendingAlert}>
               <Text style={s.pendingAlertText}>
-                🔔 {t("visitor_pending_alert", "%d walk-in(s) awaiting your approval", { count: pendingCount, value: pendingCount })}
+                🔔 {t("visitor_pending_alert", "{count} walk-in(s) awaiting your approval", { count: pendingCount })}
               </Text>
             </View>
           )}
@@ -921,7 +1076,9 @@ export const VisitorsScreen = () => {
               icon="🚶"
               message={
                 statusFilter === "all"
-                  ? isAdmin ? t("visitor_empty_admin_all", "No visitor records yet.") : t("visitor_empty_resident_all", "No visitors yet. Invite someone!")
+                  ? isAdmin
+                    ? t("visitor_empty_admin_all", "No visitor records yet.")
+                    : t("visitor_empty_resident_all", "No visitors yet. Invite someone!")
                   : t("visitor_empty_status", "No visitors found.")
               }
             />
