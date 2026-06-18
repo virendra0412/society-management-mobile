@@ -56,6 +56,7 @@ const PillSelect = ({ label, value, options, onSelect }) => (
 
 // ─── Notice Card ──────────────────────────────────────────────────────────────
 const NoticeCard = ({ notice, canWrite, onTogglePin, onDelete, onEdit, pinBusy, delBusy }) => {
+  const { t } = useLanguage();
   const tagColor = NOTICE_TAG_COLOR[notice.tag] || C.teal;
   const icon     = NOTICE_TAG_ICON[notice.tag]  || "📋";
 
@@ -89,7 +90,7 @@ const NoticeCard = ({ notice, canWrite, onTogglePin, onDelete, onEdit, pinBusy, 
 
           <Text style={{ fontSize: 12, color: C.gray500, lineHeight: 18, marginBottom: 6 }}>{notice.body}</Text>
           <Text style={{ fontSize: 11, color: C.gray300, marginBottom: canWrite ? 10 : 0 }}>
-            Posted by {notice.postedBy?.name || "Admin"} · {timeAgo(notice.createdAt)}
+            {t("notice_posted_by", "Posted by {name} - {timeAgo}").replace("{name}", notice.postedBy?.name || "Admin").replace("{timeAgo}", timeAgo(notice.createdAt))}
           </Text>
 
           {/* Admin actions */}
@@ -104,7 +105,7 @@ const NoticeCard = ({ notice, canWrite, onTogglePin, onDelete, onEdit, pinBusy, 
               >
                 {pinBusy ? <Spinner size={10} /> : <Text style={{ fontSize: 10 }}>📌</Text>}
                 <Text style={[s.adminBtnText, { color: notice.isPinned ? C.amber : C.gray700 }]}>
-                  {notice.isPinned ? "Unpin" : "Pin"}
+                  {notice.isPinned ? t("notice_unpin", "Unpin") : t("notice_pin", "Pin")}
                 </Text>
               </TouchableOpacity>
 
@@ -166,7 +167,7 @@ export const NoticesScreen = ({ navigation }) => {
       const res = await noticesApi.getAll({ limit: 30 });
       setNotices(res.data?.notices || []);
     } catch (e) {
-      setError(e.response?.data?.message || "Failed to load notices.");
+      setError(e.response?.data?.message || t("notice_load_failed", "Failed to load notices."));
     } finally { setLoading(false); }
   }, []);
 
@@ -213,7 +214,7 @@ export const NoticesScreen = ({ navigation }) => {
   // ── Save (create OR update) ───────────────────────────────────────────────
   const handleSave = async () => {            // TC-NOTICE-04 — unified save handler
     if (!form.title.trim() || !form.body.trim())
-      return toast.error("Title and message are required.");
+      return toast.error(t("notice_required_fields", "Title and message are required."));
 
     setSubmitting(true);
     try {
@@ -226,16 +227,16 @@ export const NoticesScreen = ({ navigation }) => {
             list.map((n) => (n._id === updated._id ? updated : n))
           );
         }
-        toast.success("Notice updated.");
+        toast.success(t("notice_updated", "Notice updated."));
       } else {
         // ── CREATE new notice ──
         const res = await noticesApi.create(form);
         setNotices((p) => [res.data.notice, ...p]);
-        toast.success("Notice posted.");
+        toast.success(t("notice_posted_success", "Notice posted."));
       }
       closeModal();
     } catch (e) {
-      toast.error(e.response?.data?.message || "Failed to save notice.");
+      toast.error(e.response?.data?.message || t("notice_save_failed", "Failed to save notice."));
     } finally { setSubmitting(false); }
   };
 
@@ -250,9 +251,9 @@ export const NoticesScreen = ({ navigation }) => {
         const updated = list.map((n) => n._id === notice._id ? { ...n, isPinned: next } : n);
         return [...updated.filter((n) => n.isPinned), ...updated.filter((n) => !n.isPinned)];
       });
-      toast.success(next ? "Notice pinned." : "Notice unpinned.");
+      toast.success(next ? t("notice_pinned", "Notice pinned.") : t("notice_unpinned", "Notice unpinned."));
     } catch (e) {
-      toast.error(e.response?.data?.message || "Failed to update pin.");
+      toast.error(e.response?.data?.message || t("notice_pin_failed", "Failed to update pin."));
     } finally { setPinBusy((p) => ({ ...p, [notice._id]: false })); }
   };
 
@@ -263,9 +264,9 @@ export const NoticesScreen = ({ navigation }) => {
     try {
       await noticesApi.remove(noticeId);
       setNotices((list) => list.filter((n) => n._id !== noticeId));
-      toast.success("Notice deleted.");
+      toast.success(t("notice_deleted", "Notice deleted."));
     } catch (e) {
-      toast.error(e.response?.data?.message || "Failed to delete notice.");
+      toast.error(e.response?.data?.message || t("notice_delete_failed", "Failed to delete notice."));
     } finally { setDelBusy((d) => ({ ...d, [noticeId]: false })); }
   };
 

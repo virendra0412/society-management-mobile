@@ -13,6 +13,7 @@ import {
 
 import { eventsApi } from "../../api/resources.api";
 import { useToast } from "../../context/ToastContext";
+import { useLanguage } from "../../context/LanguageContext";
 import { Badge, EmptyState, ErrorState } from "../../components/ui";
 import { C, RSVP_STATUS_COLOR, RSVP_LABEL } from "../../constants/theme";
 
@@ -22,6 +23,7 @@ import { C, RSVP_STATUS_COLOR, RSVP_LABEL } from "../../constants/theme";
  */
 export const AttendeeList = ({ eventId }) => {
   const toast = useToast();
+  const { t } = useLanguage();
   const [rsvps, setRsvps] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -34,7 +36,7 @@ export const AttendeeList = ({ eventId }) => {
       const res = await eventsApi.getOne(eventId);
       setRsvps(res.data?.event?.rsvps || []);
     } catch (e) {
-      setError("Failed to load attendees.");
+      setError(t("attendees_load_failed", "Failed to load attendees."));
     } finally {
       setLoading(false);
     }
@@ -105,7 +107,7 @@ export const AttendeeList = ({ eventId }) => {
       {!loading && !error && shown.length === 0 && (
         <EmptyState
           icon="🙈"
-          message={filter === "all" ? "No RSVPs yet." : `No "${filter}" responses.`}
+          message={filter === "all" ? t("attendees_empty_all", "No RSVPs yet.") : t("attendees_empty_filter", "No \"{filter}\" responses.").replace("{filter}", filter)}
         />
       )}
 
@@ -134,7 +136,7 @@ export const AttendeeList = ({ eventId }) => {
                 {/* Info */}
                 <View style={{ flex: 1 }}>
                   <Text style={{ fontSize: 13, fontWeight: "700", color: C.text }}>
-                    {resident.name || "Resident"}
+                    {resident.name || t("attendees_resident_fallback", "Resident")}
                   </Text>
                   <Text style={styles.meta} numberOfLines={1}>
                     {[resident.flat, resident.wing].filter(Boolean).join(" · ")}

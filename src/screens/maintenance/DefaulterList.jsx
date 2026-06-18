@@ -242,6 +242,7 @@ const DefaulterCard = ({ defaulter }) => {
 // ─── DefaulterList (exported) ──────────────────────────────────────────────────
 export const DefaulterList = () => {
   const toast = useToast();
+  const { t } = useLanguage();
   const [defaulters, setDefaulters] = useState([]);
   const [loading,    setLoading]    = useState(true);
   const [error,      setError]      = useState(null);
@@ -257,7 +258,7 @@ export const DefaulterList = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -280,8 +281,6 @@ export const DefaulterList = () => {
   if (error) {
     return <ErrorState message={error} onRetry={load} />;
   }
-
-  const { t } = useLanguage();
 
   if (defaulters.length === 0) {
     return (

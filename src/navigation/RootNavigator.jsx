@@ -59,17 +59,17 @@ const PendingScreen = ({ onLogout, t }) => (
 );
 
 // ─── Multi-society selector (shown once after login when user has 2+ societies) ─
-const SocietySelectorScreen = ({ memberships, activeSocietyId, onSelect, onContinue, loading }) => (
+const SocietySelectorScreen = ({ memberships, activeSocietyId, onSelect, onContinue, loading, t }) => (
   <SafeAreaView style={[styles.center, { backgroundColor: C.bg, paddingHorizontal: 24 }]}>
     <Text style={{ fontSize: 32, marginBottom: 12 }}>🏘️</Text>
-    <Text style={styles.selectorTitle}>Choose your society</Text>
+    <Text style={styles.selectorTitle}>{t("selector_title", "Choose your society")}</Text>
     <Text style={styles.selectorSubtitle}>
-      You are a member of multiple societies. Pick one to continue.
+      {t("selector_subtitle", "You are a member of multiple societies. Pick one to continue.")}
     </Text>
     <ScrollView style={{ width: "100%", marginBottom: 16 }} showsVerticalScrollIndicator={false}>
       {memberships.map((m) => {
         const sid    = m.society?._id?.toString() || m.society?.toString();
-        const name   = m.society?.name  || "Unknown Society";
+        const name   = m.society?.name  || t("selector_unknown_society", "Unknown Society");
         const flat   = m.flat  ? `Flat ${m.flat}` : "";
         const wing   = m.wing  ? `, Wing ${m.wing}` : "";
         const active = sid === activeSocietyId;
@@ -104,19 +104,19 @@ const SocietySelectorScreen = ({ memberships, activeSocietyId, onSelect, onConti
     >
       {loading
         ? <ActivityIndicator color="#fff" />
-        : <Text style={styles.selectorContinueText}>Continue →</Text>}
+        : <Text style={styles.selectorContinueText}>{t("selector_continue", "Continue ->")}</Text>}
     </TouchableOpacity>
   </SafeAreaView>
 );
 
 // ─── Auth screen wrapper ──────────────────────────────────────────────────────
-const AuthScreenWithSALink = ({ onSAPress }) => (
+const AuthScreenWithSALink = ({ onSAPress, t }) => (
   <View style={{ flex: 1 }}>
     <AuthStack />
     <View style={styles.saContainer}>
-      <Text style={styles.saLabel}>Platform Administrator?</Text>
+      <Text style={styles.saLabel}>{t("sa_admin_label", "Platform Administrator?")}</Text>
       <TouchableOpacity onPress={onSAPress} style={styles.saLink} activeOpacity={0.85}>
-        <Text style={styles.saLinkText}>🛡️  Login as Super Admin</Text>
+        <Text style={styles.saLinkText}>{t("sa_login_link", "Login as Super Admin")}</Text>
       </TouchableOpacity>
     </View>
   </View>
@@ -200,7 +200,7 @@ export const RootNavigator = () => {
         <SALoginScreen onBack={() => setShowSALogin(false)} />
 
       ) : !isLogged ? (
-        <AuthScreenWithSALink onSAPress={() => setShowSALogin(true)} />
+        <AuthScreenWithSALink onSAPress={() => setShowSALogin(true)} t={t} />
 
       ) : (!isApproved && !isAdmin) ? (
         <PendingScreen onLogout={logout} t={t} />

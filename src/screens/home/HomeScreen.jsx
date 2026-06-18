@@ -184,10 +184,10 @@ const TrialBanner = ({ plan, daysLeft, onPress, t }) => {
       <View style={{ flex: 1 }}>
         <Text style={[styles.trialEyebrow, { color: C.amber }]}>⏰  {t("home_trial_warning")}</Text>
         <Text style={styles.trialTitle}>
-          {daysLeft} {daysLeft === 1 ? "day" : "days"} {t("home_trial_days_left")}
+          {daysLeft} {daysLeft === 1 ? t("home_trial_day_singular", "day") : t("home_trial_day_plural", "days")} {t("home_trial_days_left")}
         </Text>
         <Text style={[styles.trialSub, { color: C.amber }]}>
-          {daysLeft <= 3 ? "Upgrade now to avoid losing access to premium features" : "Tap to see what's included after trial"}
+          {daysLeft <= 3 ? t("home_trial_upgrade_cta", "Upgrade now to avoid losing access to premium features") : t("home_trial_info_cta", "Tap to see what's included after trial")}
         </Text>
       </View>
       <Ionicons name="chevron-forward" size={18} color={C.amber} />
@@ -240,7 +240,7 @@ export const HomeScreen = () => {
               const myPay = b.payments[0];
               return {
                 _id:      b._id,
-                title:    b.title || "Maintenance Bill",
+                title:    b.title || t("home_maintenance_bill_fallback", "Maintenance Bill"),
                 dueDate:  b.dueDate,
                 totalDue: myPay?.totalDue ?? b.baseAmount ?? 0,
                 status:   myPay?.status,

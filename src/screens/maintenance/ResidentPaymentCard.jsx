@@ -17,6 +17,7 @@
  */
 import { View, Text, StyleSheet } from "react-native";
 import { Badge }                   from "../../components/ui";
+import { useLanguage }             from "../../context/LanguageContext";
 import { C, PAYMENT_STATUS_COLOR } from "../../constants/theme";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -59,6 +60,7 @@ const BreakdownRow = ({ label, value, color, bold, topBorder }) => (
 
 // ─── Main component ───────────────────────────────────────────────────────────
 export const ResidentPaymentCard = ({ payment, bill }) => {
+  const { t } = useLanguage();
   if (!payment) return <NoRecord />;
 
   const sc        = PAYMENT_STATUS_COLOR[payment.status] ?? {};
@@ -104,7 +106,7 @@ export const ResidentPaymentCard = ({ payment, bill }) => {
           <BreakdownRow label="Discount"      value={`- ${fmt(payment.discount)}`} color={C.green} />
         )}
         <BreakdownRow
-          label="Total Due"
+          label={t("maint_total_due_label", "Total Due")}
           value={fmt(payment.totalDue)}
           color={C.navy}
           bold
@@ -122,7 +124,7 @@ export const ResidentPaymentCard = ({ payment, bill }) => {
           <Text style={styles.dueDateIcon}>{isOverdue ? "🔴" : "📅"}</Text>
           <View>
             <Text style={[styles.dueDateTitle, { color: isOverdue ? C.red : C.amber }]}>
-              {isOverdue ? "Payment Overdue" : "Due Date"}
+              {isOverdue ? t("maint_payment_overdue", "Payment Overdue") : t("maint_due_date_display", "Due Date")}
             </Text>
             <Text style={styles.dueDateValue}>
               {fmtDate(bill?.dueDate)}
@@ -138,10 +140,10 @@ export const ResidentPaymentCard = ({ payment, bill }) => {
           <Text style={styles.receiptTitle}>✅  Payment Receipt</Text>
 
           {[
-            ["Paid On",   fmtDate(payment.paidAt)],
-            ["Method",    payment.paymentMethod?.toUpperCase()],
-            payment.transactionId && ["Reference", payment.transactionId],
-            payment.receiptNote   && ["Note",       payment.receiptNote],
+            [t("maint_paid_on", "Paid On"),   fmtDate(payment.paidAt)],
+            [t("maint_method", "Method"),    payment.paymentMethod?.toUpperCase()],
+            payment.transactionId && [t("maint_reference", "Reference"), payment.transactionId],
+            payment.receiptNote   && [t("maint_note", "Note"),       payment.receiptNote],
           ].filter(Boolean).map(([label, value]) => (
             <View key={label} style={styles.receiptRow}>
               <Text style={styles.receiptLabel}>{label}</Text>

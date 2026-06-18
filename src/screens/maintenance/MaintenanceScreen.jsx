@@ -891,7 +891,7 @@ const DefaulterView = ({ onBack }) => {
       const res = await maintenanceApi.getDefaulters();
       setDefaulters(res.data?.defaulters || []);
     } catch (e) {
-      setError(e?.response?.data?.message || t("payments_load_defaulters_failed","Failed to load defaulters."));
+      setError(e?.response?.data?.message || t("maint_load_defaulters_failed", "Failed to load defaulters."));
     } finally {
       setLoading(false);
     }

@@ -17,26 +17,28 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "../../context/AuthContext";
+import { useLanguage } from "../../context/LanguageContext";
 import { modulesApi } from "../../api/resources.api";
 import { COLORS, SPACING } from "../../constants/theme";
 
 const MODULE_META = {
-  notices:     { icon: "📢", label: "Notices",          desc: "Post announcements. Always free." },
-  polls:       { icon: "🗳️", label: "Polls",            desc: "Vote on decisions. Always free." },
-  contacts:    { icon: "📞", label: "Contacts",         desc: "Emergency & vendor directory. Always free." },
-  issues:      { icon: "🔧", label: "Issues",           desc: "Complaint tracking, escalation, assignment." },
-  visitors:    { icon: "👁️", label: "Visitor Mgmt",     desc: "OTP entry, walk-ins, trusted visitors, visitor logs." },
-  maintenance: { icon: "💰", label: "Maintenance",      desc: "Bills, payments, defaulter tracking." },
-  amenities:   { icon: "🏊", label: "Amenity Booking",  desc: "Clubhouse, gym, pool slots. Conflict detection." },
-  events:      { icon: "🎉", label: "Events",           desc: "RSVP management, attendance, notifications." },
-  parking:     { icon: "🅿️", label: "Parking",         desc: "Slot assignment, visitor parking, vehicle registry." },
-  community:   { icon: "🤝", label: "Community Help",   desc: "Resident-to-resident help & marketplace." },
-  analytics:   { icon: "📊", label: "Analytics",        desc: "Collection rates, issue trends, visitor reports." },
-  multilang:   { icon: "🌍", label: "Multi-Language",   desc: "Hindi + Gujarati + English support." },
+  notices:     { icon: "📢", labelKey: "upgrade_mod_notices_label", descKey: "upgrade_mod_notices_desc", label: "Notices", desc: "Post announcements. Always free." },
+  polls:       { icon: "🗳️", labelKey: "upgrade_mod_polls_label", descKey: "upgrade_mod_polls_desc", label: "Polls", desc: "Vote on decisions. Always free." },
+  contacts:    { icon: "📞", labelKey: "upgrade_mod_contacts_label", descKey: "upgrade_mod_contacts_desc", label: "Contacts", desc: "Emergency & vendor directory. Always free." },
+  issues:      { icon: "🔧", labelKey: "upgrade_mod_issues_label", descKey: "upgrade_mod_issues_desc", label: "Issues", desc: "Complaint tracking, escalation, assignment." },
+  visitors:    { icon: "👁️", labelKey: "upgrade_mod_visitors_label", descKey: "upgrade_mod_visitors_desc", label: "Visitor Mgmt", desc: "OTP entry, walk-ins, trusted visitors, visitor logs." },
+  maintenance: { icon: "💰", labelKey: "upgrade_mod_maintenance_label", descKey: "upgrade_mod_maintenance_desc", label: "Maintenance", desc: "Bills, payments, defaulter tracking." },
+  amenities:   { icon: "🏊", labelKey: "upgrade_mod_amenities_label", descKey: "upgrade_mod_amenities_desc", label: "Amenity Booking", desc: "Clubhouse, gym, pool slots. Conflict detection." },
+  events:      { icon: "🎉", labelKey: "upgrade_mod_events_label", descKey: "upgrade_mod_events_desc", label: "Events", desc: "RSVP management, attendance, notifications." },
+  parking:     { icon: "🅿️", labelKey: "upgrade_mod_parking_label", descKey: "upgrade_mod_parking_desc", label: "Parking", desc: "Slot assignment, visitor parking, vehicle registry." },
+  community:   { icon: "🤝", labelKey: "upgrade_mod_community_label", descKey: "upgrade_mod_community_desc", label: "Community Help", desc: "Resident-to-resident help & marketplace." },
+  analytics:   { icon: "📊", labelKey: "upgrade_mod_analytics_label", descKey: "upgrade_mod_analytics_desc", label: "Analytics", desc: "Collection rates, issue trends, visitor reports." },
+  multilang:   { icon: "🌍", labelKey: "upgrade_mod_multilang_label", descKey: "upgrade_mod_multilang_desc", label: "Multi-Language", desc: "Hindi + Gujarati + English support." },
 };
 
 const UpgradeScreen = () => {
   const { plan, trialDaysLeft } = useAuth();
+  const { t } = useLanguage();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -47,7 +49,7 @@ const UpgradeScreen = () => {
       const res = await modulesApi.getStatus();
       setData(res.data || res);
     } catch (err) {
-      Alert.alert("Error", err.response?.data?.message || "Failed to load module status");
+      Alert.alert(t("error_title", "Error"), err.response?.data?.message || "Failed to load module status");
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -60,21 +62,22 @@ const UpgradeScreen = () => {
 
   const handleRequestUpgrade = (key) => {
     const meta = MODULE_META[key];
+    const label = t(meta.labelKey, meta.label);
     Alert.alert(
-      `Request ${meta.label}`,
-      `This will notify our team to enable the ${meta.label} module for your society. They will contact you to confirm pricing.`,
+      `Request ${label}`,
+      `This will notify our team to enable the ${label} module for your society. They will contact you to confirm pricing.`,
       [
-        { text: "Cancel" },
+        { text: t("upgrade_request_cancel", "Cancel") },
         {
-          text: "Send Request",
+          text: t("upgrade_request_send", "Send Request"),
           onPress: async () => {
             setRequesting((prev) => ({ ...prev, [key]: true }));
             try {
               await modulesApi.requestUpgrade(key);
-              Alert.alert("Requested!", `Your upgrade request for ${meta.label} has been submitted. We'll review it shortly.`);
+              Alert.alert("Requested!", t("upgrade_request_success", "Your upgrade request for {label} has been submitted. We'll review it shortly.").replace("{label}", label));
               fetchStatus();
             } catch (err) {
-              Alert.alert("Error", err.response?.data?.message || "Request failed. Please try again.");
+              Alert.alert(t("error_title", "Error"), err.response?.data?.message || t("upgrade_request_failed", "Request failed. Please try again."));
             } finally {
               setRequesting((prev) => ({ ...prev, [key]: false }));
             }
@@ -135,7 +138,7 @@ const UpgradeScreen = () => {
               <>
                 <Text style={{ fontSize: 12, fontWeight: "700", color: "#06B6D4", marginBottom: 4 }}>✓ PREMIUM PLAN</Text>
                 <Text style={{ fontSize: 15, fontWeight: "700", color: "#1F2937", marginBottom: 6 }}>
-                  {plan === "basic" ? "Basic Plan" : "Premium Plan"}
+                  {plan === "basic" ? t("upgrade_plan_basic", "Basic Plan") : t("upgrade_plan_premium", "Premium Plan")}
                 </Text>
                 <Text style={{ fontSize: 13, color: "#4B5563", lineHeight: 18 }}>
                   You have access to all features. Contact support if you need to modify your plan.
@@ -151,12 +154,13 @@ const UpgradeScreen = () => {
             <Text style={styles.sectionTitle}>✅ Active Paid Modules</Text>
             {enabledPaid.map((key) => {
               const meta = MODULE_META[key];
+    const label = t(meta.labelKey, meta.label);
               return (
                 <View key={key} style={[styles.card, styles.cardEnabled]}>
                   <Text style={styles.cardIcon}>{meta.icon}</Text>
                   <View style={styles.cardBody}>
-                    <Text style={styles.cardName}>{meta.label}</Text>
-                    <Text style={styles.cardDesc}>{meta.desc}</Text>
+                    <Text style={styles.cardName}>{t(meta.labelKey, meta.label)}</Text>
+                    <Text style={styles.cardDesc}>{t(meta.descKey, meta.desc)}</Text>
                   </View>
                   <View style={styles.activeBadge}>
                     <Text style={styles.activeBadgeText}>Active</Text>
@@ -173,6 +177,7 @@ const UpgradeScreen = () => {
             <Text style={styles.sectionTitle}>🔒 Available Upgrades</Text>
             {lockedPaid.map((key) => {
               const meta = MODULE_META[key];
+    const label = t(meta.labelKey, meta.label);
               const isPending = modules[key]?.pendingRequest;
               const isRequesting = requesting[key];
 
@@ -180,8 +185,8 @@ const UpgradeScreen = () => {
                 <View key={key} style={[styles.card, styles.cardLocked]}>
                   <Text style={[styles.cardIcon, styles.cardIconLocked]}>{meta.icon}</Text>
                   <View style={styles.cardBody}>
-                    <Text style={[styles.cardName, styles.cardNameLocked]}>{meta.label}</Text>
-                    <Text style={styles.cardDesc}>{meta.desc}</Text>
+                    <Text style={[styles.cardName, styles.cardNameLocked]}>{t(meta.labelKey, meta.label)}</Text>
+                    <Text style={styles.cardDesc}>{t(meta.descKey, meta.desc)}</Text>
                   </View>
                   {isPending ? (
                     <View style={styles.pendingBadge}>
@@ -209,12 +214,13 @@ const UpgradeScreen = () => {
         <Text style={styles.sectionTitle}>🆓 Always Free</Text>
         {freeKeys.map((key) => {
           const meta = MODULE_META[key];
+    const label = t(meta.labelKey, meta.label);
           return (
             <View key={key} style={[styles.card, styles.cardFree]}>
               <Text style={styles.cardIcon}>{meta.icon}</Text>
               <View style={styles.cardBody}>
-                <Text style={styles.cardName}>{meta.label}</Text>
-                <Text style={styles.cardDesc}>{meta.desc}</Text>
+                <Text style={styles.cardName}>{t(meta.labelKey, meta.label)}</Text>
+                <Text style={styles.cardDesc}>{t(meta.descKey, meta.desc)}</Text>
               </View>
               <View style={styles.freeBadge}>
                 <Text style={styles.freeBadgeText}>FREE</Text>
