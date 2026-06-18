@@ -29,19 +29,19 @@ import { TermsScreen }         from "../legal/TermsScreen";
 const { width } = Dimensions.get("window");
 const TILE_SIZE = (width - 56) / 3;
 
-const SCREEN_TITLES = {
-  Notices:          "Notices",
-  Help:             "Community Help",
-  Contacts:         "Contacts",
-  Polls:            "Polls",
-  Events:           "Events",
-  Parking:          "Parking",
-  Amenity:          "Amenities",
-  Profile:          "Profile",
-  Committee:        "Committee",
-  Upgrade:          "Upgrades",
-  PrivacyPolicy:    "Privacy Policy",
-  Terms:            "Terms & Conditions",
+const SCREEN_TITLE_KEYS = {
+  Notices:       "nav_notices",
+  Help:          "nav_help",
+  Contacts:      "nav_contacts",
+  Polls:         "nav_polls",
+  Events:        "nav_events",
+  Parking:       "nav_parking",
+  Amenity:       "nav_amenities",
+  Profile:       "btn_profile",
+  Committee:     "nav_committee",
+  Upgrade:       "nav_upgrades",
+  PrivacyPolicy: "nav_privacy_policy",
+  Terms:         "nav_terms",
 };
 
 // ─── Compact custom header (replaces native stack header) ─────────────────────
@@ -60,12 +60,14 @@ const SCREEN_TITLES = {
 // ─────────────────────────────────────────────────────────────────────────────
 const SubScreenHeader = ({ navigation, route, options, back }) => {
   const insets = useSafeAreaInsets();
+  const { t }  = useLanguage();
 
   // Resolve title: screens may override via navigation.setOptions({ title })
+  const titleKey = SCREEN_TITLE_KEYS[route.name];
   const title =
     typeof options.headerTitle === "string"
       ? options.headerTitle
-      : options.title ?? SCREEN_TITLES[route.name] ?? route.name;
+      : options.title ?? (titleKey ? t(titleKey) : null) ?? route.name;
 
   return (
     <View style={[hdr.wrap, { paddingTop: insets.top }]}>

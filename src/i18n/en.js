@@ -388,6 +388,7 @@ const en = {
   maint_err_amount:             "Amount must be ≥ ₹1.",
   maint_err_penalty_amount:     "Penalty amount must be ≥ ₹1.",
   maint_err_due_date:           "Due date is required.",
+  maint_err_title_required:     "Title is required.",
   maint_save_failed:            "Save failed.",
 
   maint_record_payment_title:   "Record Payment",

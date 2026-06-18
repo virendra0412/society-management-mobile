@@ -259,6 +259,7 @@ const BLANK_BILL = {
 
 const CreateBillModal = ({ open, onClose, bill, onSaved }) => {
   const toast  = useToast();
+  const { t }  = useLanguage();
   const isEdit = !!bill;
   const [form,   setForm]   = useState(BLANK_BILL);
   const [saving, setSaving] = useState(false);
@@ -282,11 +283,11 @@ const CreateBillModal = ({ open, onClose, bill, onSaved }) => {
   const set = (k) => (v) => setForm((p) => ({ ...p, [k]: v }));
 
   const handleSave = async () => {
-    if (!form.title.trim())                             return toast.error("Title is required.");
-    if (!form.baseAmount || Number(form.baseAmount) < 1) return toast.error("Amount must be ≥ ₹1.");
-    if (!form.dueDate)                                  return toast.error("Due date is required.");
+    if (!form.title.trim())                             return toast.error(t("maint_err_title_required", "Title is required."));
+    if (!form.baseAmount || Number(form.baseAmount) < 1) return toast.error(t("maint_err_amount", "Amount must be ≥ ₹1."));
+    if (!form.dueDate)                                  return toast.error(t("maint_err_due_date", "Due date is required."));
     if (form.penaltyEnabled && Number(form.penaltyAmount) < 1)
-      return toast.error("Penalty amount must be ≥ ₹1.");
+      return toast.error(t("maint_err_penalty_amount", "Penalty amount must be ≥ ₹1."));
 
     const payload = {
       title:          form.title.trim(),
@@ -308,46 +309,46 @@ const CreateBillModal = ({ open, onClose, bill, onSaved }) => {
         ? await maintenanceApi.updateBill(bill._id, payload)
         : await maintenanceApi.createBill(payload);
       onSaved(res.data.bill, isEdit ? "update" : "create");
-      toast.success(isEdit ? "Bill updated." : "Draft bill created.");
+      toast.success(isEdit ? t("maint_bill_updated", "Bill updated.") : t("maint_draft_created", "Draft bill created."));
       onClose();
     } catch (e) {
-      toast.error(e?.response?.data?.message || "Save failed.");
+      toast.error(e?.response?.data?.message || t("maint_save_failed", "Save failed."));
     } finally {
       setSaving(false);
     }
   };
 
   return (
-    <Modal open={open} onClose={onClose} title={isEdit ? "Edit Bill" : "Create Maintenance Bill"}>
-      <Input label="Bill Title *"        value={form.title}       onChangeText={set("title")}       placeholder="e.g. January 2025 Maintenance" />
-      <Input label="Description"         value={form.description} onChangeText={set("description")} placeholder="Any notes for residents…" multiline />
+    <Modal open={open} onClose={onClose} title={isEdit ? t("maint_edit_bill_title", "Edit Bill") : t("maint_create_bill_title", "Create Maintenance Bill")}>
+      <Input label={t("maint_bill_title_label", "Bill Title *")}        value={form.title}       onChangeText={set("title")}       placeholder={t("maint_bill_title_ph", "e.g. January 2025 Maintenance")} />
+      <Input label={t("maint_description_label", "Description")}         value={form.description} onChangeText={set("description")} placeholder={t("maint_description_ph", "Any notes for residents…")} multiline />
       <View style={S.row}>
         <View style={{ flex: 1, marginRight: 8 }}>
-          <Input label="Bill Month (YYYY-MM)" value={form.billMonth}  onChangeText={set("billMonth")}  placeholder="2025-01" />
+          <Input label={t("maint_bill_month_label", "Bill Month (YYYY-MM)")} value={form.billMonth}  onChangeText={set("billMonth")}  placeholder={t("maint_bill_month_ph", "2025-01")} />
         </View>
         <View style={{ flex: 1 }}>
-          <Input label="Amount (₹) *"    value={form.baseAmount}  onChangeText={set("baseAmount")}  placeholder="2500" keyboardType="numeric" />
+          <Input label={t("maint_amount_label", "Amount (₹) *")}    value={form.baseAmount}  onChangeText={set("baseAmount")}  placeholder={t("maint_amount_ph", "2500")} keyboardType="numeric" />
         </View>
       </View>
-      <Input label="Due Date (YYYY-MM-DD) *" value={form.dueDate} onChangeText={set("dueDate")} placeholder="2025-01-31" keyboardType="numbers-and-punctuation" />
+      <Input label={t("maint_due_date_label", "Due Date (YYYY-MM-DD) *")} value={form.dueDate} onChangeText={set("dueDate")} placeholder={t("maint_due_date_ph", "2025-01-31")} keyboardType="numbers-and-punctuation" />
 
-      <Text style={S.inputLabel}>Target</Text>
+      <Text style={S.inputLabel}>{t("maint_target_label", "Target")}</Text>
       <TargetPicker value={form.targetMode} onChange={set("targetMode")} />
 
       {form.targetMode === "specific" && (
         <Input
-          label="Flat Numbers (comma-separated)"
+          label={t("maint_flat_numbers_label", "Flat Numbers (comma-separated)")}
           value={form.targetFlats}
           onChangeText={set("targetFlats")}
-          placeholder="101, 102, 203A"
+          placeholder={t("maint_flat_numbers_ph", "101, 102, 203A")}
         />
       )}
 
       {/* Penalty toggle */}
       <View style={S.toggleRow}>
         <View style={{ flex: 1 }}>
-          <Text style={S.toggleLabel}>Late Penalty</Text>
-          <Text style={S.toggleHint}>Auto-charge overdue flats</Text>
+          <Text style={S.toggleLabel}>{t("maint_penalty_label", "Late Penalty")}</Text>
+          <Text style={S.toggleHint}>{t("maint_penalty_hint", "Auto-charge overdue flats")}</Text>
         </View>
         <Switch
           value={form.penaltyEnabled}
@@ -358,11 +359,11 @@ const CreateBillModal = ({ open, onClose, bill, onSaved }) => {
       </View>
 
       {form.penaltyEnabled && (
-        <Input label="Penalty Amount (₹) *" value={form.penaltyAmount} onChangeText={set("penaltyAmount")} placeholder="200" keyboardType="numeric" />
+        <Input label={t("maint_penalty_amount_label", "Penalty Amount (₹) *")} value={form.penaltyAmount} onChangeText={set("penaltyAmount")} placeholder={t("maint_penalty_amount_ph", "200")} keyboardType="numeric" />
       )}
 
       <Btn onPress={handleSave} loading={saving}>
-        {isEdit ? "Save Changes" : "Create Draft Bill"}
+        {isEdit ? t("maint_save_changes", "Save Changes") : t("maint_create_draft", "Create Draft Bill")}
       </Btn>
     </Modal>
   );
@@ -397,17 +398,17 @@ const RecordPaymentModal = ({ open, onClose, paymentRecord, billId, onSaved }) =
       };
       const res = await maintenanceApi.recordPayment(billId, paymentRecord._id, payload);
       onSaved(res.data.bill);
-      toast.success("Payment recorded.");
+      toast.success(t("maint_payment_recorded", "Payment recorded."));
       onClose();
     } catch (e) {
-      toast.error(e?.response?.data?.message || "Failed to record payment.");
+      toast.error(e?.response?.data?.message || t("maint_payment_record_failed", "Failed to record payment."));
     } finally {
       setSaving(false);
     }
   };
 
   return (
-    <Modal open={open} onClose={onClose} title="Record Payment">
+    <Modal open={open} onClose={onClose} title={t("maint_record_payment_title", "Record Payment")}>
       {paymentRecord && (
         <View style={S.infoBox}>
           <Text style={S.infoTitle}>Flat {paymentRecord.flat}{paymentRecord.wing ? ` · ${paymentRecord.wing}` : ""}</Text>
@@ -417,12 +418,12 @@ const RecordPaymentModal = ({ open, onClose, paymentRecord, billId, onSaved }) =
           </Text>
         </View>
       )}
-      <Input label="Amount Paid (₹)" value={amount} onChangeText={setAmount} placeholder="Leave blank for full amount" keyboardType="numeric" />
-      <Text style={S.inputLabel}>Payment Method *</Text>
+      <Input label={t("maint_amount_paid_label", "Amount Paid (₹)")} value={amount} onChangeText={setAmount} placeholder={t("maint_amount_paid_ph", "Leave blank for full amount")} keyboardType="numeric" />
+      <Text style={S.inputLabel}>{t("maint_method_label", "Payment Method *")}</Text>
       <MethodPicker value={method} onChange={setMethod} />
-      <Input label="Transaction ID / Ref (optional)" value={txnId} onChangeText={setTxnId} placeholder="UPI ref, cheque no., etc." />
-      <Input label="Receipt Note (optional)" value={note} onChangeText={setNote} placeholder="Any note…" multiline />
-      <Btn onPress={handleSave} loading={saving}>Mark as Paid</Btn>
+      <Input label={t("maint_txn_label", "Transaction ID / Ref (optional)")} value={txnId} onChangeText={setTxnId} placeholder={t("maint_txn_ph", "UPI ref, cheque no., etc.")} />
+      <Input label={t("maint_receipt_note_label", "Receipt Note (optional)")} value={note} onChangeText={setNote} placeholder={t("maint_receipt_note_ph", "Any note…")} multiline />
+      <Btn onPress={handleSave} loading={saving}>{t("maint_mark_paid", "Mark as Paid")}</Btn>
     </Modal>
   );
 };
@@ -430,6 +431,7 @@ const RecordPaymentModal = ({ open, onClose, paymentRecord, billId, onSaved }) =
 // ─── Discount Modal ────────────────────────────────────────────────────────────
 const DiscountModal = ({ open, onClose, paymentRecord, billId, onSaved }) => {
   const toast = useToast();
+  const { t } = useLanguage();
   const [discount, setDiscount] = useState("");
   const [saving,   setSaving]   = useState(false);
 
@@ -438,30 +440,30 @@ const DiscountModal = ({ open, onClose, paymentRecord, billId, onSaved }) => {
   }, [open, paymentRecord]);
 
   const handleSave = async () => {
-    if (discount === "" || Number(discount) < 0) return toast.error("Discount must be ≥ 0.");
+    if (discount === "" || Number(discount) < 0) return toast.error(t("maint_err_discount", "Discount must be ≥ 0."));
     setSaving(true);
     try {
       const res = await maintenanceApi.applyDiscount(billId, paymentRecord._id, Number(discount));
       onSaved(res.data.bill);
-      toast.success("Discount applied.");
+      toast.success(t("maint_discount_applied", "Discount applied."));
       onClose();
     } catch (e) {
-      toast.error(e?.response?.data?.message || "Failed.");
+      toast.error(e?.response?.data?.message || t("maint_discount_failed", "Failed."));
     } finally {
       setSaving(false);
     }
   };
 
   return (
-    <Modal open={open} onClose={onClose} title="Apply Discount">
+    <Modal open={open} onClose={onClose} title={t("maint_discount_title", "Apply Discount")}>
       {paymentRecord && (
         <View style={S.infoBox}>
           <Text style={S.infoTitle}>Flat {paymentRecord.flat}</Text>
           <Text style={S.infoMeta}>Base: {fmt(paymentRecord.amount)}</Text>
         </View>
       )}
-      <Input label="Discount Amount (₹) *" value={discount} onChangeText={setDiscount} placeholder="e.g. 200" keyboardType="numeric" />
-      <Btn onPress={handleSave} loading={saving}>Apply Discount</Btn>
+      <Input label={t("maint_discount_label", "Discount Amount (₹) *")} value={discount} onChangeText={setDiscount} placeholder={t("maint_discount_ph", "e.g. 200")} keyboardType="numeric" />
+      <Btn onPress={handleSave} loading={saving}>{t("maint_apply_discount", "Apply Discount")}</Btn>
     </Modal>
   );
 };
@@ -966,9 +968,9 @@ const MaintenanceDashboard = ({ isAdmin, onOpenBill, onOpenMyPayments, onOpenDef
             try {
               await maintenanceApi.deleteBill(billId);
               setBills((prev) => prev.filter((b) => b._id !== billId));
-              toast.success("Draft bill deleted.");
+              toast.success(t("payments_draft_deleted", "Draft bill deleted."));
             } catch (e) {
-              toast.error(e?.response?.data?.message || "Delete failed.");
+              toast.error(e?.response?.data?.message || t("payments_delete_failed", "Delete failed."));
             }
           },
         },
@@ -987,7 +989,7 @@ const MaintenanceDashboard = ({ isAdmin, onOpenBill, onOpenMyPayments, onOpenDef
       const res = await maintenanceApi.getAllBills(params);
       setBills(res.data?.bills || []);
     } catch (e) {
-      setError(e?.response?.data?.message || "Failed to load bills.");
+      setError(e?.response?.data?.message || t("payments_load_bills_failed", "Failed to load bills."));
     } finally {
       setLoading(false);
     }
@@ -1024,8 +1026,8 @@ const MaintenanceDashboard = ({ isAdmin, onOpenBill, onOpenMyPayments, onOpenDef
         {/* My Payments shortcut */}
         <TouchableOpacity onPress={onOpenMyPayments} activeOpacity={0.85} style={S.shortcutCard}>
           <View>
-            <Text style={[S.shortcutTitle, { color: C.teal }]}>💳 My Payment History</Text>
-            <Text style={S.shortcutSub}>View your maintenance bills and payment status</Text>
+            <Text style={[S.shortcutTitle, { color: C.teal }]}>{t("maint_my_payment_shortcut", "💳 My Payment History")}</Text>
+            <Text style={S.shortcutSub}>{t("maint_my_payment_shortcut_sub", "View your maintenance bills and payment status")}</Text>
           </View>
           <Text style={[S.shortcutArrow, { color: C.teal }]}>›</Text>
         </TouchableOpacity>
@@ -1037,8 +1039,8 @@ const MaintenanceDashboard = ({ isAdmin, onOpenBill, onOpenMyPayments, onOpenDef
         {isAdmin && (
           <TouchableOpacity onPress={onOpenDefaulters} activeOpacity={0.85} style={[S.shortcutCard, S.shortcutDanger]}>
             <View>
-              <Text style={[S.shortcutTitle, { color: C.red }]}>⚠️ Defaulter Triage</Text>
-              <Text style={S.shortcutSub}>Residents with unpaid or overdue records</Text>
+              <Text style={[S.shortcutTitle, { color: C.red }]}>{t("maint_defaulter_shortcut", "⚠️ Defaulter Triage")}</Text>
+              <Text style={S.shortcutSub}>{t("maint_defaulter_shortcut_sub", "Residents with unpaid or overdue records")}</Text>
             </View>
             <Text style={[S.shortcutArrow, { color: C.red }]}>›</Text>
           </TouchableOpacity>
@@ -1053,7 +1055,7 @@ const MaintenanceDashboard = ({ isAdmin, onOpenBill, onOpenMyPayments, onOpenDef
                   <FilterPill key={f} label={f} active={statusFilter === f} onPress={() => setStatusFilter(f)} />
                 ))}
               </ScrollView>
-              <Btn small onPress={() => setShowCreate(true)} style={{ marginLeft: 10 }}>+ New</Btn>
+              <Btn small onPress={() => setShowCreate(true)} style={{ marginLeft: 10 }}>{t("maint_new_btn", "+ New")}</Btn>
             </View>
             <MonthPicker value={monthFilter} onChange={setMonthFilter} />
           </>
@@ -1069,10 +1071,10 @@ const MaintenanceDashboard = ({ isAdmin, onOpenBill, onOpenMyPayments, onOpenDef
             icon="💰"
             message={
               monthFilter
-                ? `No bills for ${monthFilter}.`
+                ? `${t("maint_no_bills_month", "No bills for")} ${monthFilter}.`
                 : isAdmin
-                  ? "No bills yet. Create your first maintenance bill."
-                  : "No maintenance bills published yet."
+                  ? t("maint_no_bills_admin", "No bills yet. Create your first maintenance bill.")
+                  : t("maint_no_bills_resident", "No maintenance bills published yet.")
             }
           />
         )}
@@ -1122,14 +1124,14 @@ const MaintenanceDashboard = ({ isAdmin, onOpenBill, onOpenMyPayments, onOpenDef
                     style={[S.draftActionBtn, { borderColor: C.amber + "50", backgroundColor: C.amber + "12" }]}
                     activeOpacity={0.7}
                   >
-                    <Text style={[S.draftActionText, { color: C.amber }]}>✏️ Edit Draft</Text>
+                    <Text style={[S.draftActionText, { color: C.amber }]}>{t("maint_edit_draft", "✏️ Edit Draft")}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={(e) => { e.stopPropagation?.(); handleDeleteBill(bill._id); }}
                     style={[S.draftActionBtn, { borderColor: C.red + "40", backgroundColor: C.red + "10" }]}
                     activeOpacity={0.7}
                   >
-                    <Text style={[S.draftActionText, { color: C.red }]}>🗑 Delete</Text>
+                    <Text style={[S.draftActionText, { color: C.red }]}>{t("maint_delete_draft", "🗑 Delete")}</Text>
                   </TouchableOpacity>
                 </View>
               )}

@@ -253,7 +253,7 @@ export const DefaulterList = () => {
       const res = await maintenanceApi.getDefaulters();
       setDefaulters(res.data?.defaulters || []);
     } catch (e) {
-      setError(e?.response?.data?.message || "Failed to load defaulter list.");
+      setError(e?.response?.data?.message || t("maint_load_defaulters_failed", "Failed to load defaulters."));
     } finally {
       setLoading(false);
     }
