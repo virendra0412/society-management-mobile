@@ -21,6 +21,9 @@ export const authApi = {
   forgotPassword:(payload)     => client.post("/auth/forgot-password", payload).then(unwrap),
   resetPassword: (payload)     => client.post("/auth/reset-password", payload).then(unwrap),
   changePassword: (payload)    => client.patch("/auth/change-password", payload).then(unwrap),
+  // Unauthenticated — first login with a temp password (mustChangePassword=true).
+  // Returns { user, accessToken, refreshToken } so the caller can log straight in.
+  forceChangePassword: (payload) => client.post("/auth/force-change-password", payload).then(unwrap),
   logout:       ()             => client.post("/auth/logout").then(unwrap),
   getMe:        ()             => client.get("/auth/me").then(unwrap),
   updateProfile:(payload)      => client.patch("/users/profile",      payload).then(unwrap),

@@ -99,15 +99,20 @@ export const amenitiesApi = {
   getAll:        (p = {}) => client.get("/amenities",                          { params: p }).then(unwrap),
   getOne:        (id)     => client.get(`/amenities/${id}`).then(unwrap),
   create:        (d)      => client.post("/amenities",                          d).then(unwrap),
-  update:        (id, d)  => client.put(`/amenities/${id}`,                    d).then(unwrap),
-  deactivate:    (id)     => client.patch(`/amenities/${id}/deactivate`).then(unwrap),
+  // Fix 1: backend route is PATCH /:id, not PUT /:id
+  update:        (id, d)  => client.patch(`/amenities/${id}`,                  d).then(unwrap),
+  // Fix 2: backend route is DELETE /:id, not PATCH /:id/deactivate
+  deactivate:    (id)     => client.delete(`/amenities/${id}`).then(unwrap),
   getAvailability:(id,dt) => client.get(`/amenities/${id}/availability`, { params: { date: dt } }).then(unwrap),
-  book:          (id, d)  => client.post(`/amenities/${id}/bookings`,          d).then(unwrap),
+  // Fix 3: backend booking route is POST /amenities/bookings (flat) with amenityId in body,
+  //         not POST /amenities/:id/bookings. Inject amenityId into payload here.
+  book:          (id, d)  => client.post("/amenities/bookings",                { ...d, amenityId: id }).then(unwrap),
   getMyBookings: (p = {}) => client.get("/amenities/bookings/mine",      { params: p }).then(unwrap),
   getAllBookings: (p = {}) => client.get("/amenities/bookings/all",       { params: p }).then(unwrap),
-  cancelBooking: (id,bId,r)=> client.patch(`/amenities/bookings/${bId}/cancel`, { reason: r }).then(unwrap),
-  confirmBooking:(id,bId,n)=> client.patch(`/amenities/bookings/${bId}/confirm`, { adminNote: n }).then(unwrap),
-  rejectBooking: (id,bId,n)=> client.patch(`/amenities/bookings/${bId}/reject`,  { adminNote: n }).then(unwrap),
+  // Fix 4: amenityId is not part of cancel/confirm/reject URLs — drop the unused first arg
+  cancelBooking: (_id,bId,r)=> client.patch(`/amenities/bookings/${bId}/cancel`,  { reason: r }).then(unwrap),
+  confirmBooking:(_id,bId,n)=> client.patch(`/amenities/bookings/${bId}/confirm`, { adminNote: n }).then(unwrap),
+  rejectBooking: (_id,bId,n)=> client.patch(`/amenities/bookings/${bId}/reject`,  { adminNote: n }).then(unwrap),
 };
 
 // ─── Events ───────────────────────────────────────────────────────────────────

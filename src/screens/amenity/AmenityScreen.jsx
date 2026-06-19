@@ -254,18 +254,18 @@ const BookingCard = ({ booking, isAdmin, onCancel, onConfirm, onReject }) => {
       {/* Actions */}
       <View style={{ flexDirection: "row", gap: 6, marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: C.gray100 }}>
         {canCancel && !isAdmin && (
-          <Btn small onPress={() => onCancel(booking)} style={{ flex: 1, backgroundColor: C.red + "10", borderColor: C.red }}>
-            <Text style={{ color: C.red, fontWeight: "700", fontSize: 11 }}>{t("amenity_action_cancel", "Cancel")}</Text>
+          <Btn small variant="danger" onPress={() => onCancel(booking)} style={{ flex: 1 }}>
+            {t("amenity_action_cancel", "Cancel Booking")}
           </Btn>
         )}
 
         {canReview && isAdmin && (
           <>
-            <Btn small onPress={() => onConfirm(booking)} style={{ flex: 1, backgroundColor: C.green + "10" }}>
-              <Text style={{ color: C.green, fontWeight: "700", fontSize: 11 }}>✓ {t("amenity_action_confirm", "Confirm")}</Text>
+            <Btn small variant="primary" onPress={() => onConfirm(booking)} style={{ flex: 1, backgroundColor: C.green }}>
+              {"✓ " + t("amenity_action_confirm", "Confirm")}
             </Btn>
-            <Btn small onPress={() => onReject(booking)} style={{ flex: 1, backgroundColor: C.red + "10" }}>
-              <Text style={{ color: C.red, fontWeight: "700", fontSize: 11 }}>✕ {t("amenity_action_reject", "Reject")}</Text>
+            <Btn small variant="danger" onPress={() => onReject(booking)} style={{ flex: 1 }}>
+              {"✕ " + t("amenity_action_reject", "Reject")}
             </Btn>
           </>
         )}
@@ -317,10 +317,12 @@ const AmenityFormModal = ({ open, editing, onClose, onSaved }) => {
   const [form,          setForm]          = useState(BLANK_AMENITY);
   const [durationInput, setDurationInput] = useState("60");   // comma-separated string
   const [submitting,    setSubmitting]    = useState(false);
+  const [formError,     setFormError]     = useState("");
 
   // Pre-fill when editing, reset when creating
   useEffect(() => {
     if (open) {
+      setFormError("");
       if (editing) {
         setForm({ ...BLANK_AMENITY, ...editing });
         setDurationInput((editing.slotDurationOptions || [60]).join(", "));
@@ -331,22 +333,29 @@ const AmenityFormModal = ({ open, editing, onClose, onSaved }) => {
     }
   }, [editing, open]);
 
-  const f = (k) => (v) => setForm((p) => ({ ...p, [k]: v }));
-  const fNum = (k) => (v) => setForm((p) => ({ ...p, [k]: Number(v) || 0 }));
+  const f = (k) => (v) => { setFormError(""); setForm((p) => ({ ...p, [k]: v })); };
+  const fNum = (k) => (v) => { setFormError(""); setForm((p) => ({ ...p, [k]: Number(v) || 0 })); };
 
   const handleSave = async () => {
-    if (!form.name.trim()) return toast.error(t("amenity_form_error_name", "Name is required."));
+    if (!form.name.trim()) {
+      setFormError(t("amenity_form_error_name", "Name is required."));
+      return;
+    }
 
     // Parse comma-separated duration options
     const opts = durationInput
       .split(",")
       .map((s) => parseInt(s.trim(), 10))
       .filter((n) => n > 0);
-    if (opts.length === 0) return toast.error(t("amenity_form_error_duration", "Enter at least one slot duration (e.g. 60)."));
+    if (opts.length === 0) {
+      setFormError(t("amenity_form_error_duration", "Enter at least one slot duration (e.g. 60)."));
+      return;
+    }
 
     const payload = { ...form, slotDurationOptions: opts };
 
     setSubmitting(true);
+    setFormError("");
     try {
       const res = editing
         ? await amenitiesApi.update(editing._id, payload)   // TC-AMEN-12 — PATCH /amenities/:id
@@ -355,7 +364,7 @@ const AmenityFormModal = ({ open, editing, onClose, onSaved }) => {
       onSaved(res.data?.amenity);
       onClose();
     } catch (e) {
-      toast.error(e.response?.data?.message || t("amenity_form_save_failed", "Save failed."));
+      setFormError(e.response?.data?.message || t("amenity_form_save_failed", "Save failed."));
     } finally {
       setSubmitting(false);
     }
@@ -365,6 +374,7 @@ const AmenityFormModal = ({ open, editing, onClose, onSaved }) => {
     <Modal
       open={open}
       onClose={onClose}
+      apiError={formError}
       title={editing ? t("amenity_form_title_edit", "Edit Amenity") : t("amenity_form_title_add", "Add Amenity")}
     >
       <Input
@@ -674,19 +684,28 @@ const BookSlotModal = ({ open, amenity, onClose, onBooked }) => {
   const [guestCount, setGuestCount] = useState("1");
   const [purpose, setPurpose] = useState("");
   const [busy, setBusy] = useState(false);
+  const [bookError, setBookError] = useState("");
   const toast = useToast();
+
+  const clearError = () => setBookError("");
 
   const submit = async () => {
     if (!date || !startTime || !duration) {
-      return toast.error(t("amenity_booking_error_required_fields", "Please fill all required fields."));
-    }                                                           // ← Fix 1: closed the if-block
+      setBookError(t("amenity_booking_error_required_fields", "Please fill all required fields."));
+      return;
+    }
     setBusy(true);
+    setBookError("");
     try {
+      // Backend validator requires amenityId (injected by api layer), startTime, and endTime.
+      // Compute endTime from the selected date + startTime + duration (minutes).
+      const start = new Date(`${date}T${startTime}:00`);
+      const end   = new Date(start.getTime() + parseInt(duration) * 60000);
       const data = {
-        startTime: `${date}T${startTime}:00Z`,
-        durationMinutes: parseInt(duration),
+        startTime:  start.toISOString(),
+        endTime:    end.toISOString(),
         guestCount: parseInt(guestCount) || 1,
-        purpose: purpose.trim() || undefined,
+        purpose:    purpose.trim() || undefined,
       };
 
       const res = await amenitiesApi.book(amenity._id, data);
@@ -701,7 +720,7 @@ const BookSlotModal = ({ open, amenity, onClose, onBooked }) => {
       setGuestCount("1");
       setPurpose("");
     } catch (e) {
-      toast.error(e.response?.data?.message || t("amenity_booking_failed", "Booking failed."));
+      setBookError(e.response?.data?.message || t("amenity_booking_failed", "Booking failed."));
     } finally {
       setBusy(false);
     }
@@ -710,7 +729,13 @@ const BookSlotModal = ({ open, amenity, onClose, onBooked }) => {
   const durationOptions = amenity?.slotDurationOptions || ["30", "60", "120"];
 
   return (
-    <Modal open={open} onClose={onClose} title={t("amenity_booking_modal_title", "Book") + (amenity?.name ? `: ${amenity.name}` : "") }>
+    <Modal
+      open={open}
+      onClose={onClose}
+      onOpen={() => setBookError("")}
+      apiError={bookError}
+      title={t("amenity_booking_modal_title", "Book") + (amenity?.name ? `: ${amenity.name}` : "") }
+    >
       <Input
         label={t("amenity_booking_label_date", "Date *")}
         value={date}
@@ -795,10 +820,12 @@ const ReviewModal = ({ open, booking, action, onClose, onDone }) => {
   const { t } = useLanguage();
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
+  const [reviewError, setReviewError] = useState("");
   const toast = useToast();
 
   const submit = async () => {
     setBusy(true);
+    setReviewError("");
     try {
       const amenityId = resolveAmenityId(booking);
       const bookingId = booking._id;
@@ -813,7 +840,7 @@ const ReviewModal = ({ open, booking, action, onClose, onDone }) => {
         onDone({ ...booking, status: "rejected" });
       }
     } catch (e) {
-      toast.error(e?.response?.data?.message || t("amenity_review_failed", "Failed to update booking."));
+      setReviewError(e?.response?.data?.message || t("amenity_review_failed", "Failed to update booking."));
     } finally {
       setBusy(false);
     }
@@ -823,6 +850,8 @@ const ReviewModal = ({ open, booking, action, onClose, onDone }) => {
     <Modal
       open={open}
       onClose={onClose}
+      onOpen={() => { setReviewError(""); setNote(""); }}
+      apiError={reviewError}
       title={action === "confirm" ? t("amenity_review_title_confirm", "Confirm Booking") : t("amenity_review_title_reject", "Reject Booking")}
     >
       <Text style={styles.modalMeta}>
@@ -835,7 +864,7 @@ const ReviewModal = ({ open, booking, action, onClose, onDone }) => {
       <Input
         label={t("amenity_review_label_note", "Admin Note (optional)")}
         value={note}
-        onChangeText={setNote}
+        onChangeText={(v) => { setReviewError(""); setNote(v); }}
         placeholder={t("amenity_review_placeholder_note", "e.g., Approved. Please confirm your attendance.")}
         multiline
         numberOfLines={3}
@@ -844,14 +873,12 @@ const ReviewModal = ({ open, booking, action, onClose, onDone }) => {
       <Btn
         onPress={submit}
         loading={busy}
-        style={{
-          width: "100%",
-          backgroundColor: action === "confirm" ? C.green + "20" : C.red + "20",
-        }}
+        variant={action === "confirm" ? "primary" : "danger"}
+        style={{ width: "100%", ...(action === "confirm" ? { backgroundColor: C.green } : {}) }}
       >
-        <Text style={{ color: action === "confirm" ? C.green : C.red, fontWeight: "700" }}>
-          {action === "confirm" ? `✓ ${t("amenity_action_confirm", "Confirm")}` : `✕ ${t("amenity_action_reject", "Reject")}`}
-        </Text>
+        {action === "confirm"
+          ? "✓ " + t("amenity_action_confirm", "Confirm")
+          : "✕ " + t("amenity_action_reject", "Reject")}
       </Btn>
     </Modal>
   );

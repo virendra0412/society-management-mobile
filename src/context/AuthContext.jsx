@@ -209,6 +209,25 @@ export const AuthProvider = ({ children }) => {
     return data;
   }, [bumpDataVersion]);
 
+  // First-time login with a temp password (mustChangePassword=true).
+  // On success the backend already issues real tokens, so this logs the
+  // user straight into the app — no need to return to the Login screen.
+  const forceChangePassword = useCallback(async ({ email, currentPassword, newPassword }) => {
+    const { data } = await authApi.forceChangePassword({ email, currentPassword, newPassword });
+    tokenStorage.setAccess(data.accessToken);
+    await tokenStorage.setRefresh(data.refreshToken);
+    await tokenStorage.setUser(data.user);
+    setUser(data.user);
+    bumpDataVersion();
+
+    if (registerPushRef.current) {
+      registerPushRef.current().catch((e) =>
+        console.warn("[AuthContext] Push token registration failed:", e?.message)
+      );
+    }
+    return data.user;
+  }, [bumpDataVersion]);
+
   const logout = useCallback(async () => {
     try { await authApi.logout(); } catch { /* ignore */ }
     await tokenStorage.clearAll();
@@ -326,6 +345,7 @@ export const AuthProvider = ({ children }) => {
         hasPermission,
         login,
         register,
+        forceChangePassword,
         logout,
         refreshUser,
         registerPushRef,

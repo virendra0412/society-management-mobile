@@ -1,13 +1,14 @@
 import React, { useState } from "react";
 import { View, Text, StyleSheet, TextInput, TouchableOpacity } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { authApi } from "../../api/auth.api";
+import { useAuth } from "../../context/AuthContext";
 import { useLanguage } from "../../context/LanguageContext";
 import { Btn } from "../../components/ui";
 import { C } from "../../constants/theme";
 
 export const ForceChangePassword = ({ navigation, route }) => {
   const { t } = useLanguage();
+  const { forceChangePassword } = useAuth();
   const { email: initialEmail = "", password: initialPassword = "" } = route.params || {};
 
   const [currentPassword, setCurrentPassword] = useState(initialPassword || "");
@@ -23,9 +24,11 @@ export const ForceChangePassword = ({ navigation, route }) => {
     }
     setLoading(true);
     try {
-      await authApi.changePassword({ currentPassword, newPassword });
-      // On success, navigate back to Login screen
-      navigation.replace("Login");
+      // Unauthenticated — identified by email, since login never issued a
+      // token (it's blocked until the temp password is changed). On success
+      // this logs the user straight into the app via AuthContext.
+      await forceChangePassword({ email: initialEmail, currentPassword, newPassword });
+      // RootNavigator handles redirect automatically via isLogged state
     } catch (e) {
       setErr(e.response?.data?.message || t("change_password_failed"));
     } finally {
