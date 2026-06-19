@@ -417,18 +417,24 @@ const ApprovalsTab = () => {
 // ─── Tab 2: Committee ─────────────────────────────────────────────────────────
 const CommitteeTab = ({ activeSocietyId }) => {
   const toast = useToast();
-  const [members,  setMembers]  = useState([]);
-  const [loading,  setLoading]  = useState(true);
-  const [removing, setRemoving] = useState(null);
-  const [saving,   setSaving]   = useState(false);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [selectedMember, setSelectedMember] = useState(null);
+  const [members,       setMembers]       = useState([]);
+  const [allApproved,   setAllApproved]   = useState([]);
+  const [loading,       setLoading]       = useState(true);
+  const [removing,      setRemoving]      = useState(null);
+  const [saving,        setSaving]        = useState(false);
+  const [modalVisible,  setModalVisible]  = useState(false);
+  const [selectedMember,setSelectedMember]= useState(null);
 
   const loadMembers = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await userApi.getCommitteeMembers();
-      setMembers(res.data.members || []);
+      // Load committee members (have role) AND all approved members (for assignment)
+      const [committeeRes, approvedRes] = await Promise.allSettled([
+        userApi.getCommitteeMembers(),
+        userApi.getApprovedMembers(),
+      ]);
+      if (committeeRes.status === "fulfilled") setMembers(committeeRes.value.data.members || []);
+      if (approvedRes.status  === "fulfilled") setAllApproved(approvedRes.value.data.members || []);
     } catch (e) {
       toast.error(e?.response?.data?.message || "Failed to load committee");
     } finally { setLoading(false); }
@@ -459,10 +465,15 @@ const CommitteeTab = ({ activeSocietyId }) => {
       await userApi.removeCommitteeRole(userId);
       toast.success("Member demoted to resident.");
       setMembers((prev) => prev.filter((m) => m._id !== userId));
+      loadMembers(); // reload approved list too
     } catch (e) {
       toast.error(e?.response?.data?.message || "Failed to remove role");
     } finally { setRemoving(null); }
   };
+
+  // Members approved but not yet assigned a committee role
+  const committeeIds   = new Set(members.map((m) => m._id));
+  const pendingAssign  = allApproved.filter((m) => !committeeIds.has(m._id));
 
   if (loading) {
     return (
@@ -489,6 +500,38 @@ const CommitteeTab = ({ activeSocietyId }) => {
                 Assign granular module permissions to committee members. Each role gets access only to what they need.
               </Text>
             </Card>
+
+            {/* Approved members awaiting role assignment */}
+            {pendingAssign.length > 0 && (
+              <View style={{ marginBottom: 16 }}>
+                <View style={s.pendingHeader}>
+                  <Text style={s.pendingHeaderText}>
+                    Approved — No Role Yet ({pendingAssign.length})
+                  </Text>
+                </View>
+                {pendingAssign.map((member) => {
+                  const mem = member.memberships?.[0] || {};
+                  return (
+                    <Card key={member._id} style={{ marginBottom: 8 }}>
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+                        <View style={[s.avatarBox, { backgroundColor: C.gray100 }]}>
+                          <Text style={[s.avatarText, { color: C.gray500 }]}>{(member.name || "?")[0].toUpperCase()}</Text>
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Text style={s.memberName}>{member.name}</Text>
+                          <Text style={s.memberEmail}>{member.email}</Text>
+                          {mem.flat ? <Text style={s.memberMeta}>Flat {mem.flat}{mem.wing ? ` · ${mem.wing}` : ""}</Text> : null}
+                        </View>
+                        <Btn small onPress={() => handleEdit(member)} style={{ backgroundColor: C.teal + "15" }}>
+                          <Text style={{ fontSize: 11, fontWeight: "700", color: C.teal }}>Assign Role</Text>
+                        </Btn>
+                      </View>
+                    </Card>
+                  );
+                })}
+              </View>
+            )}
+
             <View style={s.pendingHeader}>
               <Text style={s.pendingHeaderText}>
                 Committee Members ({members.length})

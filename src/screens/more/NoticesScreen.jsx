@@ -342,6 +342,6 @@ const s = StyleSheet.create({
   pinDot:        { position: "absolute", top: -4, right: -4, width: 16, height: 16, borderRadius: 8, backgroundColor: C.amber, borderWidth: 2, borderColor: "#fff", alignItems: "center", justifyContent: "center" },
   tag:           { borderRadius: 6, paddingHorizontal: 8, paddingVertical: 2, alignSelf: "flex-start" },
   tagText:       { fontSize: 10, fontWeight: "700" },
-  adminBtn:      { flexDirection: "row", alignItems: "center", gap: 4, borderRadius: 7, paddingHorizontal: 10, paddingVertical: 4, borderWidth: 1 },
-  adminBtnText:  { fontSize: 11, fontWeight: "700" },
+  adminBtn:      { flexDirection: "row", alignItems: "center", gap: 4, borderRadius: 7, paddingHorizontal: 10, paddingVertical: 5, borderWidth: 1, minHeight: 28 },
+  adminBtnText:  { fontSize: 11, fontWeight: "700", lineHeight: 14 },
 });

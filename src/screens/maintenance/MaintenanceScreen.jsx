@@ -373,7 +373,8 @@ const CreateBillModal = ({ open, onClose, bill, onSaved }) => {
 // ─── RECORD PAYMENT MODAL ─────────────────────────────────────────────────────
 // ═══════════════════════════════════════════════════════════════════════════════
 const RecordPaymentModal = ({ open, onClose, paymentRecord, billId, onSaved }) => {
-  const toast = useToast();
+  const toast    = useToast();
+  const { t }    = useLanguage();
   const [method, setMethod]   = useState("upi");
   const [amount, setAmount]   = useState("");
   const [txnId,  setTxnId]    = useState("");
@@ -955,6 +956,21 @@ const MaintenanceDashboard = ({ isAdmin, onOpenBill, onOpenMyPayments, onOpenDef
   const [showCreate,   setShowCreate]   = useState(false);
   const [editBill,     setEditBill]     = useState(null);
 
+  const [publishingBillId, setPublishingBillId] = useState(null);
+
+  const handlePublishBill = useCallback(async (billId) => {
+    setPublishingBillId(billId);
+    try {
+      const res = await maintenanceApi.publishBill(billId);
+      setBills((prev) => prev.map((b) => b._id === billId ? res.data.bill : b));
+      toast.success(t("maint_publish_success", "Bill published!"));
+    } catch (e) {
+      toast.error(e?.response?.data?.message || t("maint_publish_failed", "Failed to publish."));
+    } finally {
+      setPublishingBillId(null);
+    }
+  }, [toast, t]);
+
   const handleDeleteBill = useCallback((billId) => {
     Alert.alert(
       t("payments_delete_bill_title", "Delete Draft Bill"),
@@ -1116,19 +1132,32 @@ const MaintenanceDashboard = ({ isAdmin, onOpenBill, onOpenMyPayments, onOpenDef
                 </>
               )}
 
-              {/* Draft actions — Edit & Delete */}
               {isAdmin && isDraft && (
                 <View style={{ flexDirection: "row", gap: 8, marginTop: 10 }}>
+                  {/* Publish */}
                   <TouchableOpacity
-                    onPress={(e) => { e.stopPropagation?.(); setEditBill(bill); }}
-                    style={[S.draftActionBtn, { borderColor: C.amber + "50", backgroundColor: C.amber + "12" }]}
+                    onPress={(e) => { e.stopPropagation?.(); handlePublishBill(bill._id); }}
+                    disabled={publishingBillId === bill._id}
+                    style={[S.draftActionBtn, { borderColor: C.green + "50", backgroundColor: C.green + "12", flex: 1 }]}
                     activeOpacity={0.7}
                   >
-                    <Text style={[S.draftActionText, { color: C.amber }]}>{t("maint_edit_draft", "✏️ Edit Draft")}</Text>
+                    {publishingBillId === bill._id
+                      ? <Spinner size={12} color={C.green} />
+                      : <Text style={[S.draftActionText, { color: C.green }]}>{t("maint_publish_btn", "📢 Publish")}</Text>
+                    }
                   </TouchableOpacity>
+                  {/* Edit */}
+                  <TouchableOpacity
+                    onPress={(e) => { e.stopPropagation?.(); setEditBill(bill); }}
+                    style={[S.draftActionBtn, { borderColor: C.amber + "50", backgroundColor: C.amber + "12", flex: 1 }]}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[S.draftActionText, { color: C.amber }]}>{t("maint_edit_draft", "✏️ Edit")}</Text>
+                  </TouchableOpacity>
+                  {/* Delete */}
                   <TouchableOpacity
                     onPress={(e) => { e.stopPropagation?.(); handleDeleteBill(bill._id); }}
-                    style={[S.draftActionBtn, { borderColor: C.red + "40", backgroundColor: C.red + "10" }]}
+                    style={[S.draftActionBtn, { borderColor: C.red + "40", backgroundColor: C.red + "10", flex: 1 }]}
                     activeOpacity={0.7}
                   >
                     <Text style={[S.draftActionText, { color: C.red }]}>{t("maint_delete_draft", "🗑 Delete")}</Text>
@@ -1288,7 +1317,7 @@ const S = StyleSheet.create({
   residentPayCard:  { backgroundColor: C.gray50, borderRadius: 12, padding: 12, marginBottom: 8 },
 
   // Info box (in modals)
-  infoBox:          { backgroundColor: C.gray50, borderRadius: 10, padding: "10px 14px", marginBottom: 14 },
+  infoBox:          { backgroundColor: C.gray50, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10, marginBottom: 14 },
   infoTitle:        { fontSize: 13, fontWeight: "700", color: C.navy },
   infoMeta:         { fontSize: 12, color: C.gray500, marginTop: 2 },
 

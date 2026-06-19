@@ -104,7 +104,7 @@ const hdr = StyleSheet.create({
   wrap:     { backgroundColor: C.bg, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "rgba(0,0,0,0.08)" },
   row:      { height: 44, flexDirection: "row", alignItems: "center", paddingHorizontal: 4 },
   backBtn:  { width: 42, alignItems: "center", justifyContent: "center" },
-  sideSlot: { width: 42, alignItems: "flex-end", justifyContent: "center" },
+  sideSlot: { minWidth: 42, alignItems: "flex-end", justifyContent: "center", paddingRight: 8 },
   title:    { flex: 1, fontSize: 16, fontWeight: "700", color: C.navy, textAlign: "center" },
 });
 

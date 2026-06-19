@@ -17,7 +17,7 @@
  *   links to the Maintenance tab. Silently suppressed if the API call fails (no
  *   error shown to user — dashboard should never break because of a billing fetch).
  */
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   View, Text, StyleSheet, ScrollView,
   TouchableOpacity, Dimensions,
@@ -25,6 +25,7 @@ import {
 import { SafeAreaView }  from "react-native-safe-area-context";
 import { Ionicons }      from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
+import { useFocusEffect } from "@react-navigation/native";
 
 import { useAuth }     from "../../context/AuthContext";
 import { useLanguage } from "../../context/LanguageContext";
@@ -209,15 +210,13 @@ export const HomeScreen = () => {
   const [showSwitcher, setShowSwitcher] = useState(false);
   const [switching,    setSwitching]    = useState(null);
 
-  useEffect(() => {
-    const load = async () => {
+  const load = useCallback(async () => {
       setLoading(true);
       try {
         const [iRes, hRes, nRes, mRes] = await Promise.allSettled([
           issuesApi.getAll({ limit: 3, sort: "-createdAt" }),
           helpApi.getAll({ limit: 2 }),
           noticesApi.getAll({ limit: 5 }),
-          // TC-HOME-02: fetch resident's own bills — silently ignored on failure
           maintenanceApi.getMyBills({ isPublished: true, limit: 20 }),
         ]);
 
@@ -225,13 +224,11 @@ export const HomeScreen = () => {
         if (hRes.status === "fulfilled") setHelp(hRes.value.data?.posts     || []);
         if (nRes.status === "fulfilled") setNotices(nRes.value.data?.notices || []);
 
-        // TC-HOME-02 — derive unpaid/overdue bills from the resident's payment records
         if (mRes.status === "fulfilled") {
           const bills = mRes.value.data?.bills || [];
           const now   = new Date();
           const unpaid = bills
             .filter((b) => {
-              // A bill has b.payments = [myPaymentRecord] when scoped to resident
               const myPay = Array.isArray(b.payments) ? b.payments[0] : null;
               if (!myPay) return false;
               return myPay.status === "unpaid" || myPay.status === "overdue";
@@ -252,9 +249,17 @@ export const HomeScreen = () => {
       } finally {
         setLoading(false);
       }
-    };
-    load();
-  }, [dataVersion]);
+    }, [dataVersion, t]);
+
+  useEffect(() => { load(); }, [load]);
+
+  // Refresh notices (and all data) every time user navigates back to Home tab
+  // This fixes the stale notice banner showing deleted/edited notices
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [load])
+  );
 
   const openCount    = issues.filter((i) => i.status !== "Resolved").length;
   const urgentNotice = notices.find((n) => n.tag === "Urgent") || notices[0];

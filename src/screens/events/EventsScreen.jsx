@@ -176,9 +176,9 @@ const RsvpCounts = ({ summary = {}, maxAttendees }) => {
 // ═══════════════════════════════════════════════════════
 const RsvpButtons = ({ event, onRsvp, onRemove, loading }) => {
   const { t } = useLanguage();
-  const [guestCount, setGuestCount] = useState(event.myRsvp?.guestCount || 1);
-  const current = event.myRsvp?.status || null;
-  const isFull = event.maxAttendees > 0 && (event.rsvpSummary?.going || 0) >= event.maxAttendees && current !== "going";
+  const current = event?.myRsvp?.status || null;
+  const [guestCount, setGuestCount] = useState(event?.myRsvp?.guestCount || 1);
+  const isFull = (event?.maxAttendees > 0) && ((event?.rsvpSummary?.going || 0) >= event.maxAttendees) && current !== "going";
 
   const options = [
     { status: "going", icon: "🎉", label: t("Events.Going", "Going") },
@@ -627,13 +627,13 @@ const EventDetailView = ({ eventId, onBack, isAdmin }) => {
               <Text style={{ fontSize: 12, fontWeight: "700", color: C.gray700, marginBottom: 10 }}>
                 {t("Events.AdminActions", "Admin Actions")}
               </Text>
-              <View style={{ flexDirection: "row", gap: 8 }}>
+              <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap" }}>
                 {!event.isPublished && (
                   <Btn
                     small
                     onPress={handlePublish}
                     loading={actionBusy === "publish"}
-                    style={{ flex: 1 }}
+                    style={{ flex: 1, minWidth: 100 }}
                   >
                     📢 {t("Events.Publish", "Publish")}
                   </Btn>
@@ -642,11 +642,10 @@ const EventDetailView = ({ eventId, onBack, isAdmin }) => {
                   small
                   onPress={() => setShowCancelModal(true)}
                   loading={actionBusy === "cancel"}
-                  style={{ flex: 1, backgroundColor: C.red + "20" }}
+                  style={{ flex: 1, minWidth: 100, backgroundColor: C.red + "20", borderWidth: 0 }}
+                  textStyle={{ color: C.red }}
                 >
-                  <Text style={{ color: C.red, fontWeight: "700", fontSize: 11 }}>
-                  {t("Events.Cancel", "Cancel")}
-                </Text>
+                  {t("Events.Cancel", "Cancel Event")}
                 </Btn>
               </View>
             </Card>

@@ -174,6 +174,7 @@ export const userApi = {
   removeFamilyMember: (id)        => client.delete(`/users/profile/family/${id}`).then(unwrap),
   // Admin — member approval
   getPendingMembers:  ()          => client.get("/users/pending").then(unwrap),
+  getApprovedMembers: ()          => client.get("/users/approved").then(unwrap),
   approveMember:      (id)        => client.patch(`/users/${id}/approve`).then(unwrap),
   rejectMember:       (id)        => client.patch(`/users/${id}/reject`).then(unwrap),
   // Admin — committee management (RBAC)
