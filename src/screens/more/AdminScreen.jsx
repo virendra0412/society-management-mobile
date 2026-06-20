@@ -235,10 +235,15 @@ const AssignRoleModal = ({ visible, member, onClose, onSave, saving }) => {
               variant="primary"
               onPress={handleSave}
               loading={saving}
-              disabled={!title.trim() || !selectedPreset}
+              disabled={!selectedPreset}
             >
               Assign Role
             </Btn>
+            {!selectedPreset && (
+              <Text style={s.helperHint}>
+                Pick a preset above or adjust a module's permission to enable saving.
+              </Text>
+            )}
             <View style={{ height: 24 }} />
           </ScrollView>
         </View>
@@ -723,6 +728,7 @@ const s = StyleSheet.create({
   tabBtnTextActive:  { color: C.navy },
   list:              { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 24 },
   sectionLabel:      { fontSize: 11, fontWeight: "700", color: C.gray500, textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 10 },
+  helperHint:        { fontSize: 12, color: C.gray500, textAlign: "center", marginTop: 8 },
   statPill:          { flex: 1, borderRadius: 10, padding: 12, alignItems: "center", borderWidth: 1 },
   statCount:         { fontSize: 22, fontWeight: "800" },
   statLabel:         { fontSize: 11, color: C.gray500, marginTop: 2 },

@@ -19,7 +19,7 @@ export const ForceChangePassword = ({ navigation, route }) => {
   const handleChange = async () => {
     setErr("");
     if (!currentPassword || !newPassword) {
-      setErr(t("err_pass_required"));
+      setErr(t("err_pass_required", "Password is required"));
       return;
     }
     setLoading(true);
@@ -30,7 +30,7 @@ export const ForceChangePassword = ({ navigation, route }) => {
       await forceChangePassword({ email: initialEmail, currentPassword, newPassword });
       // RootNavigator handles redirect automatically via isLogged state
     } catch (e) {
-      setErr(e.response?.data?.message || t("change_password_failed"));
+      setErr(e.response?.data?.message || t("change_password_failed", "Couldn't change password. Please check the temporary password and try again."));
     } finally {
       setLoading(false);
     }
@@ -39,35 +39,35 @@ export const ForceChangePassword = ({ navigation, route }) => {
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.container}>
-        <Text style={styles.title}>{t("force_change_title")}</Text>
-        <Text style={styles.subtitle}>{t("force_change_sub")}</Text>
+        <Text style={styles.title}>{t("force_change_title", "Set a new password")}</Text>
+        <Text style={styles.subtitle}>{t("force_change_sub", "For security, please set your own password before continuing.")}</Text>
 
         {!!err && <Text style={styles.err}>{err}</Text>}
 
         <View style={{ marginTop: 12 }}>
-          <Text style={styles.label}>{t("current_password")}</Text>
+          <Text style={styles.label}>{t("current_password", "Temporary password")}</Text>
           <TextInput
             value={currentPassword}
             onChangeText={setCurrentPassword}
             secureTextEntry
             style={styles.input}
-            placeholder={t("current_password_ph")}
+            placeholder={t("current_password_ph", "Enter the temporary password from your email")}
           />
         </View>
 
         <View style={{ marginTop: 12 }}>
-          <Text style={styles.label}>{t("new_password")}</Text>
+          <Text style={styles.label}>{t("new_password", "New password")}</Text>
           <TextInput
             value={newPassword}
             onChangeText={setNewPassword}
             secureTextEntry
             style={styles.input}
-            placeholder={t("new_password_ph")}
+            placeholder={t("new_password_ph", "Min 8 chars, A-Z, 0-9")}
           />
         </View>
 
         <Btn onPress={handleChange} loading={loading} style={{ marginTop: 20 }}>
-          {t("change_password_btn")}
+          {t("change_password_btn", "Set Password & Continue")}
         </Btn>
       </View>
     </SafeAreaView>

@@ -59,6 +59,16 @@ const hi = {
   err_pass_required:   "पासवर्ड आवश्यक है",
   err_legal_accept:    "कृपया नियमों और गोपनीयता नीति को स्वीकार करें",
 
+  // ── Auth — Force Change Password (first login with a temp password) ──────────
+  force_change_title:     "नया पासवर्ड सेट करें",
+  force_change_sub:       "सुरक्षा के लिए, कृपया आगे बढ़ने से पहले अपना पासवर्ड सेट करें।",
+  current_password:       "अस्थायी पासवर्ड",
+  current_password_ph:    "अपने ईमेल से प्राप्त अस्थायी पासवर्ड दर्ज करें",
+  new_password:            "नया पासवर्ड",
+  new_password_ph:         "कम से कम 8 अक्षर, A-Z, 0-9",
+  change_password_btn:     "पासवर्ड सेट करें और जारी रखें",
+  change_password_failed:  "पासवर्ड बदला नहीं जा सका। कृपया अस्थायी पासवर्ड जाँचें और पुनः प्रयास करें।",
+
   // ── Auth — Forgot / Reset ────────────────────────────────────────────────────
   forgot_title:      "पासवर्ड भूल गए?",
   forgot_subtitle:   "अपना पंजीकृत ईमेल दर्ज करें। हम एक OTP भेजेंगे।",

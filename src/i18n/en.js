@@ -53,6 +53,16 @@ const en = {
   err_email_required:  "Email is required",
   err_pass_required:   "Password is required",
 
+  // ── Auth — Force Change Password (first login with a temp password) ──────────
+  force_change_title:     "Set a new password",
+  force_change_sub:       "For security, please set your own password before continuing.",
+  current_password:       "Temporary password",
+  current_password_ph:    "Enter the temporary password from your email",
+  new_password:            "New password",
+  new_password_ph:         "Min 8 chars, A-Z, 0-9",
+  change_password_btn:     "Set Password & Continue",
+  change_password_failed:  "Couldn't change password. Please check the temporary password and try again.",
+
   // ── Auth — Forgot / Reset ────────────────────────────────────────────────────
   forgot_title:        "Forgot password?",
   forgot_subtitle:     "Enter your registered email. We'll send a one-time password.",

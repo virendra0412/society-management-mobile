@@ -59,6 +59,16 @@ const gu = {
   err_pass_required:   "પાસવર્ડ જરૂરી છે",
   err_legal_accept:    "કૃપા કરીને નિયમો અને ગોપનીયતા નીતિ સ્વીકારો",
 
+  // ── Auth — Force Change Password (first login with a temp password) ──────────
+  force_change_title:     "નવો પાસવર્ડ સેટ કરો",
+  force_change_sub:       "સુરક્ષા માટે, કૃપા કરી આગળ વધતા પહેલા તમારો પોતાનો પાસવર્ડ સેટ કરો.",
+  current_password:       "કામચલાઉ પાસવર્ડ",
+  current_password_ph:    "તમારા ઇમેઇલમાંથી કામચલાઉ પાસવર્ડ દાખલ કરો",
+  new_password:            "નવો પાસવર્ડ",
+  new_password_ph:         "ઓછામાં ઓછા 8 અક્ષરો, A-Z, 0-9",
+  change_password_btn:     "પાસવર્ડ સેટ કરો અને ચાલુ રાખો",
+  change_password_failed:  "પાસવર્ડ બદલી શકાયો નહીં. કૃપા કરી કામચલાઉ પાસવર્ડ તપાસો અને ફરી પ્રયત્ન કરો.",
+
   // ── Auth — Forgot / Reset ────────────────────────────────────────────────────
   forgot_title:      "પાસવર્ડ ભૂલી ગયા?",
   forgot_subtitle:   "તમારો નોંધાયેલ ઇમેઇલ દાખલ કરો. અમે OTP મોકલીશું.",

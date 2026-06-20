@@ -58,6 +58,16 @@ const mr = {
   err_pass_required:   "पासवर्ड आवश्यक आहे",
   err_legal_accept:    "कृपया नियम व गोपनीयता धोरण स्वीकारा",
 
+  // ── Auth — Force Change Password (first login with a temp password) ──────────
+  force_change_title:     "नवीन पासवर्ड सेट करा",
+  force_change_sub:       "सुरक्षेसाठी, पुढे जाण्यापूर्वी कृपया आपला स्वतःचा पासवर्ड सेट करा.",
+  current_password:       "तात्पुरता पासवर्ड",
+  current_password_ph:    "तुमच्या ईमेलमधील तात्पुरता पासवर्ड टाका",
+  new_password:            "नवीन पासवर्ड",
+  new_password_ph:         "किमान 8 अक्षरे, A-Z, 0-9",
+  change_password_btn:     "पासवर्ड सेट करा आणि सुरू ठेवा",
+  change_password_failed:  "पासवर्ड बदलता आला नाही. कृपया तात्पुरता पासवर्ड तपासा आणि पुन्हा प्रयत्न करा.",
+
   forgot_title:        "पासवर्ड विसरले?",
   forgot_subtitle:     "आपले नोंदणीकृत ईमेल प्रविष्ट करा. आम्ही OTP पाठवू.",
   reset_subtitle:      "OTP प्रविष्ट करा आणि नवीन पासवर्ड निवडा.",

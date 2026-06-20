@@ -900,7 +900,15 @@ const TrustedTab = ({ user }) => {
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 export const VisitorsScreen = () => {
-  const { user, isAdmin, activeSocietyId, memberships, dataVersion } = useAuth();
+  const { user, isAdmin: isRoleAdmin, hasPermission, activeSocietyId, memberships, dataVersion } = useAuth();
+  // Security Desk access shouldn't be limited to the literal "admin" role —
+  // the backend already grants "security" (and anyone else with a
+  // visitors:write/full permission, e.g. committee) full access via
+  // requirePermission("visitors", "write"). isAdmin here is broadened to
+  // match that, so every downstream isAdmin check in this screen (which
+  // toggles between "Security Desk" and "My Visitors" UI) now works for
+  // security guards too, not just role === "admin".
+  const isAdmin = isRoleAdmin || hasPermission("visitors", "write");
   const { t } = useLanguage();
   const activeMembership = memberships?.find(
     (m) => m.society?._id?.toString() === activeSocietyId || m.society?.toString() === activeSocietyId

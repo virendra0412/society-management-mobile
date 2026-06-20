@@ -58,6 +58,16 @@ const pa = {
   err_pass_required:   "ਪਾਸਵਰਡ ਦੀ ਲੋੜ ਹੈ",
   err_legal_accept:    "ਕਿਰਪਾ ਕਰਕੇ ਨਿਯਮ ਅਤੇ ਗੋਪਨੀਯਤਾ ਨੀਤੀ ਸਵੀਕਾਰੋ",
 
+  // ── Auth — Force Change Password (first login with a temp password) ──────────
+  force_change_title:     "ਨਵਾਂ ਪਾਸਵਰਡ ਸੈੱਟ ਕਰੋ",
+  force_change_sub:       "ਸੁਰੱਖਿਆ ਲਈ, ਅੱਗੇ ਵਧਣ ਤੋਂ ਪਹਿਲਾਂ ਕਿਰਪਾ ਕਰਕੇ ਆਪਣਾ ਪਾਸਵਰਡ ਸੈੱਟ ਕਰੋ।",
+  current_password:       "ਆਰਜ਼ੀ ਪਾਸਵਰਡ",
+  current_password_ph:    "ਆਪਣੀ ਈ-ਮੇਲ ਤੋਂ ਆਰਜ਼ੀ ਪਾਸਵਰਡ ਦਾਖਲ ਕਰੋ",
+  new_password:            "ਨਵਾਂ ਪਾਸਵਰਡ",
+  new_password_ph:         "ਘੱਟੋ-ਘੱਟ 8 ਅੱਖਰ, A-Z, 0-9",
+  change_password_btn:     "ਪਾਸਵਰਡ ਸੈੱਟ ਕਰੋ ਅਤੇ ਜਾਰੀ ਰੱਖੋ",
+  change_password_failed:  "ਪਾਸਵਰਡ ਬਦਲਿਆ ਨਹੀਂ ਜਾ ਸਕਿਆ। ਕਿਰਪਾ ਕਰਕੇ ਆਰਜ਼ੀ ਪਾਸਵਰਡ ਦੀ ਜਾਂਚ ਕਰੋ ਅਤੇ ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ।",
+
   forgot_title:        "ਪਾਸਵਰਡ ਭੁੱਲ ਗਏ?",
   forgot_subtitle:     "ਆਪਣਾ ਪੰਜੀਕਰਨ ਈ-ਮੇਲ ਦਰਜ ਕਰੋ। ਅਸੀਂ OTP ਭੇਜਾਂਗੇ।",
   reset_subtitle:      "OTP ਦਰਜ ਕਰੋ ਅਤੇ ਨਵਾਂ ਪਾਸਵਰਡ ਚੁਣੋ.",
