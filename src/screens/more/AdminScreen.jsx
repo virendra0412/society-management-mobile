@@ -20,13 +20,23 @@ const MODULE_ICON = {
   visitors:    "🚶", maintenance: "💰", issues: "🔧",
   notices:     "📢", parking:     "🅿️", amenities: "🏊", residents: "👥",
 };
-const MODULE_LABEL = {
-  visitors:    "Visitors",    maintenance: "Maintenance", issues:    "Issues",
-  notices:     "Notices",     parking:     "Parking",     amenities: "Amenities",
-  residents:   "Residents",
+const MODULE_LABEL_KEY = {
+  visitors:    "admin_module_visitors",    maintenance: "admin_module_maintenance", issues:    "admin_module_issues",
+  notices:     "admin_module_notices",     parking:     "admin_module_parking",     amenities: "admin_module_amenities",
+  residents:   "admin_module_residents",
 };
 const PERM_LEVELS = ["none", "read", "write", "full"];
 const PERM_COLOR  = { none: C.gray300, read: C.blue, write: C.amber, full: C.green };
+
+// Labels for preset roles — resolved via t() at render time using these keys
+const PRESET_ROLE_LABEL_KEY = {
+  "Treasurer":        "admin_preset_treasurer",
+  "Secretary":        "admin_preset_secretary",
+  "Security Head":    "admin_preset_security_head",
+  "Parking Head":     "admin_preset_parking_head",
+  "Maintenance Head": "admin_preset_maintenance_head",
+  "Custom":           "admin_preset_custom",
+};
 
 const PRESET_ROLES = [
   {
@@ -65,6 +75,7 @@ const StatPill = ({ label, count, color }) => (
 
 // ─── Pending Member Card ──────────────────────────────────────────────────────
 const PendingCard = ({ member, onApprove, onReject, busy }) => {
+  const { t } = useLanguage();
   const mem = member.memberships?.[0] || {};
   return (
     <Card style={{ marginBottom: 10 }}>
@@ -76,11 +87,11 @@ const PendingCard = ({ member, onApprove, onReject, busy }) => {
           <Text style={s.memberName}>{member.name}</Text>
           <Text style={s.memberEmail}>{member.email}</Text>
           <Text style={s.memberMeta}>
-            {[mem.flat && `Flat ${mem.flat}`, mem.wing].filter(Boolean).join(" · ") || "No flat info"}
+            {[mem.flat && t("admin_flat_prefix", "Flat ") + mem.flat, mem.wing].filter(Boolean).join(" · ") || t("admin_no_flat_info", "No flat info")}
             {" · "}{timeAgo(member.createdAt)}
           </Text>
         </View>
-        <Badge label="Pending" bg="#FEF3C7" text="#92400E" dot="#F59E0B" />
+        <Badge label={t("admin_badge_pending", "Pending")} bg="#FEF3C7" text="#92400E" dot="#F59E0B" />
       </View>
       {!!member.phone && (
         <View style={s.phoneBox}>
@@ -90,11 +101,11 @@ const PendingCard = ({ member, onApprove, onReject, busy }) => {
       <View style={{ flexDirection: "row", gap: 8 }}>
         <Btn small variant="primary" onPress={() => onApprove(member._id)}
           loading={busy === member._id + "_approve"} style={{ flex: 1 }}>
-          ✓ Approve
+          {"✓ " + t("admin_btn_approve", "Approve")}
         </Btn>
         <Btn small variant="danger" onPress={() => onReject(member._id)}
           loading={busy === member._id + "_reject"} style={{ flex: 1 }}>
-          ✕ Reject
+          {"✕ " + t("admin_btn_reject", "Reject")}
         </Btn>
       </View>
     </Card>
@@ -102,34 +113,38 @@ const PendingCard = ({ member, onApprove, onReject, busy }) => {
 };
 
 // ─── Permission Level Picker ──────────────────────────────────────────────────
-const PermLevelPicker = ({ module, value, onChange }) => (
-  <View style={{ marginBottom: 10 }}>
-    <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 6 }}>
-      <Text style={s.permModuleIcon}>{MODULE_ICON[module]}</Text>
-      <Text style={s.permModuleLabel}>{MODULE_LABEL[module]}</Text>
+const PermLevelPicker = ({ module, value, onChange }) => {
+  const { t } = useLanguage();
+  return (
+    <View style={{ marginBottom: 10 }}>
+      <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 6 }}>
+        <Text style={s.permModuleIcon}>{MODULE_ICON[module]}</Text>
+        <Text style={s.permModuleLabel}>{t(MODULE_LABEL_KEY[module], module)}</Text>
+      </View>
+      <View style={{ flexDirection: "row", gap: 6 }}>
+        {PERM_LEVELS.map((lvl) => {
+          const active = value === lvl;
+          return (
+            <TouchableOpacity
+              key={lvl}
+              onPress={() => onChange(module, lvl)}
+              style={[
+                s.permChip,
+                active && { backgroundColor: PERM_COLOR[lvl], borderColor: PERM_COLOR[lvl] },
+              ]}
+            >
+              <Text style={[s.permChipText, active && { color: "#fff" }]}>{t("admin_perm_" + lvl, lvl)}</Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
     </View>
-    <View style={{ flexDirection: "row", gap: 6 }}>
-      {PERM_LEVELS.map((lvl) => {
-        const active = value === lvl;
-        return (
-          <TouchableOpacity
-            key={lvl}
-            onPress={() => onChange(module, lvl)}
-            style={[
-              s.permChip,
-              active && { backgroundColor: PERM_COLOR[lvl], borderColor: PERM_COLOR[lvl] },
-            ]}
-          >
-            <Text style={[s.permChipText, active && { color: "#fff" }]}>{lvl}</Text>
-          </TouchableOpacity>
-        );
-      })}
-    </View>
-  </View>
-);
+  );
+};
 
 // ─── Assign Role Modal ────────────────────────────────────────────────────────
 const AssignRoleModal = ({ visible, member, onClose, onSave, saving }) => {
+  const { t } = useLanguage();
   const [selectedPreset, setSelectedPreset] = useState(null);
   const [title,       setTitle]       = useState("");
   const [permissions, setPermissions] = useState({});
@@ -137,7 +152,6 @@ const AssignRoleModal = ({ visible, member, onClose, onSave, saving }) => {
   const applyPreset = (preset) => {
     setSelectedPreset(preset.label);
     setTitle(preset.committeeTitle);
-    // Fill all modules: preset values first, rest = "none"
     const filled = {};
     MODULES.forEach((m) => { filled[m] = preset.permissions[m] || "none"; });
     setPermissions(filled);
@@ -145,7 +159,7 @@ const AssignRoleModal = ({ visible, member, onClose, onSave, saving }) => {
 
   const handlePermChange = (module, level) => {
     setPermissions((prev) => ({ ...prev, [module]: level }));
-    setSelectedPreset("Custom"); // mark as custom once manually changed
+    setSelectedPreset("Custom");
   };
 
   const activePreset = PRESET_ROLES.find((p) => p.label === selectedPreset);
@@ -155,7 +169,6 @@ const AssignRoleModal = ({ visible, member, onClose, onSave, saving }) => {
     onSave(member._id, { role: roleToSend, committeeTitle: title, permissions });
   };
 
-  // Reset on open
   useEffect(() => {
     if (visible) {
       setSelectedPreset(null);
@@ -186,7 +199,7 @@ const AssignRoleModal = ({ visible, member, onClose, onSave, saving }) => {
             </View>
 
             {/* Preset chips */}
-            <Text style={s.sectionLabel}>Quick Presets</Text>
+            <Text style={s.sectionLabel}>{t("admin_modal_presets_label", "Quick Presets")}</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
               <View style={{ flexDirection: "row", gap: 8, paddingHorizontal: 2 }}>
                 {PRESET_ROLES.map((p) => (
@@ -200,7 +213,7 @@ const AssignRoleModal = ({ visible, member, onClose, onSave, saving }) => {
                   >
                     <Text style={modal.presetIcon}>{p.icon}</Text>
                     <Text style={[modal.presetLabel, selectedPreset === p.label && { color: "#fff" }]}>
-                      {p.label}
+                      {t(PRESET_ROLE_LABEL_KEY[p.label], p.label)}
                     </Text>
                   </TouchableOpacity>
                 ))}
@@ -208,17 +221,17 @@ const AssignRoleModal = ({ visible, member, onClose, onSave, saving }) => {
             </ScrollView>
 
             {/* Title */}
-            <Text style={s.sectionLabel}>Committee Title</Text>
+            <Text style={s.sectionLabel}>{t("admin_modal_title_label", "Committee Title")}</Text>
             <TextInput
               value={title}
               onChangeText={setTitle}
-              placeholder='e.g. "Treasurer" or "Joint Secretary"'
+              placeholder={t("admin_modal_title_placeholder", 'e.g. "Treasurer" or "Joint Secretary"')}
               placeholderTextColor={C.gray300}
               style={modal.input}
             />
 
             {/* Permission matrix */}
-            <Text style={s.sectionLabel}>Module Permissions</Text>
+            <Text style={s.sectionLabel}>{t("admin_modal_permissions_label", "Module Permissions")}</Text>
             <Card style={{ marginBottom: 12 }}>
               {MODULES.map((m) => (
                 <PermLevelPicker
@@ -237,11 +250,11 @@ const AssignRoleModal = ({ visible, member, onClose, onSave, saving }) => {
               loading={saving}
               disabled={!selectedPreset}
             >
-              Assign Role
+              {t("admin_modal_assign_btn", "Assign Role")}
             </Btn>
             {!selectedPreset && (
               <Text style={s.helperHint}>
-                Pick a preset above or adjust a module's permission to enable saving.
+                {t("admin_modal_assign_hint", "Pick a preset above or adjust a module's permission to enable saving.")}
               </Text>
             )}
             <View style={{ height: 24 }} />
@@ -254,13 +267,11 @@ const AssignRoleModal = ({ visible, member, onClose, onSave, saving }) => {
 
 // ─── Committee Member Card ────────────────────────────────────────────────────
 const CommitteeCard = ({ member, societyId, onRemove, onEdit, removing }) => {
-  // Find the membership for this society
+  const { t } = useLanguage();
   const mem = member.memberships?.find(
     (m) => m.society?._id?.toString() === societyId || m.society?.toString() === societyId
   ) || {};
   const perms = mem.permissions || {};
-
-  // Collect granted permissions (> none)
   const grantedModules = MODULES.filter((m) => perms[m] && perms[m] !== "none");
 
   return (
@@ -279,13 +290,12 @@ const CommitteeCard = ({ member, societyId, onRemove, onEdit, removing }) => {
           <Text style={s.memberEmail}>{member.email}</Text>
         </View>
         <Badge
-          label={mem.role || "committee"}
+          label={mem.role || t("admin_role_committee", "committee")}
           bg={mem.role === "security" ? C.green + "20" : C.purple + "20"}
           text={mem.role === "security" ? C.green : C.purple}
         />
       </View>
 
-      {/* Permission chips */}
       {grantedModules.length > 0 && (
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
           {grantedModules.map((m) => (
@@ -295,7 +305,7 @@ const CommitteeCard = ({ member, societyId, onRemove, onEdit, removing }) => {
             >
               <Text style={s.permBadgeIcon}>{MODULE_ICON[m]}</Text>
               <Text style={[s.permBadgeText, { color: PERM_COLOR[perms[m]] }]}>
-                {MODULE_LABEL[m]}: {perms[m]}
+                {t(MODULE_LABEL_KEY[m], m)}: {t("admin_perm_" + perms[m], perms[m])}
               </Text>
             </View>
           ))}
@@ -304,7 +314,7 @@ const CommitteeCard = ({ member, societyId, onRemove, onEdit, removing }) => {
 
       <View style={{ flexDirection: "row", gap: 8 }}>
         <Btn small variant="outline" onPress={() => onEdit(member)} style={{ flex: 1 }}>
-          ✏️ Edit
+          {"✏️ " + t("admin_btn_edit", "Edit")}
         </Btn>
         <Btn
           small variant="danger"
@@ -312,7 +322,7 @@ const CommitteeCard = ({ member, societyId, onRemove, onEdit, removing }) => {
           loading={removing === member._id}
           style={{ flex: 1 }}
         >
-          Remove
+          {t("admin_btn_remove", "Remove")}
         </Btn>
       </View>
     </Card>
@@ -322,6 +332,7 @@ const CommitteeCard = ({ member, societyId, onRemove, onEdit, removing }) => {
 // ─── Tab 1: Approvals ─────────────────────────────────────────────────────────
 const ApprovalsTab = () => {
   const toast = useToast();
+  const { t } = useLanguage();
   const [pending,       setPending]       = useState([]);
   const [loading,       setLoading]       = useState(true);
   const [busy,          setBusy]          = useState(null);
@@ -334,7 +345,7 @@ const ApprovalsTab = () => {
       const res = await userApi.getPendingMembers();
       setPending(res.data.members || []);
     } catch (e) {
-      toast.error(e?.response?.data?.message || "Failed to load pending members");
+      toast.error(e?.response?.data?.message || t("admin_err_load_pending", "Failed to load pending members"));
     } finally { setLoading(false); }
   }, []);
 
@@ -346,9 +357,9 @@ const ApprovalsTab = () => {
       await userApi.approveMember(userId);
       setPending((p) => p.filter((m) => m._id !== userId));
       setApprovedCount((c) => c + 1);
-      toast.success("Member approved!");
+      toast.success(t("admin_success_approved", "Member approved!"));
     } catch (e) {
-      toast.error(e?.response?.data?.message || "Approval failed");
+      toast.error(e?.response?.data?.message || t("admin_err_approve", "Approval failed"));
     } finally { setBusy(null); }
   };
 
@@ -358,9 +369,9 @@ const ApprovalsTab = () => {
       await userApi.rejectMember(userId);
       setPending((p) => p.filter((m) => m._id !== userId));
       setRejectedCount((c) => c + 1);
-      toast.success("Member rejected.");
+      toast.success(t("admin_success_rejected", "Member rejected."));
     } catch (e) {
-      toast.error(e?.response?.data?.message || "Rejection failed");
+      toast.error(e?.response?.data?.message || t("admin_err_reject", "Rejection failed"));
     } finally { setBusy(null); }
   };
 
@@ -374,16 +385,16 @@ const ApprovalsTab = () => {
         <View>
           {(approvedCount > 0 || rejectedCount > 0) && (
             <Card style={{ marginBottom: 16 }}>
-              <Text style={s.sectionLabel}>This Session</Text>
+              <Text style={s.sectionLabel}>{t("admin_session_label", "This Session")}</Text>
               <View style={{ flexDirection: "row", gap: 10 }}>
-                <StatPill label="Approved" count={approvedCount} color={C.green} />
-                <StatPill label="Rejected" count={rejectedCount} color={C.red} />
+                <StatPill label={t("admin_stat_approved", "Approved")} count={approvedCount} color={C.green} />
+                <StatPill label={t("admin_stat_rejected", "Rejected")} count={rejectedCount} color={C.red} />
               </View>
             </Card>
           )}
           <View style={s.pendingHeader}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-              <Text style={s.pendingHeaderText}>Pending Requests</Text>
+              <Text style={s.pendingHeaderText}>{t("admin_pending_title", "Pending Requests")}</Text>
               {pending.length > 0 && (
                 <View style={s.countBadge}>
                   <Text style={s.countBadgeText}>{pending.length}</Text>
@@ -391,7 +402,7 @@ const ApprovalsTab = () => {
               )}
             </View>
             <TouchableOpacity onPress={loadPending} disabled={loading} style={s.refreshBtn}>
-              {loading ? <Spinner size={12} /> : <Text style={s.refreshBtnText}>↻ Refresh</Text>}
+              {loading ? <Spinner size={12} /> : <Text style={s.refreshBtnText}>{t("admin_btn_refresh", "↻ Refresh")}</Text>}
             </TouchableOpacity>
           </View>
         </View>
@@ -402,13 +413,13 @@ const ApprovalsTab = () => {
             {[1, 2, 3].map((k) => <View key={k} style={s.skeleton} />)}
           </View>
         ) : (
-          <Card><EmptyState icon="✅" message="No pending approvals. All caught up!" /></Card>
+          <Card><EmptyState icon="✅" message={t("admin_empty_pending", "No pending approvals. All caught up!")} /></Card>
         )
       }
       ListFooterComponent={() => (
         <View style={s.infoBanner}>
           <Text style={s.infoBannerText}>
-            ℹ️ Rejected members will have their accounts deactivated.
+            {t("admin_info_rejected", "ℹ️ Rejected members will have their accounts deactivated.")}
           </Text>
         </View>
       )}
@@ -422,6 +433,7 @@ const ApprovalsTab = () => {
 // ─── Tab 2: Committee ─────────────────────────────────────────────────────────
 const CommitteeTab = ({ activeSocietyId }) => {
   const toast = useToast();
+  const { t } = useLanguage();
   const [members,       setMembers]       = useState([]);
   const [allApproved,   setAllApproved]   = useState([]);
   const [loading,       setLoading]       = useState(true);
@@ -433,7 +445,6 @@ const CommitteeTab = ({ activeSocietyId }) => {
   const loadMembers = useCallback(async () => {
     setLoading(true);
     try {
-      // Load committee members (have role) AND all approved members (for assignment)
       const [committeeRes, approvedRes] = await Promise.allSettled([
         userApi.getCommitteeMembers(),
         userApi.getApprovedMembers(),
@@ -441,7 +452,7 @@ const CommitteeTab = ({ activeSocietyId }) => {
       if (committeeRes.status === "fulfilled") setMembers(committeeRes.value.data.members || []);
       if (approvedRes.status  === "fulfilled") setAllApproved(approvedRes.value.data.members || []);
     } catch (e) {
-      toast.error(e?.response?.data?.message || "Failed to load committee");
+      toast.error(e?.response?.data?.message || t("admin_err_load_committee", "Failed to load committee"));
     } finally { setLoading(false); }
   }, []);
 
@@ -456,11 +467,11 @@ const CommitteeTab = ({ activeSocietyId }) => {
     setSaving(true);
     try {
       await userApi.assignCommitteeRole(userId, payload);
-      toast.success("Committee role assigned!");
+      toast.success(t("admin_success_role_assigned", "Committee role assigned!"));
       setModalVisible(false);
       loadMembers();
     } catch (e) {
-      toast.error(e?.response?.data?.message || "Failed to assign role");
+      toast.error(e?.response?.data?.message || t("admin_err_assign_role", "Failed to assign role"));
     } finally { setSaving(false); }
   };
 
@@ -468,15 +479,14 @@ const CommitteeTab = ({ activeSocietyId }) => {
     setRemoving(userId);
     try {
       await userApi.removeCommitteeRole(userId);
-      toast.success("Member demoted to resident.");
+      toast.success(t("admin_success_role_removed", "Member demoted to resident."));
       setMembers((prev) => prev.filter((m) => m._id !== userId));
-      loadMembers(); // reload approved list too
+      loadMembers();
     } catch (e) {
-      toast.error(e?.response?.data?.message || "Failed to remove role");
+      toast.error(e?.response?.data?.message || t("admin_err_remove_role", "Failed to remove role"));
     } finally { setRemoving(null); }
   };
 
-  // Members approved but not yet assigned a committee role
   const committeeIds   = new Set(members.map((m) => m._id));
   const pendingAssign  = allApproved.filter((m) => !committeeIds.has(m._id));
 
@@ -499,19 +509,18 @@ const CommitteeTab = ({ activeSocietyId }) => {
           <View>
             <Card style={{ marginBottom: 12, backgroundColor: C.navy }}>
               <Text style={{ color: "#fff", fontWeight: "700", fontSize: 13, marginBottom: 4 }}>
-                🛡️ Committee RBAC
+                {t("admin_rbac_title", "\ud83d\udee1\ufe0f Committee RBAC")}
               </Text>
               <Text style={{ color: "rgba(255,255,255,0.65)", fontSize: 12, lineHeight: 18 }}>
-                Assign granular module permissions to committee members. Each role gets access only to what they need.
+                {t("admin_rbac_desc", "Assign granular module permissions to committee members. Each role gets access only to what they need.")}
               </Text>
             </Card>
 
-            {/* Approved members awaiting role assignment */}
             {pendingAssign.length > 0 && (
               <View style={{ marginBottom: 16 }}>
                 <View style={s.pendingHeader}>
                   <Text style={s.pendingHeaderText}>
-                    Approved — No Role Yet ({pendingAssign.length})
+                    {t("admin_no_role_yet", "Approved \u2014 No Role Yet")} ({pendingAssign.length})
                   </Text>
                 </View>
                 {pendingAssign.map((member) => {
@@ -525,10 +534,10 @@ const CommitteeTab = ({ activeSocietyId }) => {
                         <View style={{ flex: 1 }}>
                           <Text style={s.memberName}>{member.name}</Text>
                           <Text style={s.memberEmail}>{member.email}</Text>
-                          {mem.flat ? <Text style={s.memberMeta}>Flat {mem.flat}{mem.wing ? ` · ${mem.wing}` : ""}</Text> : null}
+                          {mem.flat ? <Text style={s.memberMeta}>{t("admin_flat_prefix", "Flat ")}{mem.flat}{mem.wing ? ` \u00b7 ${mem.wing}` : ""}</Text> : null}
                         </View>
-                        <Btn small onPress={() => handleEdit(member)} style={{ backgroundColor: C.teal + "15" }}>
-                          <Text style={{ fontSize: 11, fontWeight: "700", color: C.teal }}>Assign Role</Text>
+                        <Btn small variant="primary" onPress={() => handleEdit(member)} style={{ backgroundColor: C.teal }}>
+                          {t("admin_btn_assign_role", "Assign Role")}
                         </Btn>
                       </View>
                     </Card>
@@ -539,10 +548,10 @@ const CommitteeTab = ({ activeSocietyId }) => {
 
             <View style={s.pendingHeader}>
               <Text style={s.pendingHeaderText}>
-                Committee Members ({members.length})
+                {t("admin_committee_members_title", "Committee Members")} ({members.length})
               </Text>
               <TouchableOpacity onPress={loadMembers} style={s.refreshBtn}>
-                <Text style={s.refreshBtnText}>↻ Refresh</Text>
+                <Text style={s.refreshBtnText}>{t("admin_btn_refresh", "\u21bb Refresh")}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -550,8 +559,8 @@ const CommitteeTab = ({ activeSocietyId }) => {
         ListEmptyComponent={() => (
           <Card>
             <EmptyState
-              icon="👥"
-              message="No committee members yet. Approve a member first, then assign them a committee role."
+              icon="\ud83d\udc65"
+              message={t("admin_empty_committee", "No committee members yet. Approve a member first, then assign them a committee role.")}
             />
           </Card>
         )}
@@ -579,47 +588,43 @@ const CommitteeTab = ({ activeSocietyId }) => {
 // ─── Invite Tab ───────────────────────────────────────────────────────────────
 const InviteTab = ({ activeSocietyId }) => {
   const toast = useToast();
+  const { t } = useLanguage();
   const [loading, setLoading] = useState(false);
-  const [invite,  setInvite]  = useState(null);   // { token, expiresAt, inviteUrl, qrData, societyName }
+  const [invite,  setInvite]  = useState(null);
 
   const generate = async () => {
-    if (!activeSocietyId) { toast.error("Society not loaded yet."); return; }
+    if (!activeSocietyId) { toast.error(t("admin_err_society_not_loaded", "Society not loaded yet.")); return; }
     setLoading(true);
     try {
       const res = await userApi.generateInviteLink(activeSocietyId);
       setInvite(res.data);
     } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to generate invite link.");
+      toast.error(err.response?.data?.message || t("admin_err_invite_failed", "Failed to generate invite link."));
     } finally {
       setLoading(false);
     }
   };
 
   const expiryLabel = invite
-    ? `Expires ${new Date(invite.expiresAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}`
+    ? t("admin_invite_expires", "Expires") + " " + new Date(invite.expiresAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })
     : null;
 
   return (
     <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
       <Text style={{ fontSize: 13, color: C.gray500, marginBottom: 16, lineHeight: 20 }}>
-        Generate a QR code or shareable link. Anyone who scans it will land on the
-        registration screen with your society pre-filled. Valid for 7 days.
+        {t("admin_invite_desc", "Generate a QR code or shareable link. Anyone who scans it will land on the registration screen with your society pre-filled. Valid for 7 days.")}
       </Text>
 
       <Btn onPress={generate} loading={loading} variant="primary">
-        {invite ? "🔄 Regenerate Invite Link" : "🔗 Generate Invite Link"}
+        {invite ? t("admin_invite_btn_regenerate", "🔄 Regenerate Invite Link") : t("admin_invite_btn_generate", "🔗 Generate Invite Link")}
       </Btn>
 
       {invite && (
         <Card style={{ marginTop: 20, alignItems: "center" }}>
-          {/* QR code — rendered as a bordered placeholder using ASCII art since
-              react-native-qrcode-svg is not yet installed. Replace the View below
-              with <QRCode value={invite.qrData} size={200} /> once you run:
-              npx expo install react-native-qrcode-svg  */}
           <View style={invStyles.qrPlaceholder}>
             <Text style={invStyles.qrIcon}>📷</Text>
-            <Text style={invStyles.qrHint}>Install react-native-qrcode-svg</Text>
-            <Text style={invStyles.qrHint}>to render QR code here</Text>
+            <Text style={invStyles.qrHint}>{t("admin_invite_qr_hint1", "Install react-native-qrcode-svg")}</Text>
+            <Text style={invStyles.qrHint}>{t("admin_invite_qr_hint2", "to render QR code here")}</Text>
           </View>
 
           <Text style={invStyles.expiry}>{expiryLabel}</Text>
@@ -630,7 +635,7 @@ const InviteTab = ({ activeSocietyId }) => {
             </Text>
           </View>
           <Text style={{ fontSize: 11, color: C.gray500, marginTop: 8, textAlign: "center" }}>
-            Tap and hold the link above to copy it
+            {t("admin_invite_copy_hint", "Tap and hold the link above to copy it")}
           </Text>
         </Card>
       )}
