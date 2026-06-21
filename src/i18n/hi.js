@@ -57,7 +57,6 @@ const hi = {
   login_invalid:       "अमान्य ईमेल या पासवर्ड",
   err_email_required:  "ईमेल आवश्यक है",
   err_pass_required:   "पासवर्ड आवश्यक है",
-  err_legal_accept:    "कृपया नियमों और गोपनीयता नीति को स्वीकार करें",
 
   // ── Auth — Forgot / Reset ────────────────────────────────────────────────────
   forgot_title:      "पासवर्ड भूल गए?",
