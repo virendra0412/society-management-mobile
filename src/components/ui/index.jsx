@@ -18,6 +18,7 @@ import {
   KeyboardAvoidingView, Platform,
 } from "react-native";
 import { useEffect as useRNEffect, useRef, useEffect } from "react";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { C } from "../../constants/theme";
 
 // ─── Badge ────────────────────────────────────────────────────────────────────
@@ -305,6 +306,15 @@ export const Modal = ({ open, onClose, onOpen, apiError, title, children }) => {
     prevOpenRef.current = !!open;
   }, [open, onOpen]);
 
+  // FIX (bug #3): the sheet had no bottom safe-area padding at all, so on
+  // devices with a bottom inset (iPhone home indicator, Android gesture bar)
+  // the rounded sheet stopped short of the screen edge and the dark
+  // semi-transparent backdrop showed through underneath it. RNModal renders
+  // outside the app's own SafeAreaProvider tree in a native portal, so we
+  // must read the inset here directly rather than relying on an ancestor
+  // SafeAreaView.
+  const insets = useSafeAreaInsets();
+
   return (
     <RNModal
       visible={!!open}
@@ -317,7 +327,7 @@ export const Modal = ({ open, onClose, onOpen, apiError, title, children }) => {
         style={styles.modalOverlay}
       >
         <Pressable style={styles.modalBackdrop} onPress={onClose} />
-        <View style={styles.modalSheet}>
+        <View style={[styles.modalSheet, { paddingBottom: 20 + insets.bottom }]}>
           {/* Handle bar */}
           <View style={styles.modalHandle} />
 

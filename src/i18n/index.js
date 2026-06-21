@@ -1,7 +1,11 @@
 /**
  * i18n/index.js
- * Locale registry — identical to web version.
+ * Locale registry — React Native.
  * AsyncStorage-based locale persistence handled in LanguageContext.
+ *
+ * t(key, fallback, params?) supports {placeholder} interpolation:
+ *   t("visitor_flat_label", "Flat {value}", { value: "A-101" })
+ *   → "Flat A-101"
  */
 import en from "./en";
 import hi from "./hi";
@@ -22,7 +26,27 @@ export const LOCALES = {
 export const DEFAULT_LOCALE     = "en";
 export const LOCALE_STORAGE_KEY = "society_locale";
 
+/**
+ * Interpolate {key} placeholders in a string.
+ * e.g. interpolate("Hello {name}!", { name: "Raj" }) → "Hello Raj!"
+ */
+const interpolate = (str, params) => {
+  if (!params || typeof str !== "string") return str;
+  return str.replace(/\{(\w+)\}/g, (_, key) =>
+    key in params ? String(params[key]) : `{${key}}`
+  );
+};
+
 export const getTranslator = (locale = DEFAULT_LOCALE) => {
   const strings = LOCALES[locale]?.strings ?? en;
-  return (key, fallback) => strings[key] ?? en[key] ?? fallback ?? key;
+  /**
+   * t(key, fallback?, params?)
+   *   key      — translation key
+   *   fallback — English fallback string (with {placeholders})
+   *   params   — interpolation object e.g. { value: "A-101", count: 3 }
+   */
+  return (key, fallback, params) => {
+    const raw = strings[key] ?? en[key] ?? fallback ?? key;
+    return interpolate(raw, params);
+  };
 };

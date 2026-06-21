@@ -8,6 +8,7 @@
  *  - Detail sheet: comments thread, admin status controls, escalation badge
  */
 import { useState, useEffect, useCallback } from "react";
+import { useFocusEffect } from "@react-navigation/native";
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
   TextInput, ScrollView, Switch, Image, Alert, Platform,
@@ -515,6 +516,14 @@ export const IssuesScreen = () => {
   }, [filter]);
 
   useEffect(() => { fetchIssues(); }, [fetchIssues, dataVersion]);
+
+  // FIX (bug #7): refresh on tab focus — issues change status/comments from
+  // other devices (admin/resident) and should be current without a manual pull-to-refresh.
+  useFocusEffect(
+    useCallback(() => {
+      fetchIssues();
+    }, [fetchIssues])
+  );
 
   const handleCreate = async () => {
     const title = form.title.trim();

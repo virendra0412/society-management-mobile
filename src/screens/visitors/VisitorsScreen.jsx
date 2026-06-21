@@ -8,15 +8,17 @@
  * Flow D — Delivery (walk-in with auto-exit badge)
  */
 import { useState, useEffect, useCallback } from "react";
+import { useFocusEffect } from "@react-navigation/native";
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity, ScrollView, Switch, Share,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import QRCode from "react-native-qrcode-svg";
 
 import { visitorsApi as visitorApi } from "../../api/resources.api";
 import { useAuth }    from "../../context/AuthContext";
 import { useToast }   from "../../context/ToastContext";
-import { useLanguage as useBaseLanguage } from "../../context/LanguageContext";
+import { useLanguage } from "../../context/LanguageContext";
 import {
   Badge, Btn, Card, EmptyState, ErrorState,
   FilterPill, Modal, Input, Spinner,
@@ -101,23 +103,6 @@ const validUntilLabel = (pass, t) => {
   return t("visitor_pass_expires_in_days", "Expires in {count} days", { count: days });
 };
 
-// ─── Custom Local Wrapper for Language Hook ──────────────────────────────────
-// Keeps the rest of the codebase untouched while resolving parameter placeholders
-const useLanguage = () => {
-  const { t: baseT, ...rest } = useBaseLanguage();
-
-  const t = useCallback((key, defaultValue, params) => {
-    const translated = baseT(key, defaultValue);
-    if (!params) return translated;
-
-    return translated.replace(/\{(\w+)\}/g, (match, paramKey) => {
-      return params[paramKey] !== undefined ? String(params[paramKey]) : match;
-    });
-  }, [baseT]);
-
-  return { t, ...rest };
-};
-
 // ─── PillSelect ───────────────────────────────────────────────────────────────
 const PillSelect = ({ label, value, options, onSelect, labelMap }) => {
   const { t } = useLanguage();
@@ -181,8 +166,6 @@ const DayPicker = ({ value = ALL_DAYS, onChange }) => {
 // ─── OTP Display Modal ────────────────────────────────────────────────────────
 const OTPModal = ({ otp, visitor, onClose }) => {
   const { t } = useLanguage();
-  let QRCodeComp = null;
-  try { QRCodeComp = require("react-native-qrcode-svg").default; } catch (e) { QRCodeComp = null; }
 
   const handleShare = async () => {
     const message = t(
@@ -215,21 +198,12 @@ const OTPModal = ({ otp, visitor, onClose }) => {
             {t("visitor_otp_expected_label", "Expected:")} {new Date(visitor.expectedAt).toLocaleString()}
           </Text>
         )}
-        {QRCodeComp && (
-          <View style={{ alignItems: "center", marginTop: 12, width: "100%" }}>
-            <QRCodeComp value={String(otp)} size={140} />
-            <Btn onPress={handleShare} style={{ marginTop: 12, width: "100%" }}>
-              {t("visitor_action_share_otp", "Share OTP")}
-            </Btn>
-          </View>
-        )}
-        {!QRCodeComp && (
-          <View style={{ marginTop: 12, width: "100%" }}>
-            <Btn onPress={handleShare} style={{ width: "100%" }}>
-              {t("visitor_action_share_otp", "Share OTP")}
-            </Btn>
-          </View>
-        )}
+        <View style={{ alignItems: "center", marginTop: 12, width: "100%" }}>
+          <QRCode value={String(otp)} size={140} />
+          <Btn onPress={handleShare} style={{ marginTop: 12, width: "100%" }}>
+            {t("visitor_action_share_otp", "Share OTP")}
+          </Btn>
+        </View>
       </View>
     </Modal>
   );
@@ -243,7 +217,12 @@ const VisitorCard = ({ v, isAdmin, myFlat, onApprove, onReject, onVerifyOTP, onM
   const sc          = VISITOR_STATUS_COLOR[v.status] || VISITOR_STATUS_COLOR.exited;
   const expiry      = v.status === "invited" ? otpExpiryLabel(v.entryOTPExpires, t) : null;
   const isDelivery  = v.purpose === "Delivery";
-  const isOwnFlat   = !v.hostFlat || !myFlat || v.hostFlat === myFlat;
+  // FIX (bug #4): this used to be `!v.hostFlat || !myFlat || v.hostFlat === myFlat`,
+  // which defaulted to TRUE (i.e. "show Approve/Reject") whenever hostFlat or
+  // myFlat was missing/unresolved — the exact opposite of safe behaviour.
+  // An admin should only see Approve/Reject for a flat they can positively
+  // confirm is their own; any ambiguity must hide the buttons, not show them.
+  const isOwnFlat   = !!v.hostFlat && !!myFlat && v.hostFlat === myFlat;
   const canApproveReject = !isAdmin || isOwnFlat;
 
   return (
@@ -321,7 +300,12 @@ const VisitorCard = ({ v, isAdmin, myFlat, onApprove, onReject, onVerifyOTP, onM
       )}
 
       {/* Guard/admin actions */}
-      {isAdmin && v.status === "invited" && (
+      {/* FIX (bug #1): trusted passes also use status:"invited" to mean
+          "active pass" (not "awaiting gate OTP"), and never have an OTP
+          generated for them — so this button must never show for them.
+          Backend now excludes isTrusted records from this list entirely;
+          !v.isTrusted here is a defensive second guard. */}
+      {isAdmin && v.status === "invited" && !v.isTrusted && (
         <Btn small onPress={() => onVerifyOTP(v)} loading={isBusy}
           style={{ width: "100%", backgroundColor: C.blue }}>
           🔑 {t("visitor_action_verify_otp_grant", "Verify OTP & Grant Entry")}
@@ -340,7 +324,9 @@ const VisitorCard = ({ v, isAdmin, myFlat, onApprove, onReject, onVerifyOTP, onM
       {isAdmin && v.status === "pending" && !canApproveReject && (
         <View style={{ padding: 8, backgroundColor: C.gray50, borderRadius: 8 }}>
           <Text style={{ fontSize: 11, color: C.gray500, textAlign: "center" }}>
-            {t("visitor_approval_waiting", "Awaiting approval from Flat {value} resident", { value: v.hostFlat })}
+            {v.hostFlat
+              ? t("visitor_approval_waiting", "Awaiting approval from Flat {value} resident", { value: v.hostFlat })
+              : t("visitor_approval_waiting_unknown_flat", "Awaiting approval — resident flat not on record")}
           </Text>
         </View>
       )}
@@ -835,6 +821,14 @@ const TrustedTab = ({ user }) => {
 
   useEffect(() => { fetchPasses(); }, [fetchPasses]);
 
+  // FIX (bug #7): refresh when this tab regains focus (e.g. switching back
+  // from another bottom-tab), not just on mount / when activeOnly toggles.
+  useFocusEffect(
+    useCallback(() => {
+      fetchPasses();
+    }, [fetchPasses])
+  );
+
   const handleRevoke = async (id) => {
     setBusy(id);
     try {
@@ -848,7 +842,7 @@ const TrustedTab = ({ user }) => {
 
   return (
     <View style={{ flex: 1 }}>
-      <View style={{ flexDirection: "row", alignItems: "center", justifySpaceBetween: "space-between",
+      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between",
         paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: C.gray100 }}>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
           <Text style={{ fontSize: 12, color: C.gray500 }}>
@@ -957,6 +951,15 @@ export const VisitorsScreen = () => {
   }, [isAdmin, statusFilter]);
 
   useEffect(() => { fetchVisitors(); }, [fetchVisitors, dataVersion]);
+
+  // FIX (bug #7): visitor data changes fast (gate entries, approvals from
+  // other devices) — refetch every time this tab regains focus, not just
+  // on first mount.
+  useFocusEffect(
+    useCallback(() => {
+      fetchVisitors();
+    }, [fetchVisitors])
+  );
 
   const patchVisitor = (updated) =>
     setVisitors((p) => p.map((v) => v._id === updated._id ? updated : v));

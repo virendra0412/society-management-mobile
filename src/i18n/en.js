@@ -53,16 +53,6 @@ const en = {
   err_email_required:  "Email is required",
   err_pass_required:   "Password is required",
 
-  // ── Auth — Force Change Password (first login with a temp password) ──────────
-  force_change_title:     "Set a new password",
-  force_change_sub:       "For security, please set your own password before continuing.",
-  current_password:       "Temporary password",
-  current_password_ph:    "Enter the temporary password from your email",
-  new_password:            "New password",
-  new_password_ph:         "Min 8 chars, A-Z, 0-9",
-  change_password_btn:     "Set Password & Continue",
-  change_password_failed:  "Couldn't change password. Please check the temporary password and try again.",
-
   // ── Auth — Forgot / Reset ────────────────────────────────────────────────────
   forgot_title:        "Forgot password?",
   forgot_subtitle:     "Enter your registered email. We'll send a one-time password.",
@@ -828,71 +818,182 @@ const en = {
   parking_cta_resident_sub:     "Submit a request and admin will assign a slot.",
   parking_cta_admin_btn:        "View Requests",
   parking_cta_resident_btn:     "Request a Slot",
+  // ── Visitor Management screen strings ────────────────────────────────────────
+  // Status labels
+  visitor_status_invited:              "Invited",
+  visitor_status_pending:              "Pending",
+  visitor_status_inside:               "Inside",
+  visitor_status_rejected:             "Rejected",
+  visitor_status_exited:               "Exited",
+  visitor_status_expired:              "Expired",
 
-  // ── Admin / Approvals Screen ─────────────────────────────────────────────────
-  admin_module_visitors:  "Visitors",
-  admin_module_maintenance:  "Maintenance",
-  admin_module_issues:  "Issues",
-  admin_module_notices:  "Notices",
-  admin_module_parking:  "Parking",
-  admin_module_amenities:  "Amenities",
-  admin_module_residents:  "Residents",
-  admin_perm_none:  "none",
-  admin_perm_read:  "read",
-  admin_perm_write:  "write",
-  admin_perm_full:  "full",
-  admin_preset_treasurer:  "Treasurer",
-  admin_preset_secretary:  "Secretary",
-  admin_preset_security_head:  "Security Head",
-  admin_preset_parking_head:  "Parking Head",
-  admin_preset_maintenance_head:  "Maintenance Head",
-  admin_preset_custom:  "Custom",
-  admin_badge_pending:  "Pending",
-  admin_flat_prefix:  "Flat ",
-  admin_no_flat_info:  "No flat info",
-  admin_btn_approve:  "Approve",
-  admin_btn_reject:  "Reject",
-  admin_btn_edit:  "Edit",
-  admin_btn_remove:  "Remove",
-  admin_btn_refresh:  "↻ Refresh",
-  admin_btn_assign_role:  "Assign Role",
-  admin_role_committee:  "committee",
-  admin_session_label:  "This Session",
-  admin_stat_approved:  "Approved",
-  admin_stat_rejected:  "Rejected",
-  admin_pending_title:  "Pending Requests",
-  admin_empty_pending:  "No pending approvals. All caught up!",
-  admin_info_rejected:  "ℹ️ Rejected members will have their accounts deactivated.",
-  admin_err_load_pending:  "Failed to load pending members",
-  admin_success_approved:  "Member approved!",
-  admin_err_approve:  "Approval failed",
-  admin_success_rejected:  "Member rejected.",
-  admin_err_reject:  "Rejection failed",
-  admin_err_load_committee:  "Failed to load committee",
-  admin_success_role_assigned:  "Committee role assigned!",
-  admin_err_assign_role:  "Failed to assign role",
-  admin_success_role_removed:  "Member demoted to resident.",
-  admin_err_remove_role:  "Failed to remove role",
-  admin_rbac_title:  "🛡️ Committee RBAC",
-  admin_rbac_desc:  "Assign granular module permissions to committee members. Each role gets access only to what they need.",
-  admin_no_role_yet:  "Approved — No Role Yet",
-  admin_committee_members_title:  "Committee Members",
-  admin_empty_committee:  "No committee members yet. Approve a member first, then assign them a committee role.",
-  admin_modal_presets_label:  "Quick Presets",
-  admin_modal_title_label:  "Committee Title",
-  admin_modal_title_placeholder:  "e.g. \"Treasurer\" or \"Joint Secretary\"",
-  admin_modal_permissions_label:  "Module Permissions",
-  admin_modal_assign_btn:  "Assign Role",
-  admin_modal_assign_hint:  "Pick a preset above or adjust a module's permission to enable saving.",
-  admin_err_society_not_loaded:  "Society not loaded yet.",
-  admin_err_invite_failed:  "Failed to generate invite link.",
-  admin_invite_expires:  "Expires",
-  admin_invite_desc:  "Generate a QR code or shareable link. Anyone who scans it will land on the registration screen with your society pre-filled. Valid for 7 days.",
-  admin_invite_btn_generate:  "🔗 Generate Invite Link",
-  admin_invite_btn_regenerate:  "🔄 Regenerate Invite Link",
-  admin_invite_qr_hint1:  "Install react-native-qrcode-svg",
-  admin_invite_qr_hint2:  "to render QR code here",
-  admin_invite_copy_hint:  "Tap and hold the link above to copy it",
+  // Pass type labels
+  visitor_pass_today_only:             "Today only",
+  visitor_pass_30_days:                "30 days",
+  visitor_pass_permanent:              "Permanent pass",
+  visitor_pass_expired:                "Expired",
+  visitor_pass_expires_today:          "Expires today",
+  visitor_pass_expires_tomorrow:       "Expires tomorrow",
+  visitor_pass_expires_in_days:        "Expires in {count} days",
+
+  // OTP expiry labels
+  visitor_otp_expired:                 "OTP expired",
+  visitor_otp_valid_days:              "OTP valid ~{count}d",
+  visitor_otp_valid_hours:             "OTP valid ~{hrs}h {mins}m",
+  visitor_otp_valid_minutes:           "OTP valid {mins}m",
+
+  // Schedule helpers
+  visitor_any_time:                    "Any time",
+
+  // Trusted pass entry count
+  visitor_pass_entries_recorded:       "{value} entries recorded",
+
+  // Flat label (used in cards)
+  visitor_flat_label:                  "Flat {value}",
+
+  // Visitor type badges
+  visitor_type_walk_in:                "Walk-in",
+  visitor_type_pre_invited:            "Pre-invited",
+  visitor_auto_exit_on:                "Auto-exit on",
+
+  // Trusted status
+  visitor_trusted_status_active:       "Active",
+  visitor_trusted_status_expired:      "Expired",
+
+  // OTP modal
+  visitor_otp_share_message:           "Entry OTP: {otp}\nVisitor: {name}\nShow this at the gate to enter.",
+  visitor_otp_modal_title:             "Share this OTP with your visitor",
+  visitor_otp_modal_lead:              "Your visitor",
+  visitor_otp_modal_need:              "will need this OTP at the gate.",
+  visitor_otp_modal_not_shown_prefix:  "It will",
+  visitor_otp_modal_not_shown_bold:    "not",
+  visitor_otp_modal_not_shown_suffix:  "be shown again.",
+  visitor_otp_label:                   "ENTRY OTP",
+  visitor_otp_expected_label:          "Expected:",
+  visitor_action_share_otp:            "Share OTP",
+
+  // Approval waiting
+  visitor_approval_waiting:            "Awaiting approval from Flat {value} resident",
+  visitor_approval_waiting_unknown_flat: "Awaiting approval — resident flat not on record",
+
+  // Pending alert
+  visitor_pending_alert:               "{count} walk-in(s) awaiting your approval",
+
+  // Header
+  visitor_header_security_desk:        "Security Desk",
+  visitor_header_my_visitors:          "My Visitors",
+  visitor_header_management:           "Visitor Management",
+
+  // Tabs
+  visitor_tab_visitors:                "Visitors",
+  visitor_tab_trusted:                 "Trusted",
+
+  // Filter labels
+  visitor_filter_all:                  "All",
+
+  // Empty states
+  visitor_empty_admin_all:             "No visitor records yet.",
+  visitor_empty_resident_all:          "No visitors yet. Invite someone!",
+  visitor_empty_status:                "No visitors found.",
+
+  // Action buttons
+  visitor_action_approve:              "Approve",
+  visitor_action_reject:               "Reject",
+  visitor_action_cancel_invite:        "Cancel Invite",
+  visitor_action_verify_otp_grant:     "Verify OTP & Grant Entry",
+  visitor_action_approve_entry:        "Approve Entry",
+  visitor_action_mark_exit:            "Mark Exit",
+  visitor_action_record_entry:         "Record Entry",
+  visitor_action_revoke_pass:          "Revoke Pass",
+  visitor_action_trusted_lookup:       "Trusted",
+  visitor_action_walk_in:              "Walk-in",
+  visitor_action_invite:               "Invite",
+  visitor_action_verify_grant:         "Verify & Grant Entry",
+
+  // OTP verify modal
+  visitor_verify_otp_modal_title:      "Verify Entry OTP",
+  visitor_otp_input_label:             "6-digit OTP *",
+  visitor_otp_input_ph:                "Enter OTP from visitor",
+  visitor_otp_verified_success:        "OTP verified. Entry granted!",
+  visitor_err_otp_6_digits:            "Enter the 6-digit OTP.",
+  visitor_err_otp_invalid:             "Invalid or expired OTP.",
+
+  // Invite modal
+  visitor_invite_modal_title:          "Invite a Visitor",
+  visitor_invite_submit_btn:           "Generate OTP & Invite",
+  visitor_invite_cancelled:            "Invite cancelled.",
+  visitor_err_create_invite_failed:    "Failed to create invite.",
+
+  // Walk-in modal
+  visitor_walkin_modal_title:          "Log Walk-in Visitor",
+  visitor_walkin_submit_btn:           "Log Walk-in",
+  visitor_walkin_logged_success:       "Walk-in logged. Resident notified.",
+  visitor_walkin_host_flat_hint:       "Enter the flat number to notify the resident immediately.",
+  visitor_err_log_walkin_failed:       "Failed to log walk-in.",
+
+  // Register trusted modal
+  visitor_trusted_register_modal_title:"Register Trusted Visitor",
+  visitor_trusted_register_submit_btn: "Register Trusted Visitor",
+  visitor_trusted_registered_success:  "Trusted visitor registered!",
+  visitor_trusted_schedule_hint:       "Entry will be auto-approved within this time window. Use 00:00–23:59 for any time.",
+  visitor_err_trusted_name_required:   "Name is required.",
+  visitor_err_trusted_category_required:"Category is required.",
+  visitor_err_trusted_register_failed: "Failed to register.",
+
+  // Trusted lookup modal
+  visitor_lookup_modal_title:          "Trusted Visitor Lookup",
+  visitor_lookup_input_label:          "Phone or Name",
+  visitor_lookup_input_ph:             "9876543210 or Sunita",
+  visitor_lookup_search_btn:           "Search",
+  visitor_lookup_search_hint:          "Search by phone number or name above.",
+  visitor_lookup_no_match:             "No matching trusted visitor found.",
+  visitor_lookup_failed:               "Lookup failed.",
+  visitor_lookup_enter_btn:            "Enter",
+
+  // Trusted tab UI
+  visitor_trusted_active_only_label:   "Active only",
+  visitor_trusted_register_btn:        "+ Register",
+  visitor_trusted_empty_active:        "No active trusted visitors. Register your maid, cook or driver.",
+  visitor_trusted_empty_all:           "No trusted visitor records yet.",
+  visitor_trusted_load_failed:         "Failed to load trusted visitors.",
+  visitor_trusted_revoke_success:      "Pass revoked.",
+  visitor_trusted_revoke_failed:       "Revoke failed.",
+
+  // Entry / exit actions
+  visitor_entry_recorded_success:      "Entry recorded.",
+  visitor_entry_failed:                "Entry failed.",
+  visitor_exit_recorded:               "Exit recorded.",
+  visitor_error_exit:                  "Failed to mark exit.",
+
+  // Approval / rejection
+  visitor_approval_success:            "Visitor entry approved.",
+  visitor_error_approval:              "Approval failed.",
+  visitor_rejection_success:           "Visitor rejected.",
+  visitor_error_rejection:             "Rejection failed.",
+  visitor_error_cancel_invite:         "Failed to cancel invite.",
+  visitor_load_failed:                 "Failed to load visitors.",
+
+  // Form labels / placeholders
+  visitor_err_name_required:           "Visitor name is required.",
+  visitor_form_name_label:             "Visitor Name *",
+  visitor_form_name_ph_guest:          "e.g. Amit Shah",
+  visitor_form_name_ph_delivery:       "e.g. Delivery Person",
+  visitor_form_phone_label:            "Phone (optional)",
+  visitor_form_purpose_label:          "Purpose",
+  visitor_form_vehicle_label:          "Vehicle No. (optional)",
+  visitor_form_note_label:             "Note (optional)",
+  visitor_form_note_ph_invite:         "Coming to help shift things",
+  visitor_form_note_ph_walkin:         "Any note for resident",
+  visitor_form_note_ph_trusted:        "e.g. Morning maid, has key",
+  visitor_form_host_flat_label:        "Resident Flat (optional)",
+  visitor_form_trusted_name_label:     "Name *",
+  visitor_form_category_label:         "Category *",
+  visitor_form_pass_validity_label:    "Pass Validity",
+  visitor_form_allowed_days_label:     "Allowed Days",
+  visitor_form_from_time_label:        "From Time",
+  visitor_form_to_time_label:          "To Time",
+
+
 };
 
 export default en;

@@ -11,6 +11,7 @@ import {
 } from "react";
 import * as Notifications   from "expo-notifications";
 import * as Device          from "expo-device";
+import Constants            from "expo-constants";
 import { Platform }         from "react-native";
 import { authApi }          from "../api/auth.api";
 import { useToast }         from "./ToastContext";
@@ -70,8 +71,34 @@ export const NotificationProvider = ({ children }) => {
       });
     }
 
-    const tokenData      = await Notifications.getExpoPushTokenAsync();
-    const expoPushToken  = tokenData.data;
+    // FIX (bug #2): getExpoPushTokenAsync() requires an explicit projectId on
+    // SDK 49+ — it does NOT read app.json's extra.eas.projectId on its own.
+    // Without this, the call throws "No 'projectId' found..." on every EAS/
+    // managed build, which was being silently swallowed by the .catch() in
+    // AuthContext's caller — so push registration failed for every user on
+    // every login, with no visible error anywhere. That's why no module
+    // (visitors, issues, maintenance, etc.) was ever delivering notifications.
+    const projectId =
+      Constants?.expoConfig?.extra?.eas?.projectId ??
+      Constants?.easConfig?.projectId ??
+      null;
+
+    if (!projectId) {
+      console.warn(
+        "[Notifications] No EAS projectId found in app.json (extra.eas.projectId). " +
+        "Push registration skipped — notifications will not work until this is set."
+      );
+      return null;
+    }
+
+    let expoPushToken;
+    try {
+      const tokenData = await Notifications.getExpoPushTokenAsync({ projectId });
+      expoPushToken = tokenData.data;
+    } catch (e) {
+      console.warn("[Notifications] Failed to get Expo push token:", e.message);
+      return null;
+    }
 
     try {
       // Use the dedicated FCM token endpoint, not updateProfile

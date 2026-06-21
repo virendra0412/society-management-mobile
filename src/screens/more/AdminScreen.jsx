@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useFocusEffect } from "@react-navigation/native";
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
   ScrollView, Modal, TextInput, Switch,
@@ -351,6 +352,14 @@ const ApprovalsTab = () => {
 
   useEffect(() => { loadPending(); }, []);
 
+  // FIX (bug #7): pending approvals change as soon as a new resident
+  // registers — refresh whenever this tab regains focus, not just on first mount.
+  useFocusEffect(
+    useCallback(() => {
+      loadPending();
+    }, [loadPending])
+  );
+
   const handleApprove = async (userId) => {
     setBusy(userId + "_approve");
     try {
@@ -653,11 +662,21 @@ const invStyles = StyleSheet.create({
 });
 
 
-export const AdminScreen = () => {
+export const AdminScreen = ({ route }) => {
   const { t } = useLanguage();
   const [activeTab, setActiveTab]   = useState("approvals");
   // We need activeSocietyId for the committee tab — read from context via prop drilling
   const [activeSocietyId, setActiveSocietyId] = useState(null);
+
+  // FIX (bug #6): this screen is mounted in two different places —
+  //  - directly on the bottom tab bar as "Admin" (the Approvals tab): no
+  //    navigator header exists here, so this screen must supply its OWN
+  //    top safe-area inset, or content renders flush under the status bar/notch.
+  //  - inside the More stack as "Committee": that stack already renders a
+  //    <SubScreenHeader> which provides the top inset; adding "top" here
+  //    too would double-pad it.
+  // route.name tells us which case we're in.
+  const isTabBarEntry = route?.name === "Admin";
 
   // Get societyId from storage on mount (simpler than prop-drilling auth context here)
   useEffect(() => {
@@ -673,7 +692,7 @@ export const AdminScreen = () => {
   }, []);
 
   return (
-    <SafeAreaView style={s.safe} edges={["bottom"]}>
+    <SafeAreaView style={s.safe} edges={isTabBarEntry ? ["top", "bottom"] : ["bottom"]}>
       {/* Header */}
       <View style={s.header}>
         <Text style={s.headerSub}>{t("admin_panel_title", "Admin Panel")}</Text>
