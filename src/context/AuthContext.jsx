@@ -138,6 +138,21 @@ export const AuthProvider = ({ children }) => {
       await tokenStorage.setUser(freshUser);
       // Only bump NOW — access token is valid and society-scoped.
       bumpDataVersion();
+
+      // Re-register push token on every successful session restore.
+      // Without this, only fresh logins registered a token — every app
+      // reopen (background → foreground, or cold start with cached session)
+      // left the user with no stored FCM token, so push never fired.
+      if (registerPushRef.current) {
+        console.log("[AuthContext] restoreSession OK — re-registering push token");
+        registerPushRef.current().catch((e) =>
+          console.warn("[AuthContext] Push re-registration after restore failed:", e?.message)
+        );
+      } else {
+        console.warn("[AuthContext] restoreSession OK but registerPushRef is null — " +
+          "NotificationProvider may not have mounted yet. Token will register on next login.");
+      }
+
       return true;
     } finally {
       _isRestoringRef.current = false;

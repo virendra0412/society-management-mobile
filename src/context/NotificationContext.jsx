@@ -46,10 +46,15 @@ export const NotificationProvider = ({ children }) => {
 
   // ── Register for push notifications ────────────────────────────────────────
   const registerForPushNotifications = useCallback(async () => {
+
+    // STEP 1 — Physical device check
+    // Expo push tokens only work on real devices. Simulators/emulators always
+    // fail here. If you're testing on a simulator this is your stop.
     if (!Device.isDevice) {
       return null;
     }
 
+    // STEP 2 — Permission check
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
     let finalStatus = existingStatus;
 
@@ -62,6 +67,7 @@ export const NotificationProvider = ({ children }) => {
       return null;
     }
 
+    // STEP 3 — Android notification channel
     if (Platform.OS === "android") {
       await Notifications.setNotificationChannelAsync("default", {
         name:             "default",
@@ -71,40 +77,32 @@ export const NotificationProvider = ({ children }) => {
       });
     }
 
-    // FIX (bug #2): getExpoPushTokenAsync() requires an explicit projectId on
-    // SDK 49+ — it does NOT read app.json's extra.eas.projectId on its own.
-    // Without this, the call throws "No 'projectId' found..." on every EAS/
-    // managed build, which was being silently swallowed by the .catch() in
-    // AuthContext's caller — so push registration failed for every user on
-    // every login, with no visible error anywhere. That's why no module
-    // (visitors, issues, maintenance, etc.) was ever delivering notifications.
+    // STEP 4 — Resolve projectId from app.json
+    // SDK 49+ requires this to be passed explicitly — it does NOT read it
+    // automatically from extra.eas.projectId.
     const projectId =
       Constants?.expoConfig?.extra?.eas?.projectId ??
       Constants?.easConfig?.projectId ??
       null;
 
     if (!projectId) {
-      console.warn(
-        "[Notifications] No EAS projectId found in app.json (extra.eas.projectId). " +
-        "Push registration skipped — notifications will not work until this is set."
-      );
+     
       return null;
     }
 
+    // STEP 5 — Get Expo push token from Expo's servers
     let expoPushToken;
     try {
       const tokenData = await Notifications.getExpoPushTokenAsync({ projectId });
       expoPushToken = tokenData.data;
     } catch (e) {
-      console.warn("[Notifications] Failed to get Expo push token:", e.message);
       return null;
     }
 
+    // STEP 6 — Save token to backend
     try {
-      // Use the dedicated FCM token endpoint, not updateProfile
       await authApi.updateFcmToken(expoPushToken);
     } catch (e) {
-      console.warn("[Notifications] Failed to register token:", e.message);
     }
 
     return expoPushToken;
@@ -184,7 +182,6 @@ export const NotificationProvider = ({ children }) => {
           // that also fails it fires authEvents.logout().  Either way we still
           // navigate — the screen will show the correct data once the user
           // manually re-authenticates or the token refresh succeeds.
-          console.warn("[Notifications] Auto-switch failed:", e?.message);
         }
       }
     }
