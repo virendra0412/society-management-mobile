@@ -173,25 +173,28 @@ const ProgressBar = ({ pct, color = C.teal }) => (
 );
 
 // ─── Payment Method Picker (pill row) ─────────────────────────────────────────
-const MethodPicker = ({ value, onChange }) => (
-  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 14 }}>
-    {PAYMENT_METHODS.map((m) => {
-      const active = value === m;
-      return (
-        <TouchableOpacity
-          key={m}
-          onPress={() => onChange(m)}
-          activeOpacity={0.75}
-          style={[S.methodPill, active && S.methodPillActive]}
-        >
-          <Text style={[S.methodPillText, active && S.methodPillTextActive]}>
-            {m.toUpperCase()}
-          </Text>
-        </TouchableOpacity>
-      );
-    })}
-  </ScrollView>
-);
+const MethodPicker = ({ value, onChange }) => {
+  const { t } = useLanguage();
+  return (
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 14 }}>
+      {PAYMENT_METHODS.map((m) => {
+        const active = value === m;
+        return (
+          <TouchableOpacity
+            key={m}
+            onPress={() => onChange(m)}
+            activeOpacity={0.75}
+            style={[S.methodPill, active && S.methodPillActive]}
+          >
+            <Text style={[S.methodPillText, active && S.methodPillTextActive]}>
+              {t(`maint_method_${m}`, m.toUpperCase())}
+            </Text>
+          </TouchableOpacity>
+        );
+      })}
+    </ScrollView>
+  );
+};
 
 // ─── Target Mode picker ───────────────────────────────────────────────────────
 const TargetPicker = ({ value, onChange }) => {
@@ -714,7 +717,7 @@ const BillDetailModal = ({ open, billId, onClose, isAdmin }) => {
               ) : (
                 // Resident: own record only
                 <>
-                  <SectionLabel title="Your Payment" />
+                  <SectionLabel title={t("maint_your_payment_label","Your Payment")} />
                   {bill.payments?.length > 0 ? (() => {
                     const p  = bill.payments[0];
                     const sc = PAYMENT_STATUS_COLOR[p.status] || {};
@@ -722,29 +725,29 @@ const BillDetailModal = ({ open, billId, onClose, isAdmin }) => {
                     return (
                       <View style={S.residentPayCard}>
                         <View style={S.paymentMeta}>
-                          <Badge label={p.status.charAt(0).toUpperCase() + p.status.slice(1)} bg={sc.bg} text={sc.text} dot={sc.dot} />
+                          <Badge label={t(`maint_pay_status_${p.status}`, p.status.charAt(0).toUpperCase() + p.status.slice(1))} bg={sc.bg} text={sc.text} dot={sc.dot} />
                           <Text style={[S.paymentAmt, { color: isPaid ? C.green : C.red }]}>
                             {fmt(isPaid ? (p.paidAmount || p.totalDue) : p.totalDue)}
                           </Text>
                         </View>
-                        {p.penalty  > 0 && <Text style={S.penaltyText}>+{fmt(p.penalty)} late penalty</Text>}
-                        {p.discount > 0 && <Text style={S.discountText}>-{fmt(p.discount)} discount</Text>}
+                        {p.penalty  > 0 && <Text style={S.penaltyText}>+{fmt(p.penalty)} {t("maint_late_penalty","late penalty")}</Text>}
+                        {p.discount > 0 && <Text style={S.discountText}>-{fmt(p.discount)} {t("maint_discount_label","discount")}</Text>}
                         {isPaid && p.paidAt && (
                           <Text style={S.paidMeta}>
-                            Paid {fmtDate(p.paidAt)} via {p.paymentMethod}
+                            {t("maint_paid_on","Paid")} {fmtDate(p.paidAt)} {t("maint_via","via")} {t(`maint_method_${p.paymentMethod}`, p.paymentMethod)}
                           </Text>
                         )}
                         {!isPaid && (
                           <View style={[S.alertBox, { backgroundColor: C.amber + "15" }]}>
                             <Text style={{ fontSize: 12, color: C.amber, fontWeight: "600" }}>
-                              ⏰ Payment due by {fmtDate(bill.dueDate)}. Please pay at the office or contact admin.
+                              {t("maint_due_by_alert","⏰ Payment due by {date}. Please pay at the office or contact admin.").replace("{date}", fmtDate(bill.dueDate))}
                             </Text>
                           </View>
                         )}
                       </View>
                     );
                   })() : (
-                    <EmptyState icon="💰" message="No payment record yet. Bill may not have been published for your flat." />
+                    <EmptyState icon="💰" message={t("maint_no_payment_record","No payment record yet. Bill may not have been published for your flat.")} />
                   )}
                 </>
               )}
@@ -755,7 +758,7 @@ const BillDetailModal = ({ open, billId, onClose, isAdmin }) => {
           {!bill.isPublished && !bill.isClosed && (
             <View style={[S.alertBox, { backgroundColor: C.amber + "12", marginTop: 8 }]}>
               <Text style={{ fontSize: 13, color: C.gray700, lineHeight: 20 }}>
-                ℹ️ This bill is a <Text style={{ fontWeight: "700" }}>draft</Text>. Publish it to generate payment records and notify residents.
+                {t("maint_draft_info_banner", "ℹ️ This bill is a {word}. Publish it to generate payment records and notify residents.").replace("{word}", t("maint_word_draft","draft"))}
               </Text>
             </View>
           )}
@@ -944,6 +947,12 @@ const DefaulterView = ({ onBack }) => {
 // ─── MAINTENANCE DASHBOARD (main list view) ───────────────────────────────────
 // ═══════════════════════════════════════════════════════════════════════════════
 const BILL_STATUS_FILTERS = ["All", "Draft", "Published", "Closed"];
+const BILL_STATUS_FILTER_KEYS = {
+  All:       "maint_filter_all",
+  Draft:     "maint_filter_draft",
+  Published: "maint_filter_published",
+  Closed:    "maint_filter_closed",
+};
 
 const MaintenanceDashboard = ({ isAdmin, onOpenBill, onOpenMyPayments, onOpenDefaulters }) => {
   const { t } = useLanguage();
@@ -1068,7 +1077,7 @@ const MaintenanceDashboard = ({ isAdmin, onOpenBill, onOpenMyPayments, onOpenDef
             <View style={S.filterHeaderRow}>
               <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                 {BILL_STATUS_FILTERS.map((f) => (
-                  <FilterPill key={f} label={f} active={statusFilter === f} onPress={() => setStatusFilter(f)} />
+                  <FilterPill key={f} label={t(BILL_STATUS_FILTER_KEYS[f], f)} active={statusFilter === f} onPress={() => setStatusFilter(f)} />
                 ))}
               </ScrollView>
               <Btn small onPress={() => setShowCreate(true)} style={{ marginLeft: 10 }}>{t("maint_new_btn", "+ New")}</Btn>

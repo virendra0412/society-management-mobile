@@ -32,27 +32,32 @@ import {
 import { timeAgo } from "../../utils/timeago";
 
 // ─── PillSelect ───────────────────────────────────────────────────────────────
-const PillSelect = ({ label, value, options, onSelect }) => (
-  <View style={{ marginBottom: 14 }}>
-    {label && <Text style={{ fontSize: 12, fontWeight: "600", color: C.gray700, marginBottom: 6 }}>{label}</Text>}
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexDirection: "row", gap: 8 }}>
-      {options.map((opt) => (
-        <TouchableOpacity
-          key={opt}
-          onPress={() => onSelect(opt)}
-          style={{
-            paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20,
-            borderWidth: 1.5,
-            borderColor: value === opt ? C.teal : C.gray100,
-            backgroundColor: value === opt ? C.teal : "transparent",
-          }}
-        >
-          <Text style={{ fontSize: 13, fontWeight: "600", color: value === opt ? "#fff" : C.gray700 }}>{opt}</Text>
-        </TouchableOpacity>
-      ))}
-    </ScrollView>
-  </View>
-);
+const PillSelect = ({ label, value, options, onSelect, labelKeyPrefix }) => {
+  const { t } = useLanguage();
+  return (
+    <View style={{ marginBottom: 14 }}>
+      {label && <Text style={{ fontSize: 12, fontWeight: "600", color: C.gray700, marginBottom: 6 }}>{label}</Text>}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexDirection: "row", gap: 8 }}>
+        {options.map((opt) => (
+          <TouchableOpacity
+            key={opt}
+            onPress={() => onSelect(opt)}
+            style={{
+              paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20,
+              borderWidth: 1.5,
+              borderColor: value === opt ? C.teal : C.gray100,
+              backgroundColor: value === opt ? C.teal : "transparent",
+            }}
+          >
+            <Text style={{ fontSize: 13, fontWeight: "600", color: value === opt ? "#fff" : C.gray700 }}>
+              {labelKeyPrefix ? t(`${labelKeyPrefix}${opt}`, opt) : opt}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+    </View>
+  );
+};
 
 // ─── Notice Card ──────────────────────────────────────────────────────────────
 const NoticeCard = ({ notice, canWrite, onTogglePin, onDelete, onEdit, pinBusy, delBusy }) => {
@@ -79,12 +84,12 @@ const NoticeCard = ({ notice, canWrite, onTogglePin, onDelete, onEdit, pinBusy, 
           <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", gap: 8, marginBottom: 4 }}>
             <Text style={{ fontSize: 14, fontWeight: "700", color: C.text, flex: 1, lineHeight: 20 }}>
               {notice.isPinned && (
-                <Text style={{ fontSize: 10, fontWeight: "700", color: C.amber }}>PINNED · </Text>
+                <Text style={{ fontSize: 10, fontWeight: "700", color: C.amber }}>{t("notice_pinned_label","PINNED")} · </Text>
               )}
               {notice.title}
             </Text>
             <View style={[s.tag, { backgroundColor: tagColor + "18" }]}>
-              <Text style={[s.tagText, { color: tagColor }]}>{notice.tag}</Text>
+              <Text style={[s.tagText, { color: tagColor }]}>{t(`notice_tag_${notice.tag}`, notice.tag)}</Text>
             </View>
           </View>
 
@@ -115,7 +120,7 @@ const NoticeCard = ({ notice, canWrite, onTogglePin, onDelete, onEdit, pinBusy, 
                 style={[s.adminBtn, { backgroundColor: C.teal + "12", borderColor: C.teal + "30" }]}
               >
                 <Text style={{ fontSize: 10 }}>✏️</Text>
-                <Text style={[s.adminBtnText, { color: C.teal }]}>Edit</Text>
+                <Text style={[s.adminBtnText, { color: C.teal }]}>{t("notice_btn_edit","Edit")}</Text>
               </TouchableOpacity>
 
               {/* ── Delete ── */}
@@ -125,7 +130,7 @@ const NoticeCard = ({ notice, canWrite, onTogglePin, onDelete, onEdit, pinBusy, 
                 style={[s.adminBtn, { backgroundColor: C.red + "10", borderColor: C.red + "25" }]}
               >
                 {delBusy ? <Spinner size={10} /> : <Text style={{ fontSize: 10 }}>🗑</Text>}
-                <Text style={[s.adminBtnText, { color: C.red }]}>Delete</Text>
+                <Text style={[s.adminBtnText, { color: C.red }]}>{t("notice_btn_delete","Delete")}</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -322,6 +327,7 @@ export const NoticesScreen = ({ navigation }) => {
           value={form.tag}
           options={NOTICE_TAGS}
           onSelect={set("tag")}
+          labelKeyPrefix="notice_tag_"
         />
         <Btn onPress={handleSave} loading={submitting} style={{ width: "100%" }}>
           {editTarget ? t("notice_save_changes", "Save Changes") : t("notice_post_btn", "Post Notice")}

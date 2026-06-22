@@ -20,7 +20,9 @@ import { timeAgo } from "../../utils/timeago";
 const ALL_CATS = ["All", ...HELP_CATEGORIES];
 
 // ─── Category icon strip ──────────────────────────────────────────────────────
-const CatStrip = ({ active, onChange }) => (
+const CatStrip = ({ active, onChange }) => {
+  const { t } = useLanguage();
+  return (
   <ScrollView
     horizontal
     showsHorizontalScrollIndicator={false}
@@ -35,11 +37,13 @@ const CatStrip = ({ active, onChange }) => (
         style={[strip.item, active === c && strip.itemActive]}
       >
         <Text style={strip.icon}>{c === "All" ? "🔍" : HELP_CAT_ICON[c]}</Text>
-        <Text style={[strip.label, active === c && strip.labelActive]}>{c}</Text>
+        <Text style={[strip.label, active === c && strip.labelActive]}>
+          {c === "All" ? t("help_filter_all","All") : t(`help_cat_${c}`, c)}
+        </Text>
       </TouchableOpacity>
     ))}
   </ScrollView>
-);
+);};
 
 const strip = StyleSheet.create({
   row:        { flexDirection: "row", paddingHorizontal: 16, paddingVertical: 10, gap: 10 },
@@ -441,7 +445,7 @@ export const HelpScreen = ({ navigation }) => {
               style={[s.chip, selectedCat === c && s.chipActive]}
             >
               <Text style={[s.chipText, selectedCat === c && s.chipTextActive]}>
-                {HELP_CAT_ICON[c]} {c}
+                {HELP_CAT_ICON[c]} {t(`help_cat_${c}`, c)}
               </Text>
             </TouchableOpacity>
           ))}

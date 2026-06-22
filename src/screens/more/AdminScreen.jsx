@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useFocusEffect } from "@react-navigation/native";
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
-  ScrollView, Modal, TextInput, Switch,
+  ScrollView, Modal, TextInput, Switch, Share, Clipboard,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -602,6 +602,7 @@ const InviteTab = ({ activeSocietyId }) => {
   const { t } = useLanguage();
   const [loading, setLoading] = useState(false);
   const [invite,  setInvite]  = useState(null);
+  const qrRef = useState(null);
 
   const generate = async () => {
     if (!activeSocietyId) { toast.error(t("admin_err_society_not_loaded", "Society not loaded yet.")); return; }
@@ -616,12 +617,34 @@ const InviteTab = ({ activeSocietyId }) => {
     }
   };
 
+  const handleShareLink = async () => {
+    if (!invite?.inviteUrl) return;
+    try {
+      await Share.share({
+        message: t("admin_invite_share_message", "Join our society app! Register using this link: {url}").replace("{url}", invite.inviteUrl),
+        url: invite.inviteUrl,
+        title: t("admin_invite_share_title", "Society Invite Link"),
+      });
+    } catch {
+      // user cancelled — no-op
+    }
+  };
+
+  const handleCopyLink = () => {
+    if (!invite?.inviteUrl) return;
+    Clipboard.setString(invite.inviteUrl);
+    toast.success(t("admin_invite_copied", "Link copied to clipboard!"));
+  };
+
   const expiryLabel = invite
     ? t("admin_invite_expires", "Expires") + " " + new Date(invite.expiresAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })
     : null;
 
   return (
-    <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
+    <ScrollView
+      contentContainerStyle={{ padding: 16, paddingBottom: 60 }}
+      showsVerticalScrollIndicator={false}
+    >
       <Text style={{ fontSize: 13, color: C.gray500, marginBottom: 16, lineHeight: 20 }}>
         {t("admin_invite_desc", "Generate a QR code or shareable link. Anyone who scans it will land on the registration screen with your society pre-filled. Valid for 7 days.")}
       </Text>
@@ -631,27 +654,48 @@ const InviteTab = ({ activeSocietyId }) => {
       </Btn>
 
       {invite && (
-        <Card style={{ marginTop: 20, alignItems: "center" }}>
-          {/* Dynamic QR Code rendering */}
-          <View style={invStyles.qrContainer}>
-            <QRCode
-              value={invite.inviteUrl}
-              size={170}
-              backgroundColor="#fff"
-              color={C.navy || "#000"}
-            />
+        <Card style={{ marginTop: 20 }}>
+          {/* QR Code — large and centred */}
+          <View style={invStyles.qrWrapper}>
+            <View style={invStyles.qrContainer}>
+              <QRCode
+                value={invite.inviteUrl}
+                size={220}
+                backgroundColor="#fff"
+                color={C.navy || "#000"}
+              />
+            </View>
+            <Text style={invStyles.expiry}>{expiryLabel}</Text>
           </View>
 
-          <Text style={invStyles.expiry}>{expiryLabel}</Text>
-
+          {/* Shareable link row */}
           <View style={invStyles.linkBox}>
-            <Text style={invStyles.linkText} numberOfLines={2} selectable>
+            <Text style={invStyles.linkText} numberOfLines={3} selectable>
               {invite.inviteUrl}
             </Text>
           </View>
-          <Text style={{ fontSize: 11, color: C.gray500, marginTop: 8, textAlign: "center" }}>
-            {t("admin_invite_copy_hint", "Tap and hold the link above to copy it")}
-          </Text>
+
+          {/* Action buttons */}
+          <View style={{ flexDirection: "row", gap: 10, marginTop: 14 }}>
+            <TouchableOpacity
+              onPress={handleCopyLink}
+              style={[invStyles.actionBtn, { flex: 1, backgroundColor: C.teal + "15", borderColor: C.teal + "40" }]}
+              activeOpacity={0.75}
+            >
+              <Text style={[invStyles.actionBtnText, { color: C.teal }]}>
+                {t("admin_invite_btn_copy", "📋 Copy Link")}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={handleShareLink}
+              style={[invStyles.actionBtn, { flex: 1, backgroundColor: C.navy, borderColor: C.navy }]}
+              activeOpacity={0.75}
+            >
+              <Text style={[invStyles.actionBtnText, { color: "#fff" }]}>
+                {t("admin_invite_btn_share", "🔗 Share")}
+              </Text>
+            </TouchableOpacity>
+          </View>
         </Card>
       )}
     </ScrollView>
@@ -738,20 +782,24 @@ export const AdminScreen = ({ route }) => {
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const invStyles = StyleSheet.create({
-  qrContainer: { 
-    width: 200, 
-    height: 200, 
-    borderWidth: 1.5, 
-    borderColor: C.gray300, 
-    borderRadius: 12, 
-    alignItems: "center", 
-    justifyContent: "center", 
-    marginBottom: 12, 
-    backgroundColor: "#fff" // Keeps contrast clean for scanning
+  qrWrapper:     { alignItems: "center", marginBottom: 16 },
+  qrContainer:   {
+    width: 240,
+    height: 240,
+    borderWidth: 1.5,
+    borderColor: C.gray200,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 10,
+    backgroundColor: "#fff",
+    padding: 10,
   },
-  expiry:        { fontSize: 12, color: C.gray500, marginBottom: 12 },
-  linkBox:       { backgroundColor: C.gray50, borderRadius: 10, borderWidth: 1, borderColor: C.gray100, padding: 12, width: "100%" },
-  linkText:      { fontSize: 12, color: C.teal, fontFamily: "monospace" },
+  expiry:        { fontSize: 12, color: C.gray500, textAlign: "center" },
+  linkBox:       { backgroundColor: C.gray50, borderRadius: 10, borderWidth: 1, borderColor: C.gray100, padding: 12 },
+  linkText:      { fontSize: 11, color: C.teal, fontFamily: "monospace", lineHeight: 18 },
+  actionBtn:     { paddingVertical: 12, borderRadius: 10, borderWidth: 1.5, alignItems: "center", justifyContent: "center" },
+  actionBtnText: { fontSize: 13, fontWeight: "700" },
 });
 
 const s = StyleSheet.create({
