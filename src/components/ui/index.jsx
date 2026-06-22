@@ -327,7 +327,7 @@ export const Modal = ({ open, onClose, onOpen, apiError, title, children }) => {
         style={styles.modalOverlay}
       >
         <Pressable style={styles.modalBackdrop} onPress={onClose} />
-        <View style={[styles.modalSheet, { paddingBottom: 20 + insets.bottom }]}>
+        <View style={[styles.modalSheet]}>
           {/* Handle bar */}
           <View style={styles.modalHandle} />
 

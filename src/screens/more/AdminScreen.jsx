@@ -15,6 +15,8 @@ import {
 import { C } from "../../constants/theme";
 import { timeAgo } from "../../utils/timeago";
 
+import QRCode from "react-native-qrcode-svg";
+
 // ─── Constants ────────────────────────────────────────────────────────────────
 const MODULES = ["visitors", "maintenance", "issues", "notices", "parking", "amenities", "residents"];
 const MODULE_ICON = {
@@ -630,10 +632,14 @@ const InviteTab = ({ activeSocietyId }) => {
 
       {invite && (
         <Card style={{ marginTop: 20, alignItems: "center" }}>
-          <View style={invStyles.qrPlaceholder}>
-            <Text style={invStyles.qrIcon}>📷</Text>
-            <Text style={invStyles.qrHint}>{t("admin_invite_qr_hint1", "Install react-native-qrcode-svg")}</Text>
-            <Text style={invStyles.qrHint}>{t("admin_invite_qr_hint2", "to render QR code here")}</Text>
+          {/* Dynamic QR Code rendering */}
+          <View style={invStyles.qrContainer}>
+            <QRCode
+              value={invite.inviteUrl}
+              size={170}
+              backgroundColor="#fff"
+              color={C.navy || "#000"}
+            />
           </View>
 
           <Text style={invStyles.expiry}>{expiryLabel}</Text>
@@ -651,15 +657,6 @@ const InviteTab = ({ activeSocietyId }) => {
     </ScrollView>
   );
 };
-
-const invStyles = StyleSheet.create({
-  qrPlaceholder: { width: 200, height: 200, borderWidth: 1.5, borderColor: C.gray300, borderRadius: 12, alignItems: "center", justifyContent: "center", marginBottom: 12, backgroundColor: C.gray50 },
-  qrIcon:        { fontSize: 40, marginBottom: 8 },
-  qrHint:        { fontSize: 11, color: C.gray500, textAlign: "center" },
-  expiry:        { fontSize: 12, color: C.gray500, marginBottom: 12 },
-  linkBox:       { backgroundColor: C.gray50, borderRadius: 10, borderWidth: 1, borderColor: C.gray100, padding: 12, width: "100%" },
-  linkText:      { fontSize: 12, color: C.teal, fontFamily: "monospace" },
-});
 
 
 export const AdminScreen = ({ route }) => {
@@ -739,6 +736,24 @@ export const AdminScreen = ({ route }) => {
 };
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
+
+const invStyles = StyleSheet.create({
+  qrContainer: { 
+    width: 200, 
+    height: 200, 
+    borderWidth: 1.5, 
+    borderColor: C.gray300, 
+    borderRadius: 12, 
+    alignItems: "center", 
+    justifyContent: "center", 
+    marginBottom: 12, 
+    backgroundColor: "#fff" // Keeps contrast clean for scanning
+  },
+  expiry:        { fontSize: 12, color: C.gray500, marginBottom: 12 },
+  linkBox:       { backgroundColor: C.gray50, borderRadius: 10, borderWidth: 1, borderColor: C.gray100, padding: 12, width: "100%" },
+  linkText:      { fontSize: 12, color: C.teal, fontFamily: "monospace" },
+});
+
 const s = StyleSheet.create({
   safe:              { flex: 1, backgroundColor: C.bg },
   header:            { backgroundColor: C.navy, paddingHorizontal: 20, paddingTop: 16, paddingBottom: 16 },
