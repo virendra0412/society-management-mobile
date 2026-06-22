@@ -29,15 +29,30 @@ import { C } from "../../constants/theme";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const RELATION_OPTIONS = ["Spouse", "Parent", "Child", "Sibling", "Other"];
+const RELATION_LABEL_KEYS = {
+  Spouse:  "profile_relation_spouse",
+  Parent:  "profile_relation_parent",
+  Child:   "profile_relation_child",
+  Sibling: "profile_relation_sibling",
+  Other:   "profile_relation_other",
+};
 
 // Role display map
-const ROLE_LABEL = {
+const ROLE_LABEL_KEYS = {
+  admin:     "profile_role_admin_full",
+  committee: "profile_role_committee",
+  security:  "profile_role_security",
+  resident:  "profile_role_resident_full",
+  vendor:    "profile_role_vendor",
+};
+const ROLE_FALLBACK = {
   admin:     "👑 Admin",
   committee: "🏛️ Committee",
   security:  "🛡️ Security",
   resident:  "🏠 Resident",
   vendor:    "🔧 Vendor",
 };
+const roleLabel = (t, role) => t(ROLE_LABEL_KEYS[role] || role, ROLE_FALLBACK[role] || role || "Resident");
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -77,7 +92,10 @@ const AvatarSection = ({ profile, onAvatarUpdate }) => {
     if (Platform.OS !== "web") {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== "granted") {
-        Alert.alert("Permission needed", "Please allow photo access in settings.");
+        Alert.alert(
+          t("profile_permission_needed_title", "Permission needed"),
+          t("profile_permission_needed_body", "Please allow photo access in settings.")
+        );
         return;
       }
     }
@@ -117,7 +135,7 @@ const AvatarSection = ({ profile, onAvatarUpdate }) => {
       </TouchableOpacity>
       <Text style={styles.avatarName}>{profile?.name}</Text>
       <Text style={styles.avatarRole}>
-        {profile?.role === "admin" ? "👑 Admin" : "Resident"}
+        {profile?.role === "admin" ? `👑 ${t("profile_role_admin", "Admin")}` : t("profile_role_resident", "Resident")}
         {profile?.society?.name ? `  ·  ${profile.society.name}` : ""}
       </Text>
     </View>
@@ -218,7 +236,7 @@ const FamilyModal = ({ open, onClose, member, onDone }) => {
           return (
             <TouchableOpacity key={r} onPress={() => setForm((p) => ({ ...p, relation: r }))} activeOpacity={0.75}
               style={[styles.pill, active && styles.pillActive]}>
-              <Text style={[styles.pillText, active && styles.pillTextActive]}>{r}</Text>
+              <Text style={[styles.pillText, active && styles.pillTextActive]}>{t(RELATION_LABEL_KEYS[r] || r, r)}</Text>
             </TouchableOpacity>
           );
         })}
@@ -243,17 +261,24 @@ const FamilyMemberRow = ({ member, onEdit, onRemove }) => {
       </View>
       <View style={{ flex: 1 }}>
         <Text style={styles.familyName}>{member.name}</Text>
-        <Text style={styles.familyMeta}>{member.relation}{member.age ? `  ·  Age ${member.age}` : ""}</Text>
+        <Text style={styles.familyMeta}>
+          {t(RELATION_LABEL_KEYS[member.relation] || member.relation, member.relation)}
+          {member.age ? `  ·  ${t("profile_age_label", "Age")} ${member.age}` : ""}
+        </Text>
       </View>
       <View style={styles.familyActions}>
         <TouchableOpacity onPress={() => onEdit(member)} style={styles.familyBtn} activeOpacity={0.75}>
           <Text style={styles.familyBtnText}>{t("btn_edit")}</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          onPress={() => Alert.alert("Remove member", `Remove ${member.name}?`, [
-            { text: "Cancel", style: "cancel" },
-            { text: "Remove", style: "destructive", onPress: () => onRemove(member._id) },
-          ])}
+          onPress={() => Alert.alert(
+            t("profile_remove_member_title", "Remove member"),
+            t("profile_remove_member_body", "Remove %s?", { name: member.name }),
+            [
+              { text: t("btn_cancel", "Cancel"), style: "cancel" },
+              { text: t("btn_delete", "Remove"), style: "destructive", onPress: () => onRemove(member._id) },
+            ]
+          )}
           style={[styles.familyBtn, styles.familyBtnDanger]} activeOpacity={0.75}>
           <Text style={[styles.familyBtnText, { color: C.red }]}>{t("btn_delete")}</Text>
         </TouchableOpacity>
@@ -279,6 +304,7 @@ const SectionCard = ({ title, action, children }) => (
 
 // ─── Single society membership card ──────────────────────────────────────────
 const SocietyMembershipCard = ({ membership, isActive, onSwitch, switchingId }) => {
+  const { t } = useLanguage();
   // membership.society is a populated object { _id, name, joinCode, logo }
   const society  = membership.society || {};
   const sid      = society?._id?.toString() || membership.society?.toString();
@@ -288,11 +314,11 @@ const SocietyMembershipCard = ({ membership, isActive, onSwitch, switchingId }) 
     .split(" ").map((w) => w[0] || "").join("").toUpperCase().slice(0, 2);
 
   const flatWing = [
-    membership.flat && `Flat ${membership.flat}`,
-    membership.wing && `Wing ${membership.wing}`,
+    membership.flat && `${t("profile_flat_short", "Flat")} ${membership.flat}`,
+    membership.wing && `${t("profile_wing_short", "Wing")} ${membership.wing}`,
   ].filter(Boolean).join(" · ");
 
-  const roleLabel = ROLE_LABEL[membership.role] || membership.role || "Resident";
+  const roleText = roleLabel(t, membership.role);
 
   return (
     <View style={[smStyles.card, isActive && smStyles.cardActive]}>
@@ -305,14 +331,14 @@ const SocietyMembershipCard = ({ membership, isActive, onSwitch, switchingId }) 
         </View>
         <View style={{ flex: 1 }}>
           <Text style={smStyles.name} numberOfLines={1}>
-            {society?.name || "Unknown Society"}
+            {society?.name || t("profile_unknown_society", "Unknown Society")}
           </Text>
           <Text style={smStyles.meta} numberOfLines={1}>
-            {[flatWing, roleLabel].filter(Boolean).join("  ·  ")}
+            {[flatWing, roleText].filter(Boolean).join("  ·  ")}
           </Text>
           {!membership.isApproved && (
             <View style={smStyles.pendingPill}>
-              <Text style={smStyles.pendingPillText}>⏳ Pending Approval</Text>
+              <Text style={smStyles.pendingPillText}>⏳ {t("profile_pending_approval", "Pending Approval")}</Text>
             </View>
           )}
         </View>
@@ -322,7 +348,7 @@ const SocietyMembershipCard = ({ membership, isActive, onSwitch, switchingId }) 
       <View style={smStyles.right}>
         {isActive ? (
           <View style={smStyles.activeBadge}>
-            <Text style={smStyles.activeBadgeText}>✓ Active</Text>
+            <Text style={smStyles.activeBadgeText}>✓ {t("profile_active", "Active")}</Text>
           </View>
         ) : membership.isApproved ? (
           <TouchableOpacity
@@ -333,7 +359,7 @@ const SocietyMembershipCard = ({ membership, isActive, onSwitch, switchingId }) 
           >
             {isBusy
               ? <ActivityIndicator size="small" color={C.teal} />
-              : <Text style={smStyles.switchBtnText}>Switch</Text>
+              : <Text style={smStyles.switchBtnText}>{t("profile_switch", "Switch")}</Text>
             }
           </TouchableOpacity>
         ) : (
@@ -348,6 +374,7 @@ const SocietyMembershipCard = ({ membership, isActive, onSwitch, switchingId }) 
 // ─── Join Society Modal ───────────────────────────────────────────────────────
 const JoinSocietyModal = ({ open, onClose, onJoined }) => {
   const toast        = useToast();
+  const { t }         = useLanguage();
   const { joinSociety } = useAuth();
   const INIT = { societyJoinCode: "", flat: "", wing: "" };
   const [form,   setForm]   = useState(INIT);
@@ -355,7 +382,7 @@ const JoinSocietyModal = ({ open, onClose, onJoined }) => {
 
   const handleSubmit = async () => {
     const code = form.societyJoinCode.trim().toUpperCase();
-    if (code.length !== 8) return toast.error("Join code must be 8 characters.");
+    if (code.length !== 8) return toast.error(t("profile_join_code_length_err", "Join code must be 8 characters."));
     setSaving(true);
     try {
       const result = await joinSociety({
@@ -363,34 +390,34 @@ const JoinSocietyModal = ({ open, onClose, onJoined }) => {
         flat:  form.flat.trim()  || undefined,
         wing:  form.wing.trim()  || undefined,
       });
-      const societyName = result.society?.name || "the society";
+      const societyName = result.society?.name || t("profile_the_society", "the society");
       toast.success(
         result.pendingApproval
-          ? `Request sent to ${societyName}. Waiting for admin approval.`
-          : `You've joined ${societyName}!`
+          ? t("profile_join_pending_msg", "Request sent to %s. Waiting for admin approval.", { name: societyName })
+          : t("profile_join_success_msg", "You've joined %s!", { name: societyName })
       );
       onJoined();
       setForm(INIT);
       onClose();
     } catch (e) {
-      toast.error(e?.response?.data?.message || "Failed to join society. Check the join code.");
+      toast.error(e?.response?.data?.message || t("profile_join_failed_err", "Failed to join society. Check the join code."));
     } finally { setSaving(false); }
   };
 
   const set = (k) => (v) => setForm((p) => ({ ...p, [k]: v }));
 
   return (
-    <Modal open={open} onClose={() => { onClose(); setForm(INIT); }} title="Join Another Society">
+    <Modal open={open} onClose={() => { onClose(); setForm(INIT); }} title={t("profile_join_society_title", "Join Another Society")}>
 
       {/* Instructional hint */}
       <View style={jsStyles.hint}>
         <Text style={jsStyles.hintText}>
-          Get the 8-character join code from your society admin or scan the QR code in the lobby.
+          {t("profile_join_society_hint", "Get the 8-character join code from your society admin or scan the QR code in the lobby.")}
         </Text>
       </View>
 
       <Input
-        label="Society Join Code *"
+        label={t("profile_join_code_label", "Society Join Code *")}
         value={form.societyJoinCode}
         onChangeText={(v) => set("societyJoinCode")(v.toUpperCase().replace(/[^A-Z0-9]/g, ""))}
         placeholder="e.g. SUNRISE1"
@@ -408,7 +435,7 @@ const JoinSocietyModal = ({ open, onClose, onJoined }) => {
       <View style={styles.row}>
         <View style={{ flex: 1, marginRight: 8 }}>
           <Input
-            label="Flat / Unit No."
+            label={t("profile_flat_unit_label", "Flat / Unit No.")}
             value={form.flat}
             onChangeText={set("flat")}
             placeholder="e.g. 204"
@@ -416,7 +443,7 @@ const JoinSocietyModal = ({ open, onClose, onJoined }) => {
         </View>
         <View style={{ flex: 1 }}>
           <Input
-            label="Wing (optional)"
+            label={t("profile_wing_optional_label", "Wing (optional)")}
             value={form.wing}
             onChangeText={set("wing")}
             placeholder="e.g. A"
@@ -429,7 +456,7 @@ const JoinSocietyModal = ({ open, onClose, onJoined }) => {
         loading={saving}
         style={{ marginTop: 4, backgroundColor: C.navy }}
       >
-        🏘️ Join Society
+        🏘️ {t("profile_join_society_btn", "Join Society")}
       </Btn>
     </Modal>
   );
@@ -443,14 +470,15 @@ const MySocietiesSection = ({
   onJoin,
   switchingId,
 }) => {
+  const { t } = useLanguage();
   if (!memberships || memberships.length === 0) {
     return (
       <View style={smStyles.empty}>
         <Text style={smStyles.emptyText}>
-          You have not joined any society yet.
+          {t("profile_no_society_joined", "You have not joined any society yet.")}
         </Text>
         <TouchableOpacity onPress={onJoin} style={smStyles.joinEmptyBtn} activeOpacity={0.8}>
-          <Text style={smStyles.joinEmptyBtnText}>+ Join a Society</Text>
+          <Text style={smStyles.joinEmptyBtnText}>+ {t("profile_join_a_society", "Join a Society")}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -477,7 +505,7 @@ const MySocietiesSection = ({
 
       {/* Join another society button */}
       <TouchableOpacity onPress={onJoin} activeOpacity={0.75} style={smStyles.joinMoreBtn}>
-        <Text style={smStyles.joinMoreBtnText}>+ Join Another Society</Text>
+        <Text style={smStyles.joinMoreBtnText}>+ {t("profile_join_another_society", "Join Another Society")}</Text>
       </TouchableOpacity>
     </View>
   );
@@ -533,17 +561,21 @@ export const ProfileScreen = ({ navigation }) => {
     try {
       const res = await userApi.removeFamilyMember(memberId);
       setProfile((p) => ({ ...p, familyMembers: res.data.familyMembers }));
-      toast.success("Member removed");
+      toast.success(t("profile_member_removed", "Member removed"));
     } catch { toast.error(t("error_generic")); }
   };
 
   const handleLogout = () =>
-    Alert.alert("Sign Out", "Are you sure you want to sign out?", [
-      { text: "Cancel", style: "cancel" },
-      { text: "Sign Out", style: "destructive", onPress: async () => {
-        try { await logout(); } catch (e) { console.warn(e?.message); }
-      }},
-    ]);
+    Alert.alert(
+      t("profile_signout_title", "Sign Out"),
+      t("profile_signout_body", "Are you sure you want to sign out?"),
+      [
+        { text: t("btn_cancel", "Cancel"), style: "cancel" },
+        { text: t("btn_sign_out", "Sign Out"), style: "destructive", onPress: async () => {
+          try { await logout(); } catch (e) { console.warn(e?.message); }
+        }},
+      ]
+    );
 
   const handleEditMember = (member) => { setEditingMember(member); setFamilyOpen(true); };
 
@@ -556,12 +588,12 @@ export const ProfileScreen = ({ navigation }) => {
       const society  = updated?.memberships?.find(
         (m) => m.society?._id?.toString() === societyId || m.society?.toString() === societyId
       )?.society;
-      const name     = society?.name || "new society";
-      toast.success(`Switched to ${name}`);
+      const name     = society?.name || t("profile_new_society", "new society");
+      toast.success(t("profile_switched_to", "Switched to %s", { name }));
       // Reload profile so the societies section reflects the new activeSocietyId
       await loadProfile();
     } catch (e) {
-      toast.error(e?.response?.data?.message || "Failed to switch society.");
+      toast.error(e?.response?.data?.message || t("profile_switch_failed", "Failed to switch society."));
     } finally { setSwitchingId(null); }
   };
 
@@ -596,7 +628,7 @@ export const ProfileScreen = ({ navigation }) => {
       >
         {/* ── Header banner ─────────────────────────────────────────────────── */}
         <View style={[styles.headerBanner, { paddingTop: Math.max(20, insets.top + 12) }]}>
-          <Text style={styles.headerLabel}>MY PROFILE</Text>
+          <Text style={styles.headerLabel}>{t("profile_header_label", "MY PROFILE")}</Text>
         </View>
 
         {/* ── Avatar + name ──────────────────────────────────────────────────── */}
@@ -606,24 +638,24 @@ export const ProfileScreen = ({ navigation }) => {
 
         {/* ── Personal Details ───────────────────────────────────────────────── */}
         <SectionCard
-          title="Personal Details"
+          title={t("profile_personal_details", "Personal Details")}
           action={
             <TouchableOpacity onPress={() => setEditOpen(true)} style={styles.editBtn} activeOpacity={0.75}>
               <Text style={styles.editBtnText}>✏️ {t("btn_edit")}</Text>
             </TouchableOpacity>
           }
         >
-          <FieldRow label="Email"              value={p?.email} />
+          <FieldRow label={t("profile_email_label", "Email")} value={p?.email} />
           <FieldRow label={t("profile_phone")} value={p?.phone} />
           <FieldRow label={t("profile_flat")}  value={p?.flat} />
           <FieldRow label={t("profile_wing")}  value={p?.wing || p?.block} />
-          <FieldRow label="Society"            value={p?.society?.name} />
+          <FieldRow label={t("profile_society_label", "Society")} value={p?.society?.name} />
           <FieldRow
-            label="Account Status"
+            label={t("profile_account_status_label", "Account Status")}
             last
             value={
               <Badge
-                label={p?.isApproved ? "Approved" : "Pending"}
+                label={p?.isApproved ? t("profile_status_approved", "Approved") : t("profile_status_pending", "Pending")}
                 bg={p?.isApproved   ? "#D1FAE5"   : "#FEF3C7"}
                 text={p?.isApproved ? "#065F46"   : "#92400E"}
                 dot={p?.isApproved  ? "#10B981"   : "#F59E0B"}
@@ -648,7 +680,7 @@ export const ProfileScreen = ({ navigation }) => {
           {!p?.familyMembers?.length ? (
             <View style={styles.emptyFamily}>
               <Text style={styles.emptyFamilyIcon}>👨‍👩‍👧</Text>
-              <Text style={styles.emptyFamilyText}>No family members added yet</Text>
+              <Text style={styles.emptyFamilyText}>{t("profile_no_family_members", "No family members added yet")}</Text>
             </View>
           ) : (
             p.familyMembers.map((m) => (
@@ -663,7 +695,7 @@ export const ProfileScreen = ({ navigation }) => {
              "Join Another Society" button at the bottom opens JoinSocietyModal.
         ══════════════════════════════════════════════════════════════════════ */}
         <SectionCard
-          title={`My Societies${displayMemberships.length > 1 ? `  (${displayMemberships.length})` : ""}`}
+          title={`${t("profile_my_societies", "My Societies")}${displayMemberships.length > 1 ? `  (${displayMemberships.length})` : ""}`}
           action={
             displayMemberships.length > 0 ? (
               <TouchableOpacity
@@ -671,7 +703,7 @@ export const ProfileScreen = ({ navigation }) => {
                 style={[styles.editBtn, { backgroundColor: C.navy + "12" }]}
                 activeOpacity={0.75}
               >
-                <Text style={[styles.editBtnText, { color: C.navy }]}>+ Join</Text>
+                <Text style={[styles.editBtnText, { color: C.navy }]}>+ {t("profile_join_short", "Join")}</Text>
               </TouchableOpacity>
             ) : null
           }
@@ -687,19 +719,19 @@ export const ProfileScreen = ({ navigation }) => {
 
         {/* ── Society Info (active society details) ──────────────────────────── */}
         {p?.society && (
-          <SectionCard title="Active Society Info">
-            <FieldRow label="Society Name" value={p.society.name} />
-            <FieldRow label="Join Code"    value={p.society.joinCode} />
-            <FieldRow label="City"         value={p.society.city} />
-            <FieldRow label="State"        value={p.society.state} last />
+          <SectionCard title={t("profile_active_society_info", "Active Society Info")}>
+            <FieldRow label={t("profile_society_name_label", "Society Name")} value={p.society.name} />
+            <FieldRow label={t("profile_join_code_field_label", "Join Code")}    value={p.society.joinCode} />
+            <FieldRow label={t("profile_city_label", "City")}         value={p.society.city} />
+            <FieldRow label={t("profile_state_label", "State")}        value={p.society.state} last />
           </SectionCard>
         )}
 
         {/* ── Language Preference ────────────────────────────────────────────── */}
-        <SectionCard title="Language">
+        <SectionCard title={t("profile_language_section", "Language")}>
           <View style={styles.langRow}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.langLabel}>App Language</Text>
+              <Text style={styles.langLabel}>{t("profile_app_language", "App Language")}</Text>
               <Text style={styles.langHint}>EN · हि · ગુ</Text>
             </View>
             <LanguageSwitcher compact={false} />

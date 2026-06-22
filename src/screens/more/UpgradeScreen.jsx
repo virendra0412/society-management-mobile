@@ -49,7 +49,7 @@ const UpgradeScreen = () => {
       const res = await modulesApi.getStatus();
       setData(res.data || res);
     } catch (err) {
-      Alert.alert(t("error_title", "Error"), err.response?.data?.message || "Failed to load module status");
+      Alert.alert(t("error_title", "Error"), err.response?.data?.message || t("upgrade_load_status_failed", "Failed to load module status"));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -64,8 +64,8 @@ const UpgradeScreen = () => {
     const meta = MODULE_META[key];
     const label = t(meta.labelKey, meta.label);
     Alert.alert(
-      `Request ${label}`,
-      `This will notify our team to enable the ${label} module for your society. They will contact you to confirm pricing.`,
+      t("upgrade_request_title", "Request %s", { label }),
+      t("upgrade_request_body", "This will notify our team to enable the %s module for your society. They will contact you to confirm pricing.", { label }),
       [
         { text: t("upgrade_request_cancel", "Cancel") },
         {
@@ -74,7 +74,7 @@ const UpgradeScreen = () => {
             setRequesting((prev) => ({ ...prev, [key]: true }));
             try {
               await modulesApi.requestUpgrade(key);
-              Alert.alert("Requested!", t("upgrade_request_success", "Your upgrade request for {label} has been submitted. We'll review it shortly.").replace("{label}", label));
+              Alert.alert(t("upgrade_requested_title", "Requested!"), t("upgrade_request_success", "Your upgrade request for %s has been submitted. We'll review it shortly.", { label }));
               fetchStatus();
             } catch (err) {
               Alert.alert(t("error_title", "Error"), err.response?.data?.message || t("upgrade_request_failed", "Request failed. Please try again."));
@@ -106,9 +106,9 @@ const UpgradeScreen = () => {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchStatus(); }} />}
         contentContainerStyle={styles.scroll}
       >
-        <Text style={styles.pageTitle}>Your Modules</Text>
+        <Text style={styles.pageTitle}>{t("upgrade_page_title", "Your Modules")}</Text>
         <Text style={styles.pageSub}>
-          Manage features for your society. Locked modules show the option to request an upgrade from our team.
+          {t("upgrade_page_subtitle", "Manage features for your society. Locked modules show the option to request an upgrade from our team.")}
         </Text>
 
         {/* ── Plan Status Card ── */}
@@ -116,32 +116,34 @@ const UpgradeScreen = () => {
           <View style={{ marginBottom: 12 }}>
             {plan === "trial" ? (
               <>
-                <Text style={{ fontSize: 12, fontWeight: "700", color: "#D97706", marginBottom: 4 }}>🎉 FREE TRIAL</Text>
+                <Text style={{ fontSize: 12, fontWeight: "700", color: "#D97706", marginBottom: 4 }}>🎉 {t("upgrade_free_trial_badge", "FREE TRIAL")}</Text>
                 <Text style={{ fontSize: 15, fontWeight: "700", color: "#1F2937", marginBottom: 6 }}>
-                  {trialDaysLeft} {trialDaysLeft === 1 ? "day" : "days"} remaining
+                  {trialDaysLeft === 1
+                    ? t("upgrade_trial_days_left_one", "%d day remaining", { count: trialDaysLeft })
+                    : t("upgrade_trial_days_left_other", "%d days remaining", { count: trialDaysLeft })}
                 </Text>
                 <Text style={{ fontSize: 13, color: "#4B5563", lineHeight: 18 }}>
-                  Every feature unlocked. After the trial, core features stay free forever. Upgrade to unlock maintenance billing & more.
+                  {t("upgrade_trial_desc", "Every feature unlocked. After the trial, core features stay free forever. Upgrade to unlock maintenance billing & more.")}
                 </Text>
               </>
             ) : plan === "free" ? (
               <>
-                <Text style={{ fontSize: 12, fontWeight: "700", color: "#10B981", marginBottom: 4 }}>✓ FREE PLAN</Text>
+                <Text style={{ fontSize: 12, fontWeight: "700", color: "#10B981", marginBottom: 4 }}>✓ {t("upgrade_free_plan_badge", "FREE PLAN")}</Text>
                 <Text style={{ fontSize: 15, fontWeight: "700", color: "#1F2937", marginBottom: 6 }}>
-                  Core features, forever
+                  {t("upgrade_free_plan_title", "Core features, forever")}
                 </Text>
                 <Text style={{ fontSize: 13, color: "#4B5563", lineHeight: 18 }}>
-                  Notices, polls, contacts, and visitors are always free. Upgrade anytime to unlock billing & amenities.
+                  {t("upgrade_free_plan_desc", "Notices, polls, contacts, and visitors are always free. Upgrade anytime to unlock billing & amenities.")}
                 </Text>
               </>
             ) : (
               <>
-                <Text style={{ fontSize: 12, fontWeight: "700", color: "#06B6D4", marginBottom: 4 }}>✓ PREMIUM PLAN</Text>
+                <Text style={{ fontSize: 12, fontWeight: "700", color: "#06B6D4", marginBottom: 4 }}>✓ {t("upgrade_premium_plan_badge", "PREMIUM PLAN")}</Text>
                 <Text style={{ fontSize: 15, fontWeight: "700", color: "#1F2937", marginBottom: 6 }}>
                   {plan === "basic" ? t("upgrade_plan_basic", "Basic Plan") : t("upgrade_plan_premium", "Premium Plan")}
                 </Text>
                 <Text style={{ fontSize: 13, color: "#4B5563", lineHeight: 18 }}>
-                  You have access to all features. Contact support if you need to modify your plan.
+                  {t("upgrade_premium_plan_desc", "You have access to all features. Contact support if you need to modify your plan.")}
                 </Text>
               </>
             )}
@@ -151,7 +153,7 @@ const UpgradeScreen = () => {
         {/* Active Modules */}
         {enabledPaid.length > 0 && (
           <>
-            <Text style={styles.sectionTitle}>✅ Active Paid Modules</Text>
+            <Text style={styles.sectionTitle}>✅ {t("upgrade_section_active_paid", "Active Paid Modules")}</Text>
             {enabledPaid.map((key) => {
               const meta = MODULE_META[key];
     const label = t(meta.labelKey, meta.label);
@@ -163,7 +165,7 @@ const UpgradeScreen = () => {
                     <Text style={styles.cardDesc}>{t(meta.descKey, meta.desc)}</Text>
                   </View>
                   <View style={styles.activeBadge}>
-                    <Text style={styles.activeBadgeText}>Active</Text>
+                    <Text style={styles.activeBadgeText}>{t("upgrade_badge_active", "Active")}</Text>
                   </View>
                 </View>
               );
@@ -174,7 +176,7 @@ const UpgradeScreen = () => {
         {/* Locked Modules */}
         {lockedPaid.length > 0 && (
           <>
-            <Text style={styles.sectionTitle}>🔒 Available Upgrades</Text>
+            <Text style={styles.sectionTitle}>🔒 {t("upgrade_section_available", "Available Upgrades")}</Text>
             {lockedPaid.map((key) => {
               const meta = MODULE_META[key];
     const label = t(meta.labelKey, meta.label);
@@ -190,7 +192,7 @@ const UpgradeScreen = () => {
                   </View>
                   {isPending ? (
                     <View style={styles.pendingBadge}>
-                      <Text style={styles.pendingBadgeText}>Pending</Text>
+                      <Text style={styles.pendingBadgeText}>{t("upgrade_badge_pending", "Pending")}</Text>
                     </View>
                   ) : (
                     <TouchableOpacity
@@ -200,7 +202,7 @@ const UpgradeScreen = () => {
                     >
                       {isRequesting
                         ? <ActivityIndicator size="small" color={COLORS.primary} />
-                        : <Text style={styles.requestBtnText}>Request</Text>
+                        : <Text style={styles.requestBtnText}>{t("upgrade_btn_request", "Request")}</Text>
                       }
                     </TouchableOpacity>
                   )}
@@ -211,7 +213,7 @@ const UpgradeScreen = () => {
         )}
 
         {/* Free Modules */}
-        <Text style={styles.sectionTitle}>🆓 Always Free</Text>
+        <Text style={styles.sectionTitle}>🆓 {t("upgrade_section_free", "Always Free")}</Text>
         {freeKeys.map((key) => {
           const meta = MODULE_META[key];
     const label = t(meta.labelKey, meta.label);
@@ -223,7 +225,7 @@ const UpgradeScreen = () => {
                 <Text style={styles.cardDesc}>{t(meta.descKey, meta.desc)}</Text>
               </View>
               <View style={styles.freeBadge}>
-                <Text style={styles.freeBadgeText}>FREE</Text>
+                <Text style={styles.freeBadgeText}>{t("upgrade_badge_free", "FREE")}</Text>
               </View>
             </View>
           );
