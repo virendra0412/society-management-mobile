@@ -217,11 +217,12 @@ const IssueCard = ({ issue, onPress }) => (
 );
 
 // ─── Issue Detail Modal ───────────────────────────────────────────────────────
-// ─── Vendor form blank state ───────────────────────────────────────────────────
 const EMPTY_VENDOR = { name: "", phone: "", note: "" };
 
 const IssueDetailModal = ({ issue, visible, onClose, isAdmin, onUpdated }) => {
   const toast = useToast();
+  const { t } = useLanguage(); // ✅ Moved to the top so it runs before any early returns
+  
   const [comments,       setComments]       = useState([]);
   const [loadingDetail,  setLoadingDetail]  = useState(false);
   const [commentBody,    setCommentBody]    = useState("");
@@ -253,9 +254,9 @@ const IssueDetailModal = ({ issue, visible, onClose, isAdmin, onUpdated }) => {
       const res = await issuesApi.update(localIssue._id, { status: newStatus });
       setLocalIssue(res.data.issue);
       onUpdated?.(res.data.issue);
-      toast.success(useLanguage().t("issues_status_changed","Status updated."));
+      toast.success(t("issues_status_changed","Status updated."));
     } catch (e) {
-      toast.error(e?.response?.data?.message || useLanguage().t("issues_update_failed","Update failed"));
+      toast.error(e?.response?.data?.message || t("issues_update_failed","Update failed"));
     } finally {
       setStatusLoading(false);
     }
@@ -282,7 +283,7 @@ const IssueDetailModal = ({ issue, visible, onClose, isAdmin, onUpdated }) => {
       }
       setCommentBody("");
     } catch (e) {
-      toast.error(e?.response?.data?.message || useLanguage().t("issues_generic_failed","Failed"));
+      toast.error(e?.response?.data?.message || t("issues_generic_failed","Failed"));
     } finally {
       setCommentLoading(false);
     }
@@ -291,7 +292,7 @@ const IssueDetailModal = ({ issue, visible, onClose, isAdmin, onUpdated }) => {
   // ── Assign vendor (admin) ────────────────────────────────────────────────────
   const handleAssignVendor = async () => {
     if (!vendorForm.name.trim() || !vendorForm.phone.trim())
-      return toast.error(useLanguage().t("issues_vendor_required","Vendor name and phone are required."));
+      return toast.error(t("issues_vendor_required","Vendor name and phone are required."));
     setVendorLoading(true);
     try {
       const res = await issuesApi.assignVendor(localIssue._id, vendorForm);
@@ -300,26 +301,26 @@ const IssueDetailModal = ({ issue, visible, onClose, isAdmin, onUpdated }) => {
       onUpdated?.(updated);
       setShowVendor(false);
       setVendorForm(EMPTY_VENDOR);
-      toast.success(useLanguage().t("issues_vendor_assigned","Vendor assigned."));
+      toast.success(t("issues_vendor_assigned","Vendor assigned."));
     } catch (e) {
-      toast.error(e?.response?.data?.message || useLanguage().t("issues_vendor_assign_failed","Failed to assign vendor."));
+      toast.error(e?.response?.data?.message || t("issues_vendor_assign_failed","Failed to assign vendor."));
     } finally {
       setVendorLoading(false);
     }
   };
 
-  if (!localIssue) return null;
+  if (!localIssue) return null; // ✅ Early return now safely happens AFTER all hooks are declared
   const sc = STATUS_COLOR[localIssue.status] || {};
 
   return (
-    <Modal open={visible} onClose={onClose} title={useLanguage().t("issues_detail_title","Issue Detail")}>
+    <Modal open={visible} onClose={onClose} title={t("issues_detail_title","Issue Detail")}>
       {/* Title + meta */}
       <View style={{ flexDirection: "row", gap: 10, marginBottom: 12 }}>
         <Text style={{ fontSize: 28 }}>{CATEGORY_ICON[localIssue.category] || "📋"}</Text>
         <View style={{ flex: 1 }}>
           <Text style={detailStyles.title}>{localIssue.title}</Text>
           <Text style={detailStyles.meta}>
-            {localIssue.isAnonymous ? useLanguage().t("issues_anonymous","Anonymous") : (localIssue.flat || localIssue.reporter?.flat || "—")}
+            {localIssue.isAnonymous ? t("issues_anonymous","Anonymous") : (localIssue.flat || localIssue.reporter?.flat || "—")}
             {" · "}{timeAgo(localIssue.createdAt)}
           </Text>
         </View>
@@ -330,7 +331,7 @@ const IssueDetailModal = ({ issue, visible, onClose, isAdmin, onUpdated }) => {
         <Badge label={localIssue.status}   {...(STATUS_COLOR[localIssue.status]     || {})} />
         <Badge label={localIssue.priority} {...(PRIORITY_COLOR[localIssue.priority] || {})} />
         <Badge label={localIssue.category} bg={C.gray100} text={C.gray700} />
-        {localIssue.isAnonymous && <Badge label={useLanguage().t("issues_anonymous","Anonymous")} bg={C.gray100} text={C.gray500} />}
+        {localIssue.isAnonymous && <Badge label={t("issues_anonymous","Anonymous")} bg={C.gray100} text={C.gray500} />}
       </View>
 
       {/* Description */}
@@ -346,7 +347,7 @@ const IssueDetailModal = ({ issue, visible, onClose, isAdmin, onUpdated }) => {
       {/* Admin status controls */}
       {isAdmin && (
         <View style={{ marginBottom: 16 }}>
-            <Text style={detailStyles.sectionLabel}>{useLanguage().t("issues_update_status","Update Status")}</Text>
+          <Text style={detailStyles.sectionLabel}>{t("issues_update_status","Update Status")}</Text>
           <View style={{ flexDirection: "row", gap: 8 }}>
             {["Open", "In Progress", "Resolved"].map((s) => {
               const ssc = STATUS_COLOR[s] || {};
@@ -385,7 +386,7 @@ const IssueDetailModal = ({ issue, visible, onClose, isAdmin, onUpdated }) => {
 
       {/* Assign vendor button (admin only) */}
       {isAdmin && (
-            <TouchableOpacity
+        <TouchableOpacity
           onPress={() => {
             setVendorForm(localIssue.assignedVendor?.name
               ? { ...localIssue.assignedVendor }
@@ -396,19 +397,19 @@ const IssueDetailModal = ({ issue, visible, onClose, isAdmin, onUpdated }) => {
           style={detailStyles.assignVendorBtn}
         >
           <Text style={detailStyles.assignVendorText}>
-            🔧 {localIssue.assignedVendor?.name ? useLanguage().t("issues_change_vendor","Change Vendor") : useLanguage().t("issues_assign_vendor","Assign Vendor")}
+            🔧 {localIssue.assignedVendor?.name ? t("issues_change_vendor","Change Vendor") : t("issues_assign_vendor","Assign Vendor")}
           </Text>
         </TouchableOpacity>
       )}
 
       {/* Comments */}
-      <Text style={detailStyles.sectionLabel}>{useLanguage().t("issues_comments_label","Comments")} ({comments.length})</Text>
+      <Text style={detailStyles.sectionLabel}>{t("issues_comments_label","Comments")} ({comments.length})</Text>
       {loadingDetail
         ? <Spinner size={20} />
         : comments.map((c) => (
           <View key={c._id} style={[detailStyles.commentBubble, c.isAdminReply && { borderLeftWidth: 3, borderLeftColor: C.teal }]}>
             <Text style={[detailStyles.commentAuthor, c.isAdminReply && { color: C.teal }]}>
-              {c.author?.name || useLanguage().t("issues_unknown_user","User")}{c.isAdminReply ? useLanguage().t("issues_admin_reply"," · Admin") : ""} · {timeAgo(c.createdAt)}
+              {c.author?.name || t("issues_unknown_user","User")}{c.isAdminReply ? t("issues_admin_reply"," · Admin") : ""} · {timeAgo(c.createdAt)}
             </Text>
             <Text style={detailStyles.commentBody}>{c.body || c.text}</Text>
           </View>
@@ -417,46 +418,46 @@ const IssueDetailModal = ({ issue, visible, onClose, isAdmin, onUpdated }) => {
 
       {/* Comment input */}
       <View style={detailStyles.commentInput}>
-          <TextInput
+        <TextInput
           value={commentBody}
           onChangeText={setCommentBody}
-          placeholder={useLanguage().t("issues_add_comment_ph","Add a comment…")}
+          placeholder={t("issues_add_comment_ph","Add a comment…")}
           placeholderTextColor={C.gray300}
           style={detailStyles.textInput}
           onSubmitEditing={handleAddComment}
           returnKeyType="send"
         />
-        <Btn onPress={handleAddComment} loading={commentLoading} small>{useLanguage().t("issues_send_btn","Send")}</Btn>
+        <Btn onPress={handleAddComment} loading={commentLoading} small>{t("issues_send_btn","Send")}</Btn>
       </View>
 
       {/* Assign Vendor Modal (admin only) */}
       <Modal
         open={showVendor}
         onClose={() => { setShowVendor(false); setVendorForm(EMPTY_VENDOR); }}
-        title={useLanguage().t("issues_assign_vendor_title","Assign to Vendor")}
+        title={t("issues_assign_vendor_title","Assign to Vendor")}
       >
         <Input
-          label={useLanguage().t("issues_label_vendor_name","Vendor Name *")}
+          label={t("issues_label_vendor_name","Vendor Name *")}
           value={vendorForm.name}
           onChangeText={(v) => setVendorForm((p) => ({ ...p, name: v }))}
-          placeholder={useLanguage().t("issues_ph_vendor_name","e.g. SpeedLift Services")}
+          placeholder={t("issues_ph_vendor_name","e.g. SpeedLift Services")}
         />
         <Input
-          label={useLanguage().t("issues_label_vendor_phone","Vendor Phone *")}
+          label={t("issues_label_vendor_phone","Vendor Phone *")}
           value={vendorForm.phone}
           onChangeText={(v) => setVendorForm((p) => ({ ...p, phone: v }))}
-          placeholder={useLanguage().t("issues_ph_vendor_phone","+91 99887 76655")}
+          placeholder={t("issues_ph_vendor_phone","+91 99887 76655")}
           keyboardType="phone-pad"
         />
         <Input
-          label={useLanguage().t("issues_label_vendor_note","Note (optional)")}
+          label={t("issues_label_vendor_note","Note (optional)")}
           value={vendorForm.note}
           onChangeText={(v) => setVendorForm((p) => ({ ...p, note: v }))}
-          placeholder={useLanguage().t("issues_ph_vendor_note","Visit scheduled for Friday 10 AM")}
+          placeholder={t("issues_ph_vendor_note","Visit scheduled for Friday 10 AM")}
           multiline
         />
         <Btn onPress={handleAssignVendor} loading={vendorLoading} style={{ width: "100%" }}>
-          {useLanguage().t("issues_assign_vendor_btn","Assign Vendor")}
+          {t("issues_assign_vendor_btn","Assign Vendor")}
         </Btn>
       </Modal>
     </Modal>
