@@ -42,7 +42,8 @@ const EMPTY_FORM = {
 };
 
 // ─── Chip selector (category / priority) ─────────────────────────────────────
-const ChipSelector = ({ label, options, value, onChange }) => {
+// labelKeyPrefix: if provided, translates each opt as t(`${labelKeyPrefix}${opt}`, opt)
+const ChipSelector = ({ label, options, value, onChange, labelKeyPrefix }) => {
   const { t } = useLanguage();
   return (
   <View style={{ marginBottom: 14 }}>
@@ -56,7 +57,7 @@ const ChipSelector = ({ label, options, value, onChange }) => {
             style={[chipStyles.chip, value === opt && chipStyles.chipActive]}
           >
             <Text style={[chipStyles.chipText, value === opt && chipStyles.chipTextActive]}>
-              {opt}
+              {labelKeyPrefix ? t(`${labelKeyPrefix}${opt}`, opt) : opt}
             </Text>
           </TouchableOpacity>
         ))}
@@ -352,6 +353,7 @@ const IssueDetailModal = ({ issue, visible, onClose, isAdmin, onUpdated }) => {
             {["Open", "In Progress", "Resolved"].map((s) => {
               const ssc = STATUS_COLOR[s] || {};
               const isActive = localIssue.status === s;
+              const statusKey = `issue_status_${s.toLowerCase().replace(" ", "_")}`;
               return (
                 <TouchableOpacity
                   key={s}
@@ -363,7 +365,7 @@ const IssueDetailModal = ({ issue, visible, onClose, isAdmin, onUpdated }) => {
                 >
                   {statusLoading && isActive
                     ? <Spinner size={12} color={ssc.text} />
-                    : <Text style={{ fontSize: 11, fontWeight: "700", color: isActive ? ssc.text : C.gray500 }}>{s}</Text>
+                    : <Text style={{ fontSize: 11, fontWeight: "700", color: isActive ? ssc.text : C.gray500 }}>{t(statusKey, s)}</Text>
                   }
                 </TouchableOpacity>
               );
@@ -375,7 +377,7 @@ const IssueDetailModal = ({ issue, visible, onClose, isAdmin, onUpdated }) => {
       {/* Assigned vendor info */}
       {localIssue.assignedVendor?.name && (
         <View style={detailStyles.vendorBox}>
-          <Text style={detailStyles.vendorLabel}>🔧 Assigned Vendor</Text>
+          <Text style={detailStyles.vendorLabel}>🔧 {t("issues_vendor_box_label","Assigned Vendor")}</Text>
           <Text style={detailStyles.vendorName}>{localIssue.assignedVendor.name}</Text>
           <Text style={detailStyles.vendorSub}>
             {localIssue.assignedVendor.phone}
@@ -641,12 +643,14 @@ export const IssuesScreen = () => {
           options={ISSUE_CATEGORIES}
           value={form.category}
           onChange={setF("category")}
+          labelKeyPrefix="issue_cat_"
         />
         <ChipSelector
           label={t("issues_label_priority","Priority")}
           options={PRIORITIES}
           value={form.priority}
           onChange={setF("priority")}
+          labelKeyPrefix="issue_priority_"
         />
         <ToggleRow
           label={useLanguage().t("issues_label_report_anonymous","Report Anonymously")}

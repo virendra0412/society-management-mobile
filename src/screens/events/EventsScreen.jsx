@@ -27,10 +27,34 @@ import {
 import {
   C,
   EVENT_CATEGORIES, EVENT_CATEGORY_ICON, EVENT_CATEGORY_COLOR,
-  RSVP_STATUS_COLOR, RSVP_LABEL,
+  RSVP_STATUS_COLOR,
 } from "../../constants/theme";
 import { timeAgo } from "../../utils/timeago";
 import { AttendeeList } from "./AttendeeList";
+
+// ─── Category translation map ──────────────────────────────────────────────────
+const EVENT_CATEGORY_KEYS = {
+  Festival:    "Events.Category.Festival",
+  Meeting:     "Events.Category.Meeting",
+  Sports:      "Events.Category.Sports",
+  Cultural:    "Events.Category.Cultural",
+  Maintenance: "Events.Category.Maintenance",
+  Emergency:   "Events.Category.Emergency",
+  Other:       "Events.Category.Other",
+};
+const catLabel = (t, cat) => t(EVENT_CATEGORY_KEYS[cat] || cat, cat);
+
+// ─── RSVP status → translated label (reuses existing Events.* keys) ───────────
+const rsvpLabel = (t, status) => {
+  const map = {
+    going:     ["Events.Going", "🎉 Going"],
+    maybe:     ["Events.Maybe", "🤔 Maybe"],
+    not_going: ["Events.NotGoing", "😕 Not Going"],
+  };
+  const [key, fallback] = map[status] || [null, status];
+  const icon = (fallback || "").split(" ")[0];
+  return key ? `${icon} ${t(key, fallback.replace(/^\S+\s/, ""))}` : status;
+};
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const fmtDate = (iso) =>
@@ -99,7 +123,7 @@ const CategoryFilter = ({ selected, onChange }) => {
                   { color: active ? "#fff" : color },
                 ]}
               >
-                {cat === "All" ? t("All", "All") : cat}
+                {cat === "All" ? t("Events.FilterAll", "All") : catLabel(t, cat)}
               </Text>
             </View>
           </TouchableOpacity>
@@ -208,7 +232,7 @@ const RsvpButtons = ({ event, onRsvp, onRemove, loading }) => {
             }}
           >
             <Text style={{ fontSize: 13, fontWeight: "700", color: sc.text }}>
-              {RSVP_LABEL[current]}
+              {rsvpLabel(t, current)}
               {current === "going" && event.myRsvp?.guestCount > 1 ? ` · ${event.myRsvp.guestCount} ${t("Events.Guests", "guests")}` : ""}
             </Text>
             <TouchableOpacity onPress={() => !loading && onRemove()} disabled={loading}>
@@ -352,7 +376,7 @@ const EventCard = ({ event, onClick }) => {
                   <Badge label={t("Events.Draft", "Draft")} bg={C.amber + "20"} text={C.amber} />
                 )}
                 {sc && (
-                  <Badge label={RSVP_LABEL[event.myRsvp.status]} bg={sc.bg} text={sc.text} />
+                  <Badge label={rsvpLabel(t, event.myRsvp.status)} bg={sc.bg} text={sc.text} />
                 )}
               </View>
             </View>
@@ -517,7 +541,7 @@ const EventDetailView = ({ eventId, onBack, isAdmin }) => {
           <Text style={{ fontSize: 44, marginBottom: 12 }}>{catIcon}</Text>
 
           <View style={{ flexDirection: "row", gap: 6, marginBottom: 8 }}>
-            <Badge label={event.category} bg="rgba(255,255,255,0.2)" text="#fff" />
+            <Badge label={catLabel(t, event.category)} bg="rgba(255,255,255,0.2)" text="#fff" />
             {event.isCancelled && (
               <Badge label={t("Events.Cancelled", "Cancelled")} bg={C.red + "80"} text="#fff" />
             )}
@@ -963,7 +987,7 @@ const EventFormModal = ({ open, editing, onClose, onSaved }) => {
                 }}
               >
                 <Text style={{ fontSize: 12, fontWeight: "700", color: form.category === cat ? "#fff" : C.gray600 }}>
-                  {cat}
+                  {catLabel(t, cat)}
                 </Text>
               </TouchableOpacity>
             ))}

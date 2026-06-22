@@ -40,6 +40,24 @@ const STATUS_LABELS = {
 };
 
 const TRUSTED_CATEGORIES = ["Maid","Cook","Driver","Security","Vendor","Delivery","Service","Other"];
+const VISIT_PURPOSE_LABEL_MAP = {
+  Guest:    "visitor_purpose_guest",
+  Delivery: "visitor_purpose_delivery",
+  Cab:      "visitor_purpose_cab",
+  Service:  "visitor_purpose_service",
+  Other:    "visitor_purpose_other",
+};
+const TRUSTED_CATEGORY_LABEL_MAP = {
+  Maid:     "visitor_trusted_maid",
+  Cook:     "visitor_trusted_cook",
+  Driver:   "visitor_trusted_driver",
+  Security: "visitor_trusted_security",
+  Vendor:   "visitor_trusted_vendor",
+  Delivery: "visitor_trusted_delivery",
+  Service:  "visitor_trusted_service",
+  Other:    "visitor_trusted_other",
+};
+const DAYS_LABEL_MAP = ["visitor_day_sun","visitor_day_mon","visitor_day_tue","visitor_day_wed","visitor_day_thu","visitor_day_fri","visitor_day_sat"];
 const PASS_TYPES         = ["daily","monthly","permanent"];
 const PASS_TYPE_LABELS   = {
   daily:     "visitor_pass_today_only",
@@ -78,7 +96,7 @@ const otpExpiryLabel = (expiresAt, t) => {
 
 const formatSchedule = (s, t) => {
   if (!s) return t("visitor_any_time", "Any time");
-  const days = (s.days ?? ALL_DAYS).map((d) => DAYS_SHORT[d]).join(", ");
+  const days = (s.days ?? ALL_DAYS).map((d) => t(DAYS_LABEL_MAP[d], DAYS_SHORT[d])).join(", ");
   const time = (s.fromTime === "00:00" && s.toTime === "23:59")
     ? t("visitor_any_time", "Any time")
     : `${s.fromTime}–${s.toTime}`;
@@ -139,6 +157,7 @@ const ps = StyleSheet.create({
 // ─── DayPicker ────────────────────────────────────────────────────────────────
 const DayPicker = ({ value = ALL_DAYS, onChange }) => {
   const { t } = useLanguage();
+  const { t } = useLanguage();
   return (
     <View style={{ marginBottom: 14 }}>
       <Text style={ps.label}>{t("visitor_form_allowed_days_label", "Allowed Days")}</Text>
@@ -154,7 +173,7 @@ const DayPicker = ({ value = ALL_DAYS, onChange }) => {
               }}
               style={[ps.pill, active && ps.pillActive, { paddingHorizontal: 10 }]}
             >
-              <Text style={[ps.pillText, active && ps.pillTextActive]}>{DAYS_SHORT[d]}</Text>
+              <Text style={[ps.pillText, active && ps.pillTextActive]}>{t(DAYS_LABEL_MAP[d], DAYS_SHORT[d])}</Text>
             </TouchableOpacity>
           );
         })}
@@ -458,6 +477,7 @@ const CreateInviteModal = ({ open, onClose, onCreated }) => {
       <PillSelect
         label={t("visitor_form_purpose_label", "Purpose")}
         value={form.purpose} options={VISIT_PURPOSES} onSelect={set("purpose")}
+        labelMap={VISIT_PURPOSE_LABEL_MAP}
       />
       <Input
         label={t("visitor_form_vehicle_label", "Vehicle No. (optional)")}
@@ -663,6 +683,7 @@ const RegisterTrustedModal = ({ open, onClose, onRegistered }) => {
       <PillSelect
         label={t("visitor_form_category_label", "Category *")}
         value={form.category} options={TRUSTED_CATEGORIES} onSelect={set("category")}
+        labelMap={TRUSTED_CATEGORY_LABEL_MAP}
       />
       <PillSelect
         label={t("visitor_form_pass_validity_label", "Pass Validity")}

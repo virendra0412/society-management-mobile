@@ -26,28 +26,39 @@ import {
 import { C, CONTACT_GROUPS } from "../../constants/theme";
 
 const GROUP_COLORS = { Emergency: C.red, Committee: C.navy, Vendor: C.amber, Other: C.teal };
+const GROUP_LABEL_KEYS = {
+  Emergency: "contacts_group_emergency",
+  Committee: "contacts_group_committee",
+  Vendor:    "contacts_group_vendor",
+  Other:     "contacts_group_other",
+};
 
 // ─── PillSelect ───────────────────────────────────────────────────────────────
-const PillSelect = ({ label, value, options, onSelect }) => (
-  <View style={{ marginBottom: 14 }}>
-    {label && <Text style={{ fontSize: 12, fontWeight: "600", color: C.gray700, marginBottom: 6 }}>{label}</Text>}
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexDirection: "row", gap: 8 }}>
-      {options.map((opt) => (
-        <TouchableOpacity
-          key={opt}
-          onPress={() => onSelect(opt)}
-          style={{
-            paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, borderWidth: 1.5,
-            borderColor: value === opt ? C.teal : C.gray100,
-            backgroundColor: value === opt ? C.teal : "transparent",
-          }}
-        >
-          <Text style={{ fontSize: 13, fontWeight: "600", color: value === opt ? "#fff" : C.gray700 }}>{opt}</Text>
-        </TouchableOpacity>
-      ))}
-    </ScrollView>
-  </View>
-);
+const PillSelect = ({ label, value, options, onSelect, labelMap }) => {
+  const { t } = useLanguage();
+  return (
+    <View style={{ marginBottom: 14 }}>
+      {label && <Text style={{ fontSize: 12, fontWeight: "600", color: C.gray700, marginBottom: 6 }}>{label}</Text>}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexDirection: "row", gap: 8 }}>
+        {options.map((opt) => (
+          <TouchableOpacity
+            key={opt}
+            onPress={() => onSelect(opt)}
+            style={{
+              paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, borderWidth: 1.5,
+              borderColor: value === opt ? C.teal : C.gray100,
+              backgroundColor: value === opt ? C.teal : "transparent",
+            }}
+          >
+            <Text style={{ fontSize: 13, fontWeight: "600", color: value === opt ? "#fff" : C.gray700 }}>
+              {labelMap ? t(labelMap[opt] || opt, opt) : opt}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+    </View>
+  );
+};
 
 // ─── Contact Card ─────────────────────────────────────────────────────────────
 const ContactCard = ({ contact, isAdmin, onEdit, onDelete, delBusy }) => {
@@ -238,7 +249,7 @@ export const ContactsScreen = ({ navigation }) => {
             <View style={{ marginBottom: 20 }}>
               <Text style={{ fontSize: 11, fontWeight: "700", color: C.gray500,
                 textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 8 }}>
-                {group}
+                {t(GROUP_LABEL_KEYS[group] || group, group)}
               </Text>
               {items.map((c) => (
                 <ContactCard
@@ -293,6 +304,7 @@ export const ContactsScreen = ({ navigation }) => {
           value={form.group}
           options={CONTACT_GROUPS}
           onSelect={set("group")}
+          labelMap={GROUP_LABEL_KEYS}
         />
         <Btn onPress={handleSave} loading={submitting} style={{ width: "100%" }}>
           {editTarget
