@@ -493,7 +493,7 @@ const s = StyleSheet.create({
   list:        { paddingHorizontal: 16, paddingBottom: 24 },
   center:      { flex: 1, alignItems: "center", justifyContent: "center" },
   chipLabel:   { fontSize: 12, fontWeight: "600", color: C.gray700, marginBottom: 8 },
-  chip:        { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20, borderWidth: 1.5, borderColor: C.gray100, marginRight: 8, backgroundColor: "#fff" },
+  chip:        { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20, borderWidth: 1.5, borderColor: C.gray100, marginRight: 8, backgroundColor: "#fff", width:'auto', minWidth:80 },
   chipActive:  { backgroundColor: C.teal, borderColor: C.teal },
   chipText:    { fontSize: 12, fontWeight: "600", color: C.gray700 },
   chipTextActive:{ color: "#fff" },

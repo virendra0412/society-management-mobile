@@ -386,7 +386,7 @@ export const FilterPill = ({ label, active, onPress }) => (
     activeOpacity={0.75}
     style={[styles.pill, active && styles.pillActive]}
   >
-    <Text style={[styles.pillText, active && styles.pillTextActive]}>
+    <Text style={[styles.pillText, active && styles.pillTextActive]} numberOfLines={1}>
       {label}
     </Text>
   </TouchableOpacity>
