@@ -7,21 +7,39 @@
     "icon": "./assets/icon.png",
     "scheme": "societyapp",
     "userInterfaceStyle": "light",
+
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+
+    "updates": {
+      "enabled": true,
+      "url": "https://u.expo.dev/0e3f0d4f-6411-4be3-b5f1-c209904d1ed4",
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0
+    },
+
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
       "backgroundColor": "#0F2040"
     },
+
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.societymanagementcompany.societyapp",
       "infoPlist": {
-        "UIBackgroundModes": [
-          "fetch",
-          "remote-notification"
-        ]
+        "UIBackgroundModes": ["fetch", "remote-notification"],
+        "NSCameraUsageDescription": "Used to scan visitor QR codes at the gate and capture photos for issue reports.",
+        "NSMicrophoneUsageDescription": "Required by the camera component.",
+        "NSPhotoLibraryUsageDescription": "Used to attach photos to issue reports and update your profile picture.",
+        "NSPhotoLibraryAddUsageDescription": "Used to save receipt images.",
+        "NSContactsUsageDescription": "Used to import emergency contacts into the society directory.",
+        "NSFaceIDUsageDescription": "Used for biometric login.",
+        "NSDocumentPickerUsageDescription": "Used to attach documents to help requests."
       }
     },
+
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
@@ -33,13 +51,24 @@
         "RECEIVE_BOOT_COMPLETED",
         "VIBRATE",
         "WAKE_LOCK",
-        "POST_NOTIFICATIONS"
+        "POST_NOTIFICATIONS",
+        "CAMERA",
+        "READ_CONTACTS",
+        "READ_MEDIA_IMAGES",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "USE_BIOMETRIC",
+        "USE_FINGERPRINT",
+        "INTERNET",
+        "ACCESS_NETWORK_STATE"
       ]
     },
+
     "web": {
       "favicon": "./assets/favicon.png",
       "bundler": "metro"
     },
+
     "plugins": [
       [
         "expo-notifications",
@@ -50,8 +79,41 @@
       ],
       "expo-secure-store",
       "expo-font",
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      "expo-updates",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Used to scan visitor QR codes at the gate and capture photos for issue reports."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Used to attach photos to issue reports and update your profile picture.",
+          "cameraPermission": "Used to take photos for issue reports."
+        }
+      ],
+      [
+        "expo-document-picker",
+        {
+          "iCloudContainerEnvironment": "Production"
+        }
+      ],
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Used for biometric login."
+        }
+      ],
+      [
+        "expo-contacts",
+        {
+          "contactsPermission": "Used to import emergency contacts into the society directory."
+        }
+      ]
     ],
+
     "extra": {
       "eas": {
         "projectId": "0e3f0d4f-6411-4be3-b5f1-c209904d1ed4"
