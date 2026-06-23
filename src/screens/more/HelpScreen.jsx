@@ -355,7 +355,7 @@ export const HelpScreen = ({ navigation }) => {
             {/* Close button — author or admin */}
             {!detailPost.isClosed && (detailPost.author?._id === user?._id || isAdmin) && (
               <Btn variant="ghost" loading={closing} onPress={handleClose} style={d.closeBtn}>
-                ✓ Mark as Resolved / Close Post
+                ✓ {t("help_close_btn", "Mark as Resolved")}
               </Btn>
             )}
 

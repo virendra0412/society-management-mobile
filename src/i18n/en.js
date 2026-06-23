@@ -1313,6 +1313,78 @@ const en = {
   upgrade_section_free: "Always Free",
   upgrade_badge_free: "FREE",
 
+
+  // ── Pill/filter translations added for all 6 screens ──
+  // Issues — category pills
+  issue_cat_Water: "Water",
+  issue_cat_Lift: "Lift",
+  issue_cat_Security: "Security",
+  issue_cat_Garbage: "Garbage",
+  issue_cat_Electricity: "Electricity",
+  issue_cat_Noise: "Noise",
+  issue_cat_Parking: "Parking",
+  issue_cat_Other: "Other",
+  // Issues — priority pills
+  issue_priority_Low: "Low",
+  issue_priority_Medium: "Medium",
+  issue_priority_High: "High",
+  // Notices — tag pills
+  notice_tag_Urgent: "Urgent",
+  notice_tag_Finance: "Finance",
+  notice_tag_Event: "Event",
+  notice_tag_Notice: "Notice",
+  notice_tag_Reminder: "Reminder",
+  // Visitors — purpose pills
+  visitor_purpose_guest: "Guest",
+  visitor_purpose_delivery: "Delivery",
+  visitor_purpose_cab: "Cab / Taxi",
+  visitor_purpose_service: "Service",
+  visitor_purpose_other: "Other",
+  // Visitors — trusted category pills
+  visitor_trusted_maid: "Maid",
+  visitor_trusted_cook: "Cook",
+  visitor_trusted_driver: "Driver",
+  visitor_trusted_security: "Security",
+  visitor_trusted_vendor: "Vendor",
+  visitor_trusted_delivery: "Delivery",
+  visitor_trusted_service: "Service",
+  visitor_trusted_other: "Other",
+  // Visitors — day pills
+  visitor_day_sun: "Sun",
+  visitor_day_mon: "Mon",
+  visitor_day_tue: "Tue",
+  visitor_day_wed: "Wed",
+  visitor_day_thu: "Thu",
+  visitor_day_fri: "Fri",
+  visitor_day_sat: "Sat",
+  // Maintenance — payment method pills
+  maint_method_cash: "Cash",
+  maint_method_upi: "UPI",
+  maint_method_neft: "NEFT / Bank Transfer",
+  maint_method_cheque: "Cheque",
+  maint_method_other: "Other",
+  // Help — category strips + resolve button
+  help_cat_Plumber: "Plumber",
+  help_cat_Electrician: "Electrician",
+  help_cat_Maid: "Maid",
+  help_cat_Carpenter: "Carpenter",
+  help_cat_Food: "Food",
+  help_cat_Transport: "Transport",
+  help_cat_Tutor: "Tutor",
+  help_cat_Other: "Other",
+  help_filter_all: "All",
+  help_close_btn: "Mark as Resolved",
+  // Amenity — category pills
+  amenity_cat_Clubhouse: "Clubhouse",
+  amenity_cat_Swimming_Pool: "Swimming Pool",
+  amenity_cat_Gym: "Gym",
+  amenity_cat_Tennis_Court: "Tennis Court",
+  amenity_cat_Badminton_Court: "Badminton Court",
+  amenity_cat_Party_Hall: "Party Hall",
+  amenity_cat_Terrace: "Terrace",
+  amenity_cat_Kids_Play_Area: "Kids Play Area",
+  amenity_cat_Other: "Other",
+
 };
 
 export default en;

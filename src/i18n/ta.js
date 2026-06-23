@@ -1216,8 +1216,80 @@ const ta = {
   upgrade_badge_pending: "நிலுவையில்",
   upgrade_btn_request: "கோரிக்கை வையுங்கள்",
   upgrade_section_free: "எப்போதும் இலவசம்",
-  upgrade_badge_free: "இலவசம்"
+  upgrade_badge_free: "இலவசம்",
 
+
+
+  // ── Pill/filter translations added for all 6 screens ──
+  // Issues — category pills
+  issue_cat_Water: "தண்ணீர்",
+  issue_cat_Lift: "லிஃப்ட்",
+  issue_cat_Security: "பாதுகாப்பு",
+  issue_cat_Garbage: "குப்பை",
+  issue_cat_Electricity: "மின்சாரம்",
+  issue_cat_Noise: "சத்தம்",
+  issue_cat_Parking: "வாகன நிறுத்தம்",
+  issue_cat_Other: "மற்றவை",
+  // Issues — priority pills
+  issue_priority_Low: "குறைந்த",
+  issue_priority_Medium: "நடுத்தரம்",
+  issue_priority_High: "அதிக",
+  // Notices — tag pills
+  notice_tag_Urgent: "அவசரம்",
+  notice_tag_Finance: "நிதி",
+  notice_tag_Event: "நிகழ்வு",
+  notice_tag_Notice: "அறிவிப்பு",
+  notice_tag_Reminder: "நினைவூட்டல்",
+  // Visitors — purpose pills
+  visitor_purpose_guest: "விருந்தினர்",
+  visitor_purpose_delivery: "டெலிவரி",
+  visitor_purpose_cab: "கேப் / டாக்சி",
+  visitor_purpose_service: "சேவை",
+  visitor_purpose_other: "மற்றவை",
+  // Visitors — trusted category pills
+  visitor_trusted_maid: "வீட்டு வேலையாள்",
+  visitor_trusted_cook: "சமையல்காரர்",
+  visitor_trusted_driver: "ஓட்டுநர்",
+  visitor_trusted_security: "பாதுகாவலர்",
+  visitor_trusted_vendor: "விற்பனையாளர்",
+  visitor_trusted_delivery: "டெலிவரி",
+  visitor_trusted_service: "சேவை",
+  visitor_trusted_other: "மற்றவை",
+  // Visitors — day pills
+  visitor_day_sun: "ஞா",
+  visitor_day_mon: "திங்",
+  visitor_day_tue: "செவ்",
+  visitor_day_wed: "புத",
+  visitor_day_thu: "வியா",
+  visitor_day_fri: "வெள்",
+  visitor_day_sat: "சனி",
+  // Maintenance — payment method pills
+  maint_method_cash: "பணம்",
+  maint_method_upi: "UPI",
+  maint_method_neft: "NEFT / வங்கி பரிமாற்றம்",
+  maint_method_cheque: "காசோலை",
+  maint_method_other: "மற்றவை",
+  // Help — category strips + resolve button
+  help_cat_Plumber: "பம்பர்",
+  help_cat_Electrician: "மின்சாரதாரர்",
+  help_cat_Maid: "வீட்டு வேலையாள்",
+  help_cat_Carpenter: "தச்சர்",
+  help_cat_Food: "உணவு",
+  help_cat_Transport: "போக்குவரத்து",
+  help_cat_Tutor: "ஆசிரியர்",
+  help_cat_Other: "மற்றவை",
+  help_filter_all: "அனைத்தும்",
+  help_close_btn: "தீர்க்கப்பட்டதாக குறிக்கவும்",
+  // Amenity — category pills
+  amenity_cat_Clubhouse: "கிளப்ஹவுஸ்",
+  amenity_cat_Swimming_Pool: "நீச்சல் குளம்",
+  amenity_cat_Gym: "ஜிம்",
+  amenity_cat_Tennis_Court: "டென்னிஸ் மைதானம்",
+  amenity_cat_Badminton_Court: "பேட்மிண்டன் மைதானம்",
+  amenity_cat_Party_Hall: "விருந்து மண்டபம்",
+  amenity_cat_Terrace: "மொட்டை மாடி",
+  amenity_cat_Kids_Play_Area: "குழந்தைகள் விளையாட்டு பகுதி",
+  amenity_cat_Other: "மற்றவை",
 
 };
 

@@ -1220,6 +1220,78 @@ const gu = {
   upgrade_section_free: "હંમેશા મુક્ત",
   upgrade_badge_free: "મુક્ત",
 
+
+  // ── Pill/filter translations added for all 6 screens ──
+  // Issues — category pills
+  issue_cat_Water: "પાણી",
+  issue_cat_Lift: "લિફ્ટ",
+  issue_cat_Security: "સુરક્ષા",
+  issue_cat_Garbage: "કચરો",
+  issue_cat_Electricity: "વીજળી",
+  issue_cat_Noise: "અવાજ",
+  issue_cat_Parking: "પાર્કિંગ",
+  issue_cat_Other: "અન્ય",
+  // Issues — priority pills
+  issue_priority_Low: "ઓછી",
+  issue_priority_Medium: "મધ્યમ",
+  issue_priority_High: "ઊંચી",
+  // Notices — tag pills
+  notice_tag_Urgent: "તાત્કાલિક",
+  notice_tag_Finance: "નાણાં",
+  notice_tag_Event: "ઇવેન્ટ",
+  notice_tag_Notice: "સૂચના",
+  notice_tag_Reminder: "રિમાઇન્ડર",
+  // Visitors — purpose pills
+  visitor_purpose_guest: "મહેમાન",
+  visitor_purpose_delivery: "ડિલીવરી",
+  visitor_purpose_cab: "કૅબ / ટૅક્સી",
+  visitor_purpose_service: "સેવા",
+  visitor_purpose_other: "અન્ય",
+  // Visitors — trusted category pills
+  visitor_trusted_maid: "ઘરની કામ વાળી",
+  visitor_trusted_cook: "રસોઇયો",
+  visitor_trusted_driver: "ડ્રાઇવર",
+  visitor_trusted_security: "સિક્યુરિટી ગાર્ડ",
+  visitor_trusted_vendor: "વિક્રેતા",
+  visitor_trusted_delivery: "ડિલીવરી",
+  visitor_trusted_service: "સેવા",
+  visitor_trusted_other: "અન્ય",
+  // Visitors — day pills
+  visitor_day_sun: "રવિ",
+  visitor_day_mon: "સોમ",
+  visitor_day_tue: "મંગળ",
+  visitor_day_wed: "બુધ",
+  visitor_day_thu: "ગુરુ",
+  visitor_day_fri: "શુક્ર",
+  visitor_day_sat: "શનિ",
+  // Maintenance — payment method pills
+  maint_method_cash: "રોકડ",
+  maint_method_upi: "UPI",
+  maint_method_neft: "NEFT / બૅન્ક ટ્રાન્સફર",
+  maint_method_cheque: "ચેક",
+  maint_method_other: "અન્ય",
+  // Help — category strips + resolve button
+  help_cat_Plumber: "પ્લમ્બર",
+  help_cat_Electrician: "ઇલેક્ટ્રિશિયન",
+  help_cat_Maid: "ઘરની કામ વાળી",
+  help_cat_Carpenter: "સુથાર",
+  help_cat_Food: "ખોરાક",
+  help_cat_Transport: "પરિવહન",
+  help_cat_Tutor: "ટ્યુટર",
+  help_cat_Other: "અન્ય",
+  help_filter_all: "બધા",
+  help_close_btn: "ઉકેલ તરીકે ચિહ્નિત કરો",
+  // Amenity — category pills
+  amenity_cat_Clubhouse: "ક્લબહાઉસ",
+  amenity_cat_Swimming_Pool: "સ્વિમિંગ પૂલ",
+  amenity_cat_Gym: "જિમ",
+  amenity_cat_Tennis_Court: "ટેનિસ કોર્ટ",
+  amenity_cat_Badminton_Court: "બૅડ્મિન્ટન કોર્ટ",
+  amenity_cat_Party_Hall: "પાર્ટી હૉલ",
+  amenity_cat_Terrace: "ધાબો",
+  amenity_cat_Kids_Play_Area: "બાળ રમત ક્ષેત્ર",
+  amenity_cat_Other: "અન્ય",
+
 };
 
 export default gu;

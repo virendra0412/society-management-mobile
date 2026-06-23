@@ -389,6 +389,7 @@ const AmenityFormModal = ({ open, editing, onClose, onSaved }) => {
         value={form.category}
         options={AMENITY_CATEGORIES}
         onChange={f("category")}
+        labelKeyPrefix="amenity_cat_"
       />
 
       <Input

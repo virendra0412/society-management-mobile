@@ -157,7 +157,6 @@ const ps = StyleSheet.create({
 // ─── DayPicker ────────────────────────────────────────────────────────────────
 const DayPicker = ({ value = ALL_DAYS, onChange }) => {
   const { t } = useLanguage();
-  const { t } = useLanguage();
   return (
     <View style={{ marginBottom: 14 }}>
       <Text style={ps.label}>{t("visitor_form_allowed_days_label", "Allowed Days")}</Text>
@@ -546,6 +545,7 @@ const LogWalkInModal = ({ open, onClose, onLogged }) => {
       <PillSelect
         label={t("visitor_form_purpose_label", "Purpose")}
         value={form.purpose} options={VISIT_PURPOSES} onSelect={set("purpose")}
+        labelMap={VISIT_PURPOSE_LABEL_MAP}
       />
       <Input
         label={t("visitor_form_vehicle_label", "Vehicle No. (optional)")}

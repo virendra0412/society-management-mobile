@@ -643,10 +643,10 @@ const BillDetailModal = ({ open, billId, onClose, isAdmin }) => {
                   {/* Status filter */}
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 8 }}>
                     {[
-                      { key: "all",     label: `All (${bill.payments?.length || 0})` },
-                      { key: "unpaid",  label: `Unpaid (${statusCounts.unpaid  || 0})` },
-                      { key: "overdue", label: `Overdue (${statusCounts.overdue || 0})` },
-                      { key: "paid",    label: `Paid (${statusCounts.paid      || 0})` },
+                      { key: "all",     label: t("maint_filter_all", "All") + ` (${bill.payments?.length || 0})` },
+                      { key: "unpaid",  label: t("maint_filter_unpaid", "Unpaid") + ` (${statusCounts.unpaid  || 0})` },
+                      { key: "overdue", label: t("maint_filter_overdue", "Overdue") + ` (${statusCounts.overdue || 0})` },
+                      { key: "paid",    label: t("maint_filter_paid", "Paid") + ` (${statusCounts.paid      || 0})` },
                     ].map(({ key, label }) => (
                       <FilterPill
                         key={key}

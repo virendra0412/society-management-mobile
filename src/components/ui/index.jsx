@@ -20,6 +20,7 @@ import {
 import { useEffect as useRNEffect, useRef, useEffect } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { C } from "../../constants/theme";
+import { useLanguage } from "../../context/LanguageContext";
 
 // ─── Badge ────────────────────────────────────────────────────────────────────
 export const Badge = ({ label, bg, text, dot }) => (
@@ -88,7 +89,8 @@ const avatarStyles = StyleSheet.create({
 });
 
 // ─── Select ───────────────────────────────────────────────────────────────────
-export const Select = ({ label, value, options = [], onChange, style }) => {
+export const Select = ({ label, value, options = [], onChange, style, labelKeyPrefix }) => {
+  const { t } = useLanguage();
   const normalised = options.map((o) =>
     typeof o === "string" ? { label: o, value: o } : o
   );
@@ -100,6 +102,11 @@ export const Select = ({ label, value, options = [], onChange, style }) => {
         <View style={selectStyles.row}>
           {normalised.map((opt) => {
             const active = value === opt.value;
+            // labelKeyPrefix: translate "Swimming Pool" as t("amenity_cat_Swimming_Pool", "Swimming Pool")
+            // spaces → underscores so keys are valid JS identifiers
+            const displayLabel = labelKeyPrefix
+              ? t(`${labelKeyPrefix}${opt.value.replace(/\s+/g, "_")}`, opt.label)
+              : opt.label;
             return (
               <TouchableOpacity
                 key={opt.value}
@@ -108,7 +115,7 @@ export const Select = ({ label, value, options = [], onChange, style }) => {
                 style={[selectStyles.pill, active && selectStyles.pillActive]}
               >
                 <Text style={[selectStyles.pillText, active && selectStyles.pillTextActive]}>
-                  {opt.label}
+                  {displayLabel}
                 </Text>
               </TouchableOpacity>
             );

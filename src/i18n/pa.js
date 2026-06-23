@@ -1210,8 +1210,80 @@ const pa = {
   upgrade_badge_pending: "ਬਾਕੀ",
   upgrade_btn_request: "ਬੇਨਤੀ ਕਰੋ",
   upgrade_section_free: "ਹਮੇਸ਼ਾ ਮੁਫ਼ਤ",
-  upgrade_badge_free: "ਮੁਫ਼ਤ"
+  upgrade_badge_free: "ਮੁਫ਼ਤ",
 
+
+
+  // ── Pill/filter translations added for all 6 screens ──
+  // Issues — category pills
+  issue_cat_Water: "ਪਾਣੀ",
+  issue_cat_Lift: "ਲਿਫਟ",
+  issue_cat_Security: "ਸੁਰੱਖਿਆ",
+  issue_cat_Garbage: "ਕੂੜਾ",
+  issue_cat_Electricity: "ਬਿਜਲੀ",
+  issue_cat_Noise: "ਰੌਲਾ",
+  issue_cat_Parking: "ਪਾਰਕਿੰਗ",
+  issue_cat_Other: "ਹੋਰ",
+  // Issues — priority pills
+  issue_priority_Low: "ਘੱਟ",
+  issue_priority_Medium: "ਦਰਮਿਆਨਾ",
+  issue_priority_High: "ਉੱਚ",
+  // Notices — tag pills
+  notice_tag_Urgent: "ਜ਼ਰੂਰੀ",
+  notice_tag_Finance: "ਵਿੱਤ",
+  notice_tag_Event: "ਸਮਾਗਮ",
+  notice_tag_Notice: "ਨੋਟਿਸ",
+  notice_tag_Reminder: "ਯਾਦ-ਦਿਲਾਸਾ",
+  // Visitors — purpose pills
+  visitor_purpose_guest: "ਮਹਿਮਾਨ",
+  visitor_purpose_delivery: "ਡਿਲੀਵਰੀ",
+  visitor_purpose_cab: "ਕੈਬ / ਟੈਕਸੀ",
+  visitor_purpose_service: "ਸੇਵਾ",
+  visitor_purpose_other: "ਹੋਰ",
+  // Visitors — trusted category pills
+  visitor_trusted_maid: "ਘਰੇਲੂ ਸਹਾਇਕ",
+  visitor_trusted_cook: "ਰਸੋਈਆ",
+  visitor_trusted_driver: "ਡਰਾਈਵਰ",
+  visitor_trusted_security: "ਸੁਰੱਖਿਆ ਗਾਰਡ",
+  visitor_trusted_vendor: "ਵਿਕਰੇਤਾ",
+  visitor_trusted_delivery: "ਡਿਲੀਵਰੀ",
+  visitor_trusted_service: "ਸੇਵਾ",
+  visitor_trusted_other: "ਹੋਰ",
+  // Visitors — day pills
+  visitor_day_sun: "ਐਤ",
+  visitor_day_mon: "ਸੋਮ",
+  visitor_day_tue: "ਮੰਗਲ",
+  visitor_day_wed: "ਬੁੱਧ",
+  visitor_day_thu: "ਵੀਰ",
+  visitor_day_fri: "ਸ਼ੁੱਕਰ",
+  visitor_day_sat: "ਸ਼ਨਿੱਚਰ",
+  // Maintenance — payment method pills
+  maint_method_cash: "ਨਕਦ",
+  maint_method_upi: "UPI",
+  maint_method_neft: "NEFT / ਬੈਂਕ ਟ੍ਰਾਂਸਫਰ",
+  maint_method_cheque: "ਚੈੱਕ",
+  maint_method_other: "ਹੋਰ",
+  // Help — category strips + resolve button
+  help_cat_Plumber: "ਪਲੰਬਰ",
+  help_cat_Electrician: "ਇਲੈਕਟ੍ਰੀਸ਼ੀਅਨ",
+  help_cat_Maid: "ਘਰੇਲੂ ਸਹਾਇਕ",
+  help_cat_Carpenter: "ਤਰਖਾਣ",
+  help_cat_Food: "ਭੋਜਨ",
+  help_cat_Transport: "ਆਵਾਜਾਈ",
+  help_cat_Tutor: "ਟਿਊਟਰ",
+  help_cat_Other: "ਹੋਰ",
+  help_filter_all: "ਸਾਰੇ",
+  help_close_btn: "ਹੱਲ ਵਜੋਂ ਚਿੰਨ੍ਹਿਤ ਕਰੋ",
+  // Amenity — category pills
+  amenity_cat_Clubhouse: "ਕਲੱਬਹਾਊਸ",
+  amenity_cat_Swimming_Pool: "ਤੈਰਾਕੀ ਪੂਲ",
+  amenity_cat_Gym: "ਜਿਮ",
+  amenity_cat_Tennis_Court: "ਟੈਨਿਸ ਕੋਰਟ",
+  amenity_cat_Badminton_Court: "ਬੈਡਮਿੰਟਨ ਕੋਰਟ",
+  amenity_cat_Party_Hall: "ਪਾਰਟੀ ਹਾਲ",
+  amenity_cat_Terrace: "ਛੱਤ",
+  amenity_cat_Kids_Play_Area: "ਬੱਚਿਆਂ ਦਾ ਖੇਡ ਖੇਤਰ",
+  amenity_cat_Other: "ਹੋਰ",
 
 };
 
