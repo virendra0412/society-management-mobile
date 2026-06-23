@@ -23,6 +23,7 @@ import { SAAuthProvider }       from "./context/SAAuthContext";
 import { ToastProvider }        from "./context/ToastContext";
 import { NotificationProvider } from "./context/NotificationContext";
 import { RootNavigator }        from "./navigation/RootNavigator";
+import { UpdateManager }        from "./components/UpdateManager";
 
 export default function App() {
   return (
@@ -35,6 +36,7 @@ export default function App() {
                 <NotificationProvider>
                   <StatusBar style="auto" />
                   <RootNavigator />
+                  <UpdateManager />
                 </NotificationProvider>
               </ToastProvider>
             </SAAuthProvider>

@@ -16,10 +16,12 @@
  */
 import { useState, useEffect } from "react";
 import { View, Text, TouchableOpacity, StyleSheet, Animated } from "react-native";
-import * as Updates from "expo-updates";
-import Constants from "expo-constants";
+import * as Updates   from "expo-updates";
+import Constants      from "expo-constants";
 
-const isExpoGo = Constants.appOwnership === "expo";
+// Constants.appOwnership is deprecated in SDK 50+.
+// ExecutionEnvironment.StoreClient = Expo Go; .Standalone = production build; .Bare = dev client.
+const isExpoGo = Constants.executionEnvironment === "storeClient";
 
 export const UpdateManager = () => {
   const [updateAvailable, setUpdateAvailable] = useState(false);
