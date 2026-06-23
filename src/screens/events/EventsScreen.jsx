@@ -202,6 +202,12 @@ const RsvpButtons = ({ event, onRsvp, onRemove, loading }) => {
   const { t } = useLanguage();
   const current = event?.myRsvp?.status || null;
   const [guestCount, setGuestCount] = useState(event?.myRsvp?.guestCount || 1);
+
+  // Keep guestCount in sync when the event prop refreshes after an RSVP update
+  useEffect(() => {
+    setGuestCount(event?.myRsvp?.guestCount || 1);
+  }, [event?.myRsvp?.guestCount]);
+
   const isFull = (event?.maxAttendees > 0) && ((event?.rsvpSummary?.going || 0) >= event.maxAttendees) && current !== "going";
 
   const options = [
@@ -325,7 +331,7 @@ const EventCard = ({ event, onClick }) => {
   const upcoming = isUpcoming(event);
   const catColor = EVENT_CATEGORY_COLOR[event.category] || C.teal;
   const catIcon = EVENT_CATEGORY_ICON[event.category] || "📅";
-  const sc = event.myRsvp ? RSVP_STATUS_COLOR[event.myRsvp.status] : null;
+  const sc = event.myRsvp ? (RSVP_STATUS_COLOR[event.myRsvp.status] || null) : null;
 
   return (
     <TouchableOpacity onPress={onClick} activeOpacity={0.7}>
@@ -659,18 +665,33 @@ const EventDetailView = ({ eventId, onBack, isAdmin }) => {
                     loading={actionBusy === "publish"}
                     style={{ flex: 1, minWidth: 100 }}
                   >
-                    📢 {t("Events.Publish", "Publish")}
+                    {"📢 " + t("Events.Publish", "Publish")}
                   </Btn>
                 )}
-                <Btn
-                  small
+                <TouchableOpacity
                   onPress={() => setShowCancelModal(true)}
-                  loading={actionBusy === "cancel"}
-                  style={{ flex: 1, minWidth: 100, backgroundColor: C.red + "20", borderWidth: 0 }}
-                  textStyle={{ color: C.red }}
+                  disabled={!!actionBusy}
+                  activeOpacity={0.75}
+                  style={{
+                    flex: 1, minWidth: 100,
+                    backgroundColor: C.red + "18",
+                    borderWidth: 1.5,
+                    borderColor: C.red + "40",
+                    borderRadius: 10,
+                    paddingVertical: 6,
+                    paddingHorizontal: 12,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    opacity: actionBusy === "cancel" ? 0.55 : 1,
+                  }}
                 >
-                  {t("Events.Cancel", "Cancel Event")}
-                </Btn>
+                  {actionBusy === "cancel"
+                    ? <ActivityIndicator size="small" color={C.red} />
+                    : <Text style={{ fontSize: 12, fontWeight: "700", color: C.red }}>
+                        {t("Events.Cancel", "Cancel Event")}
+                      </Text>
+                  }
+                </TouchableOpacity>
               </View>
             </Card>
           )}

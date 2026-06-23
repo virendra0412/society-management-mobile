@@ -718,8 +718,9 @@ const BillDetailModal = ({ open, billId, onClose, isAdmin }) => {
                 // Resident: own record only
                 <>
                   <SectionLabel title={t("maint_your_payment_label","Your Payment")} />
-                  {bill.payments?.length > 0 ? (() => {
+                  {(bill.payments?.length ?? 0) > 0 ? (() => {
                     const p  = bill.payments[0];
+                    if (!p) return <EmptyState icon="💰" message={t("maint_no_payment_record","No payment record yet. Bill may not have been published for your flat.")} />;
                     const sc = PAYMENT_STATUS_COLOR[p.status] || {};
                     const isPaid = p.status === "paid" || p.status === "waived";
                     return (

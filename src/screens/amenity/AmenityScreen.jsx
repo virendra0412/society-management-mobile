@@ -131,7 +131,7 @@ const AmenityCard = ({ amenity, onBook, onDeactivate, onEdit, isAdmin }) => {
       {/* Actions */}
       <View style={{ flexDirection: "row", gap: 8, marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: C.gray100 }}>
         <Btn small onPress={() => onBook(amenity)} style={{ flex: 1 }}>
-          📅 {t("amenity_action_book", "Book")}
+          {"📅 " + t("amenity_action_book", "Book")}
         </Btn>
 
         {/* TC-AMEN-12 — Edit button, triggers AmenityFormModal pre-filled */}
@@ -727,7 +727,11 @@ const BookSlotModal = ({ open, amenity, onClose, onBooked }) => {
     }
   };
 
-  const durationOptions = amenity?.slotDurationOptions || ["30", "60", "120"];
+  const durationOptions = amenity?.slotDurationOptions?.length
+    ? amenity.slotDurationOptions
+    : [30, 60, 120];
+
+  if (!open) return null;
 
   return (
     <Modal
@@ -935,9 +939,10 @@ const CancelModal = ({ open, booking, onClose, onCancelled }) => {
       <Btn
         onPress={submit}
         loading={busy}
-        style={{ width: "100%", backgroundColor: C.red + "20" }}
+        variant="danger"
+        style={{ width: "100%" }}
       >
-        <Text style={{ color: C.red, fontWeight: "700" }}>{t("amenity_cancel_action", "Cancel Booking")}</Text>
+        {t("amenity_cancel_action", "Cancel Booking")}
       </Btn>
     </Modal>
   );

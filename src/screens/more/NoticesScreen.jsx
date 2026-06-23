@@ -206,6 +206,15 @@ export const NoticesScreen = ({ navigation }) => {
   useLayoutEffect(() => {
     navigation.setOptions({
       title: t("nav_notices", "Notices"),
+      headerLeft: () => (
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          hitSlop={{ top: 8, bottom: 8, left: 4, right: 12 }}
+          style={{ paddingHorizontal: 4 }}
+        >
+          <Text style={{ fontSize: 22, color: C.navy, fontWeight: "300" }}>‹</Text>
+        </TouchableOpacity>
+      ),
       headerRight: canWrite
         ? () => (
             <TouchableOpacity onPress={openCreate} style={s.headerBtn}>
