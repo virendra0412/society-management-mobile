@@ -19,6 +19,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "../../context/AuthContext";
 import { useLanguage } from "../../context/LanguageContext";
 import { modulesApi } from "../../api/resources.api";
+import { subscriptionPaymentApi, paySubscription } from "../../api/subscriptionPayment.api";
+import { isEnabled } from "../../config/features";
 import { COLORS, SPACING } from "../../constants/theme";
 
 const MODULE_META = {
@@ -37,12 +39,40 @@ const MODULE_META = {
 };
 
 const UpgradeScreen = () => {
-  const { plan, trialDaysLeft } = useAuth();
+  const { plan, trialDaysLeft, user, refreshUser } = useAuth();
   const { t } = useLanguage();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [requesting, setRequesting] = useState({});
+
+  // ── Plan payment (Razorpay) state ──────────────────────────────────────────
+  const [pricing, setPricing] = useState(null);          // result of getMyPricing()
+  const [pricingLoading, setPricingLoading] = useState(true);
+  const [selectedPlan, setSelectedPlan] = useState("basic");
+  const [selectedCycle, setSelectedCycle] = useState("monthly");
+  const [paying, setPaying] = useState(false);
+
+  const fetchPricing = useCallback(async () => {
+    try {
+      const res = await subscriptionPaymentApi.getMyPricing();
+      setPricing(res.data);
+      // If this society has a custom rate locked to one plan, default the
+      // selector to that plan instead of "basic" so the price shown matches.
+      if (res.data?.isCustomPricing && res.data?.plan) {
+        setSelectedPlan(res.data.plan);
+      }
+    } catch (err) {
+      // Non-fatal — the module-status section above still works without this.
+      // Most likely cause: payments not yet configured on the backend (503).
+    } finally {
+      setPricingLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchPricing();
+  }, [fetchPricing]);
 
   const fetchStatus = useCallback(async () => {
     try {
@@ -87,7 +117,44 @@ const UpgradeScreen = () => {
     );
   };
 
-  if (loading) {
+  // Looks up the rupee amount for the currently-selected plan + billing
+  // cycle from whatever getMyPricing() returned — custom-priced societies
+  // get a table keyed only by their own plan; standard societies get the
+  // full basic/premium table. Same shape either way: pricing[plan][cycle].
+  const cyclePrice = pricing?.pricing?.[selectedPlan]?.[selectedCycle] || null;
+
+  const handlePay = async () => {
+    if (!cyclePrice) return;
+    setPaying(true);
+    try {
+      const result = await paySubscription({
+        plan: selectedPlan,
+        billingCycle: selectedCycle,
+        user: { name: user?.name, email: user?.email, phone: user?.phone },
+      });
+
+      if (result.success) {
+        Alert.alert(
+          t("upgrade_payment_success_title", "Payment successful! 🎉"),
+          t("upgrade_payment_success_body", "Your society is now on the %s plan.", { plan: selectedPlan })
+        );
+        // Refresh everything that depends on the plan: module status, the
+        // effective price (custom rate stays the same, standard rate may
+        // change for the next renewal), and the user's subscription object
+        // in AuthContext so `plan` / `trialDaysLeft` update app-wide.
+        fetchStatus();
+        fetchPricing();
+        refreshUser();
+      } else if (!result.cancelled) {
+        Alert.alert(t("error_title", "Error"), result.error || t("upgrade_payment_failed", "Payment failed. Please try again."));
+      }
+      // result.cancelled → user dismissed the sheet, no alert needed.
+    } finally {
+      setPaying(false);
+    }
+  };
+
+
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" color={COLORS.primary} />
@@ -149,6 +216,96 @@ const UpgradeScreen = () => {
             )}
           </View>
         </View>
+
+        {/* ── Pay & Upgrade Plan (Razorpay) ──────────────────────────────────
+            Separate from the per-module "Request Upgrade" flow below, which
+            is a manual sales-assisted request. This section lets the admin
+            pay for basic/premium online immediately — using this society's
+            custom negotiated rate automatically if a Super Admin has set one. */}
+        {plan !== "premium" && (
+          <View style={styles.payCard}>
+            <Text style={styles.payCardTitle}>💳 {t("upgrade_pay_title", "Upgrade Your Plan")}</Text>
+
+            {pricingLoading ? (
+              <ActivityIndicator size="small" color={COLORS.primary} style={{ marginVertical: 12 }} />
+            ) : !pricing ? (
+              <Text style={styles.payUnavailable}>
+                {t("upgrade_pay_unavailable", "Online payment isn't available right now. Contact support to upgrade your plan.")}
+              </Text>
+            ) : (
+              <>
+                {pricing.isCustomPricing && (
+                  <View style={styles.customBadge}>
+                    <Text style={styles.customBadgeText}>
+                      🎉 {t("upgrade_custom_pricing_badge", "Special pricing for your society")}
+                      {pricing.note ? ` — ${pricing.note}` : ""}
+                    </Text>
+                  </View>
+                )}
+
+                {/* Plan selector — hidden when custom pricing locks the society to one plan */}
+                {!pricing.isCustomPricing && (
+                  <View style={styles.pillRow}>
+                    {["basic", "premium"].map((p) => (
+                      <TouchableOpacity
+                        key={p}
+                        style={[styles.planPill, selectedPlan === p && styles.planPillActive]}
+                        onPress={() => setSelectedPlan(p)}
+                      >
+                        <Text style={[styles.planPillText, selectedPlan === p && styles.planPillTextActive]}>
+                          {p === "basic" ? t("upgrade_plan_basic", "Basic") : t("upgrade_plan_premium", "Premium")}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
+
+                {/* Billing cycle selector */}
+                <View style={[styles.pillRow, { marginTop: 8 }]}>
+                  {Object.keys(pricing.pricing?.[selectedPlan] || {}).map((cycleKey) => (
+                    <TouchableOpacity
+                      key={cycleKey}
+                      style={[styles.cyclePill, selectedCycle === cycleKey && styles.cyclePillActive]}
+                      onPress={() => setSelectedCycle(cycleKey)}
+                    >
+                      <Text style={[styles.cyclePillText, selectedCycle === cycleKey && styles.cyclePillTextActive]}>
+                        {t(`upgrade_cycle_${cycleKey}`, cycleKey)}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+
+                {cyclePrice && (
+                  <View style={styles.priceRow}>
+                    <Text style={styles.priceAmount}>₹{cyclePrice.amountRupees}</Text>
+                    <Text style={styles.priceSub}>
+                      {t("upgrade_price_for_months", "for %d month(s) · ₹%d/month equivalent", {
+                        months: cyclePrice.months,
+                        perMonth: cyclePrice.monthlyEquivalent,
+                      })}
+                    </Text>
+                  </View>
+                )}
+
+                <TouchableOpacity
+                  style={[styles.payBtn, (!isEnabled("PAYMENTS_ENABLED") || paying || !cyclePrice) && styles.payBtnDisabled]}
+                  onPress={handlePay}
+                  disabled={!isEnabled("PAYMENTS_ENABLED") || paying || !cyclePrice}
+                >
+                  {paying ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <Text style={styles.payBtnText}>
+                      {isEnabled("PAYMENTS_ENABLED")
+                        ? t("upgrade_pay_btn", "Pay ₹%d Now", { amount: cyclePrice?.amountRupees || 0 })
+                        : t("upgrade_pay_coming_soon", "Online Payment Coming Soon")}
+                    </Text>
+                  )}
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
+        )}
 
         {/* Active Modules */}
         {enabledPaid.length > 0 && (
@@ -246,6 +403,32 @@ const styles = StyleSheet.create({
   pageSub:      { fontSize: 14, color: "#64748B", lineHeight: 20, marginBottom: 24 },
 
   planCard:     { borderRadius: 12, borderWidth: 1.5, padding: 14, marginBottom: 20, elevation: 1, shadowColor: "#000", shadowOpacity: 0.05, shadowRadius: 4, shadowOffset: { width: 0, height: 2 } },
+
+  payCard:       { backgroundColor: "#fff", borderRadius: 12, padding: 16, marginBottom: 20, borderWidth: 1.5, borderColor: "#0D7377", elevation: 1, shadowColor: "#000", shadowOpacity: 0.05, shadowRadius: 4, shadowOffset: { width: 0, height: 2 } },
+  payCardTitle:  { fontSize: 15, fontWeight: "800", color: "#1E293B", marginBottom: 10 },
+  payUnavailable:{ fontSize: 13, color: "#94A3B8", lineHeight: 18 },
+
+  customBadge:      { backgroundColor: "#FEF3C7", borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8, marginBottom: 10 },
+  customBadgeText:  { color: "#92400E", fontSize: 12, fontWeight: "700", lineHeight: 16 },
+
+  pillRow:        { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  planPill:       { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, borderWidth: 1.5, borderColor: "#E2E8F0" },
+  planPillActive: { backgroundColor: "#0F2040", borderColor: "#0F2040" },
+  planPillText:       { fontSize: 13, fontWeight: "700", color: "#64748B" },
+  planPillTextActive: { color: "#fff" },
+
+  cyclePill:        { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, borderWidth: 1.5, borderColor: "#E2E8F0" },
+  cyclePillActive:  { backgroundColor: "#0D7377", borderColor: "#0D7377" },
+  cyclePillText:        { fontSize: 12, fontWeight: "600", color: "#64748B", textTransform: "capitalize" },
+  cyclePillTextActive:  { color: "#fff" },
+
+  priceRow:    { marginTop: 14, marginBottom: 14 },
+  priceAmount: { fontSize: 26, fontWeight: "800", color: "#0F2040" },
+  priceSub:    { fontSize: 12, color: "#64748B", marginTop: 2 },
+
+  payBtn:         { backgroundColor: "#0D7377", borderRadius: 10, paddingVertical: 13, alignItems: "center" },
+  payBtnDisabled: { backgroundColor: "#94A3B8" },
+  payBtnText:     { color: "#fff", fontSize: 14, fontWeight: "800" },
 
   sectionTitle: { fontSize: 13, fontWeight: "700", color: "#64748B", letterSpacing: 0.5, textTransform: "uppercase", marginBottom: 10, marginTop: 8 },
 
