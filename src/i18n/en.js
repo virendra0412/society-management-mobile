@@ -1385,6 +1385,19 @@ const en = {
   amenity_cat_Kids_Play_Area: "Kids Play Area",
   amenity_cat_Other: "Other",
 
+  upgrade_pay_title: "Upgrade Your Plan",
+  upgrade_pay_unavailable: "Online payment isn't available right now. Contact support to upgrade your plan.",
+  upgrade_custom_pricing_badge: "Special pricing for your society",
+  upgrade_cycle_monthly: "Monthly",
+  upgrade_cycle_quarterly: "Quarterly",
+  upgrade_cycle_halfyearly: "Half-Yearly",
+  upgrade_cycle_annual: "Annual",
+  upgrade_price_for_months: "for {months} month(s) · ₹{perMonth}/month equivalent",
+  upgrade_pay_btn: "Pay ₹{amount} Now",
+  upgrade_pay_coming_soon: "Online Payment Coming Soon",
+  upgrade_payment_success_title: "Payment successful! 🎉",
+  upgrade_payment_success_body: "Your society is now on the {plan} plan.",
+  upgrade_payment_failed: "Payment failed. Please try again.",
 };
 
 export default en;

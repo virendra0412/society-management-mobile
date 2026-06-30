@@ -1291,6 +1291,20 @@ const ta = {
   amenity_cat_Kids_Play_Area: "குழந்தைகள் விளையாட்டு பகுதி",
   amenity_cat_Other: "மற்றவை",
 
+  upgrade_pay_title: "உங்கள் திட்டத்தை மேம்படுத்தவும்",
+  upgrade_pay_unavailable: "ஆன்லைன் கட்டணம் தற்போது கிடைக்கவில்லை. உங்கள் திட்டத்தை மேம்படுத்த ஆதரவைத் தொடர்பு கொள்ளவும்.",
+  upgrade_custom_pricing_badge: "உங்கள் சங்கத்திற்கான சிறப்பு விலை",
+  upgrade_cycle_monthly: "மாதாந்திரம்",
+  upgrade_cycle_quarterly: "காலாண்டு",
+  upgrade_cycle_halfyearly: "அரையாண்டு",
+  upgrade_cycle_annual: "வருடாந்திரம்",
+  upgrade_price_for_months: "{months} மாதங்களுக்கு · ₹{perMonth}/மாதம் சமமானது",
+  upgrade_pay_btn: "இப்போது ₹{amount} செலுத்தவும்",
+  upgrade_pay_coming_soon: "ஆன்லைன் கட்டணம் விரைவில் வருகிறது",
+  upgrade_payment_success_title: "கட்டணம் வெற்றிகரமாக முடிந்தது! 🎉",
+  upgrade_payment_success_body: "உங்கள் சங்கம் இப்போது {plan} திட்டத்தில் உள்ளது.",
+  upgrade_payment_failed: "கட்டணம் தோல்வியடைந்தது. மீண்டும் முயற்சிக்கவும்.",
+ 
 };
 
 export default ta;

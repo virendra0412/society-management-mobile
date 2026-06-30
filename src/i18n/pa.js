@@ -1285,6 +1285,19 @@ const pa = {
   amenity_cat_Kids_Play_Area: "ਬੱਚਿਆਂ ਦਾ ਖੇਡ ਖੇਤਰ",
   amenity_cat_Other: "ਹੋਰ",
 
+  upgrade_pay_title: "ਆਪਣਾ ਪਲਾਨ ਅੱਪਗ੍ਰੇਡ ਕਰੋ",
+  upgrade_pay_unavailable: "ਇਸ ਵੇਲੇ ਆਨਲਾਈਨ ਭੁਗਤਾਨ ਉਪਲਬਧ ਨਹੀਂ ਹੈ। ਆਪਣਾ ਪਲਾਨ ਅੱਪਗ੍ਰੇਡ ਕਰਨ ਲਈ ਸਹਾਇਤਾ ਨਾਲ ਸੰਪਰਕ ਕਰੋ।",
+  upgrade_custom_pricing_badge: "ਤੁਹਾਡੀ ਸੋਸਾਇਟੀ ਲਈ ਖਾਸ ਕੀਮਤ",
+  upgrade_cycle_monthly: "ਮਾਸਿਕ",
+  upgrade_cycle_quarterly: "ਤਿਮਾਹੀ",
+  upgrade_cycle_halfyearly: "ਅਰਧ-ਸਾਲਾਨਾ",
+  upgrade_cycle_annual: "ਸਾਲਾਨਾ",
+  upgrade_price_for_months: "{months} ਮਹੀਨਿਆਂ ਲਈ · ₹{perMonth}/ਮਹੀਨਾ ਬਰਾਬਰ",
+  upgrade_pay_btn: "ਹੁਣੇ ₹{amount} ਭੁਗਤਾਨ ਕਰੋ",
+  upgrade_pay_coming_soon: "ਆਨਲਾਈਨ ਭੁਗਤਾਨ ਜਲਦੀ ਆ ਰਿਹਾ ਹੈ",
+  upgrade_payment_success_title: "ਭੁਗਤਾਨ ਸਫਲ! 🎉",
+  upgrade_payment_success_body: "ਤੁਹਾਡੀ ਸੋਸਾਇਟੀ ਹੁਣ {plan} ਪਲਾਨ 'ਤੇ ਹੈ।",
+  upgrade_payment_failed: "ਭੁਗਤਾਨ ਅਸਫਲ ਰਿਹਾ। ਕਿਰਪਾ ਕਰਕੇ ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ।",
 };
 
 export default pa;

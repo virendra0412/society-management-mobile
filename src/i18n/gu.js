@@ -1292,6 +1292,19 @@ const gu = {
   amenity_cat_Kids_Play_Area: "બાળ રમત ક્ષેત્ર",
   amenity_cat_Other: "અન્ય",
 
+  upgrade_pay_title: "તમારો પ્લાન અપગ્રેડ કરો",
+  upgrade_pay_unavailable: "અત્યારે ઓનલાઈન પેમેન્ટ ઉપલબ્ધ નથી. તમારો પ્લાન અપગ્રેડ કરવા સપોર્ટનો સંપર્ક કરો.",
+  upgrade_custom_pricing_badge: "તમારી સોસાયટી માટે ખાસ ભાવ",
+  upgrade_cycle_monthly: "માસિક",
+  upgrade_cycle_quarterly: "ત્રિમાસિક",
+  upgrade_cycle_halfyearly: "અર્ધ-વાર્ષિક",
+  upgrade_cycle_annual: "વાર્ષિક",
+  upgrade_price_for_months: "{months} મહિના માટે · ₹{perMonth}/મહિને બરાબર",
+  upgrade_pay_btn: "હવે ₹{amount} ચૂકવો",
+  upgrade_pay_coming_soon: "ઓનલાઈન પેમેન્ટ જલ્દી આવી રહ્યું છે",
+  upgrade_payment_success_title: "પેમેન્ટ સફળ! 🎉",
+  upgrade_payment_success_body: "તમારી સોસાયટી હવે {plan} પ્લાન પર છે.",
+  upgrade_payment_failed: "પેમેન્ટ નિષ્ફળ ગયું. કૃપા કરી ફરી પ્રયાસ કરો.",
 };
 
 export default gu;

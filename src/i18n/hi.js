@@ -1313,6 +1313,20 @@ const hi = {
   amenity_cat_Kids_Play_Area: "बच्चों का खेल क्षेत्र",
   amenity_cat_Other: "अन्य",
 
+  upgrade_pay_title: "अपना प्लान अपग्रेड करें",
+  upgrade_pay_unavailable: "अभी ऑनलाइन भुगतान उपलब्ध नहीं है। अपना प्लान अपग्रेड करने के लिए सहायता टीम से संपर्क करें।",
+  upgrade_custom_pricing_badge: "आपकी सोसायटी के लिए विशेष मूल्य",
+  upgrade_cycle_monthly: "मासिक",
+  upgrade_cycle_quarterly: "त्रैमासिक",
+  upgrade_cycle_halfyearly: "अर्ध-वार्षिक",
+  upgrade_cycle_annual: "वार्षिक",
+  upgrade_price_for_months: "{months} महीने के लिए · ₹{perMonth}/माह के बराबर",
+  upgrade_pay_btn: "अभी ₹{amount} भुगतान करें",
+  upgrade_pay_coming_soon: "ऑनलाइन भुगतान जल्द आ रहा है",
+  upgrade_payment_success_title: "भुगतान सफल! 🎉",
+  upgrade_payment_success_body: "आपकी सोसायटी अब {plan} प्लान पर है।",
+  upgrade_payment_failed: "भुगतान विफल रहा। कृपया फिर से प्रयास करें।",
+
 };
 
 export default hi;

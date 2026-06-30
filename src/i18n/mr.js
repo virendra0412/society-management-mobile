@@ -1285,6 +1285,19 @@ const mr = {
   amenity_cat_Kids_Play_Area: "मुलांचे खेळाचे क्षेत्र",
   amenity_cat_Other: "इतर",
 
+  upgrade_pay_title: "तुमची योजना अपग्रेड करा",
+  upgrade_pay_unavailable: "सध्या ऑनलाइन पेमेंट उपलब्ध नाही. तुमची योजना अपग्रेड करण्यासाठी सपोर्टशी संपर्क साधा.",
+  upgrade_custom_pricing_badge: "तुमच्या सोसायटीसाठी खास किंमत",
+  upgrade_cycle_monthly: "मासिक",
+  upgrade_cycle_quarterly: "त्रैमासिक",
+  upgrade_cycle_halfyearly: "सहामाही",
+  upgrade_cycle_annual: "वार्षिक",
+  upgrade_price_for_months: "{months} महिन्यांसाठी · ₹{perMonth}/महिना समतुल्य",
+  upgrade_pay_btn: "आता ₹{amount} भरा",
+  upgrade_pay_coming_soon: "ऑनलाइन पेमेंट लवकरच येत आहे",
+  upgrade_payment_success_title: "पेमेंट यशस्वी! 🎉",
+  upgrade_payment_success_body: "तुमची सोसायटी आता {plan} योजनेवर आहे.",
+  upgrade_payment_failed: "पेमेंट अयशस्वी झाले. कृपया पुन्हा प्रयत्न करा.",
 };
 
 export default mr;
