@@ -15,6 +15,7 @@ import SAApplications from "./SAApplications";
 import SASocieties    from "./SASocieties";
 import SAAnalytics    from "./SAAnalytics";
 import SAModules      from "./SAModules";
+import SASocietyPricing from "./SASocietyPricing";
 import SAChangePassword from "./SAChangePassword";
 import { COLORS }     from "../../constants/theme";
 
@@ -58,6 +59,11 @@ const SASuperAdminApp = () => (
       name="SAModules"
       component={SAModules}
       options={{ title: "Module Manager" }}
+    />
+    <Stack.Screen
+      name="SASocietyPricing"
+      component={SASocietyPricing}
+      options={{ title: "Pricing & Plan" }}
     />
     <Stack.Screen
       name="SAChangePassword"

@@ -311,6 +311,14 @@ const en = {
   upgrade_plan_basic: "Basic Plan",
   upgrade_plan_premium: "Premium Plan",
 
+  // ── Pick-your-own-modules checkout (replaces the old request-upgrade flow) ──
+  upgrade_modules_pick_hint: "Check any module to add it to your order — pay once for all selected modules.",
+  upgrade_modules_selected_one: "1 module selected",
+  upgrade_modules_selected_other: "{count} modules selected",
+  upgrade_modules_count: "{count} modules",
+  upgrade_modules_payment_success_body: "{label} now active for your society.",
+  upgrade_special_price: "Special",
+
   // ── Events ─────────────────────────────────────────────────────────────────
   attendees_load_failed: "Failed to load attendees.",
   attendees_empty_all: "No RSVPs yet.",

@@ -1,7 +1,9 @@
 /**
  * src/screens/more/UpgradeScreen.jsx
- * Society Admin view — shows module status (read-only) with "Request Upgrade" buttons
- * for locked modules. Mirrors what SA sees but is read-only.
+ * Society Admin view — shows module status with a "pick your own modules"
+ * checkout: check any locked module(s), see a running total, pay via
+ * Razorpay. Payment success enables the module(s) immediately — replaces
+ * the old manual "Request Upgrade → wait for SA to review" flow entirely.
  */
 
 import React, { useEffect, useState, useCallback } from "react";
@@ -19,7 +21,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "../../context/AuthContext";
 import { useLanguage } from "../../context/LanguageContext";
 import { modulesApi } from "../../api/resources.api";
-import { subscriptionPaymentApi, paySubscription } from "../../api/subscriptionPayment.api";
+import { subscriptionPaymentApi, paySubscription, payForModules } from "../../api/subscriptionPayment.api";
 import { isEnabled } from "../../config/features";
 import { COLORS, SPACING } from "../../constants/theme";
 
@@ -44,7 +46,14 @@ const UpgradeScreen = () => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [requesting, setRequesting] = useState({});
+
+  // ── "Pick your own modules" checkout state ──────────────────────────────────
+  // Replaces the old per-module "Request Upgrade → SA reviews" flow. The
+  // admin checks one or more locked modules, sees a running total computed
+  // from this society's effective per-module prices (custom rate if a Super
+  // Admin negotiated one, else the default), and pays immediately.
+  const [selectedModules, setSelectedModules] = useState({}); // { [moduleKey]: true }
+  const [payingModules, setPayingModules] = useState(false);
 
   // ── Plan payment (Razorpay) state ──────────────────────────────────────────
   const [pricing, setPricing] = useState(null);          // result of getMyPricing()
@@ -90,31 +99,56 @@ const UpgradeScreen = () => {
     fetchStatus();
   }, [fetchStatus]);
 
-  const handleRequestUpgrade = (key) => {
-    const meta = MODULE_META[key];
-    const label = t(meta.labelKey, meta.label);
-    Alert.alert(
-      t("upgrade_request_title", "Request {label}", { label }),
-      t("upgrade_request_body", "This will notify our team to enable the {label} module for your society. They will contact you to confirm pricing.", { label }),
-      [
-        { text: t("upgrade_request_cancel", "Cancel") },
-        {
-          text: t("upgrade_request_send", "Send Request"),
-          onPress: async () => {
-            setRequesting((prev) => ({ ...prev, [key]: true }));
-            try {
-              await modulesApi.requestUpgrade(key);
-              Alert.alert(t("upgrade_requested_title", "Requested!"), t("upgrade_request_success", "Your upgrade request for {label} has been submitted. We'll review it shortly.", { label }));
-              fetchStatus();
-            } catch (err) {
-              Alert.alert(t("error_title", "Error"), err.response?.data?.message || t("upgrade_request_failed", "Request failed. Please try again."));
-            } finally {
-              setRequesting((prev) => ({ ...prev, [key]: false }));
-            }
-          },
-        },
-      ]
-    );
+  // Toggle a locked module's checkbox in the multi-select list.
+  const toggleModule = (key) => {
+    setSelectedModules((prev) => {
+      const next = { ...prev };
+      if (next[key]) delete next[key];
+      else next[key] = true;
+      return next;
+    });
+  };
+
+  // Per-module effective prices for this society, from getMyPricing()'s
+  // modulePricing field — { [key]: { enabled, amountRupees, isCustomPricing } }.
+  // Falls back to MODULE_META's static default only if the backend call
+  // hasn't returned yet, so the checkbox list never shows "₹0" while loading.
+  const modulePricing = pricing?.modulePricing || {};
+
+  const selectedKeys = Object.keys(selectedModules).filter((k) => selectedModules[k]);
+  const selectedTotal = selectedKeys.reduce(
+    (sum, key) => sum + (modulePricing[key]?.amountRupees || 0),
+    0
+  );
+  const anyCustomPricing = selectedKeys.some((key) => modulePricing[key]?.isCustomPricing);
+
+  const handlePayModules = async () => {
+    if (selectedKeys.length === 0) return;
+    setPayingModules(true);
+    try {
+      const result = await payForModules({
+        modules: selectedKeys,
+        user: { name: user?.name, email: user?.email, phone: user?.phone },
+      });
+
+      if (result.success) {
+        const label = selectedKeys.length === 1
+          ? t(MODULE_META[selectedKeys[0]]?.labelKey, MODULE_META[selectedKeys[0]]?.label)
+          : t("upgrade_modules_count", "{count} modules", { count: selectedKeys.length });
+        Alert.alert(
+          t("upgrade_payment_success_title", "Payment successful! 🎉"),
+          t("upgrade_modules_payment_success_body", "{label} now active for your society.", { label })
+        );
+        setSelectedModules({});
+        fetchStatus();
+        fetchPricing();
+      } else if (!result.cancelled) {
+        Alert.alert(t("error_title", "Error"), result.error || t("upgrade_payment_failed", "Payment failed. Please try again."));
+      }
+      // result.cancelled → user dismissed the sheet, no alert needed.
+    } finally {
+      setPayingModules(false);
+    }
   };
 
   // Looks up the rupee amount for the currently-selected plan + billing
@@ -329,42 +363,88 @@ const UpgradeScreen = () => {
           </>
         )}
 
-        {/* Locked Modules */}
+        {/* Locked Modules — pick-your-own checkout (replaces the old
+            "Request Upgrade → wait for SA" flow). Check any locked module
+            below to add it to the cart; the total updates live and pays
+            via the same Razorpay flow as the plan purchase above. */}
         {lockedPaid.length > 0 && (
           <>
             <Text style={styles.sectionTitle}>🔒 {t("upgrade_section_available", "Available Upgrades")}</Text>
+            <Text style={styles.sectionHint}>
+              {t("upgrade_modules_pick_hint", "Check any module to add it to your order — pay once for all selected modules.")}
+            </Text>
+
             {lockedPaid.map((key) => {
               const meta = MODULE_META[key];
-    const label = t(meta.labelKey, meta.label);
-              const isPending = modules[key]?.pendingRequest;
-              const isRequesting = requesting[key];
+              const label = t(meta.labelKey, meta.label);
+              const isChecked = !!selectedModules[key];
+              const priceInfo = modulePricing[key];
+              const priceText = priceInfo
+                ? `₹${priceInfo.amountRupees}/mo`
+                : null;
 
               return (
-                <View key={key} style={[styles.card, styles.cardLocked]}>
+                <TouchableOpacity
+                  key={key}
+                  style={[styles.card, styles.cardLocked, isChecked && styles.cardSelected]}
+                  onPress={() => toggleModule(key)}
+                  activeOpacity={0.7}
+                >
+                  <View style={[styles.checkbox, isChecked && styles.checkboxChecked]}>
+                    {isChecked && <Text style={styles.checkboxTick}>✓</Text>}
+                  </View>
                   <Text style={[styles.cardIcon, styles.cardIconLocked]}>{meta.icon}</Text>
                   <View style={styles.cardBody}>
-                    <Text style={[styles.cardName, styles.cardNameLocked]}>{t(meta.labelKey, meta.label)}</Text>
+                    <Text style={[styles.cardName, styles.cardNameLocked]}>{label}</Text>
                     <Text style={styles.cardDesc}>{t(meta.descKey, meta.desc)}</Text>
                   </View>
-                  {isPending ? (
-                    <View style={styles.pendingBadge}>
-                      <Text style={styles.pendingBadgeText}>{t("upgrade_badge_pending", "Pending")}</Text>
+                  {priceText && (
+                    <View style={styles.modulePriceTag}>
+                      <Text style={styles.modulePriceTagText}>{priceText}</Text>
+                      {priceInfo?.isCustomPricing && (
+                        <Text style={styles.modulePriceTagBadge}>{t("upgrade_special_price", "Special")}</Text>
+                      )}
                     </View>
-                  ) : (
-                    <TouchableOpacity
-                      style={[styles.requestBtn, isRequesting && styles.requestBtnDisabled]}
-                      onPress={() => handleRequestUpgrade(key)}
-                      disabled={isRequesting}
-                    >
-                      {isRequesting
-                        ? <ActivityIndicator size="small" color={COLORS.primary} />
-                        : <Text style={styles.requestBtnText}>{t("upgrade_btn_request", "Request")}</Text>
-                      }
-                    </TouchableOpacity>
                   )}
-                </View>
+                </TouchableOpacity>
               );
             })}
+
+            {/* Running total + Pay bar — only shows once at least one module is checked */}
+            {selectedKeys.length > 0 && (
+              <View style={styles.cartBar}>
+                {anyCustomPricing && (
+                  <Text style={styles.cartBarCustomNote}>
+                    🎉 {t("upgrade_custom_pricing_badge", "Special pricing for your society")}
+                  </Text>
+                )}
+                <View style={styles.cartBarRow}>
+                  <View>
+                    <Text style={styles.cartBarCount}>
+                      {selectedKeys.length === 1
+                        ? t("upgrade_modules_selected_one", "1 module selected")
+                        : t("upgrade_modules_selected_other", "{count} modules selected", { count: selectedKeys.length })}
+                    </Text>
+                    <Text style={styles.cartBarTotal}>₹{selectedTotal}<Text style={styles.cartBarTotalSub}>/mo</Text></Text>
+                  </View>
+                  <TouchableOpacity
+                    style={[styles.cartPayBtn, (!isEnabled("PAYMENTS_ENABLED") || payingModules) && styles.payBtnDisabled]}
+                    onPress={handlePayModules}
+                    disabled={!isEnabled("PAYMENTS_ENABLED") || payingModules}
+                  >
+                    {payingModules ? (
+                      <ActivityIndicator size="small" color="#fff" />
+                    ) : (
+                      <Text style={styles.cartPayBtnText}>
+                        {isEnabled("PAYMENTS_ENABLED")
+                          ? t("upgrade_pay_btn", "Pay ₹{amount} Now", { amount: selectedTotal })
+                          : t("upgrade_pay_coming_soon", "Online Payment Coming Soon")}
+                      </Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
           </>
         )}
 
@@ -429,7 +509,8 @@ const styles = StyleSheet.create({
   payBtnDisabled: { backgroundColor: "#94A3B8" },
   payBtnText:     { color: "#fff", fontSize: 14, fontWeight: "800" },
 
-  sectionTitle: { fontSize: 13, fontWeight: "700", color: "#64748B", letterSpacing: 0.5, textTransform: "uppercase", marginBottom: 10, marginTop: 8 },
+  sectionTitle: { fontSize: 13, fontWeight: "700", color: "#64748B", letterSpacing: 0.5, textTransform: "uppercase", marginBottom: 4, marginTop: 8 },
+  sectionHint:  { fontSize: 12, color: "#94A3B8", marginBottom: 10, lineHeight: 16 },
 
   card:         { flexDirection: "row", alignItems: "center", backgroundColor: "#fff", borderRadius: 12, padding: 14, marginBottom: 10, elevation: 1, shadowColor: "#000", shadowOpacity: 0.05, shadowRadius: 4, shadowOffset: { width: 0, height: 2 } },
   cardEnabled:  { borderLeftWidth: 3, borderLeftColor: "#10B981" },
@@ -449,12 +530,25 @@ const styles = StyleSheet.create({
   freeBadge:    { backgroundColor: "#DBEAFE", borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 },
   freeBadgeText: { color: "#1E40AF", fontSize: 11, fontWeight: "700" },
 
-  pendingBadge: { backgroundColor: "#FEF3C7", borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 },
-  pendingBadgeText: { color: "#92400E", fontSize: 11, fontWeight: "700" },
+  // Multi-select checkbox row
+  cardSelected:   { borderColor: "#0D7377", borderWidth: 1.5, backgroundColor: "#F0FDFC" },
+  checkbox:       { width: 22, height: 22, borderRadius: 6, borderWidth: 2, borderColor: "#CBD5E1", marginRight: 10, alignItems: "center", justifyContent: "center" },
+  checkboxChecked:{ backgroundColor: "#0D7377", borderColor: "#0D7377" },
+  checkboxTick:   { color: "#fff", fontSize: 13, fontWeight: "800" },
 
-  requestBtn:   { borderWidth: 1.5, borderColor: COLORS.primary || "#0F2040", borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 },
-  requestBtnDisabled: { opacity: 0.5 },
-  requestBtnText: { color: COLORS.primary || "#0F2040", fontSize: 12, fontWeight: "700" },
+  modulePriceTag:     { alignItems: "flex-end" },
+  modulePriceTagText: { fontSize: 13, fontWeight: "800", color: "#1E293B" },
+  modulePriceTagBadge:{ fontSize: 9, fontWeight: "700", color: "#D97706", marginTop: 2 },
+
+  // Sticky-feel cart bar shown once ≥1 module is selected
+  cartBar:        { backgroundColor: "#0F2040", borderRadius: 14, padding: 16, marginTop: 6, marginBottom: 16 },
+  cartBarCustomNote: { color: "#FCD34D", fontSize: 11, fontWeight: "700", marginBottom: 8 },
+  cartBarRow:     { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  cartBarCount:   { color: "rgba(255,255,255,0.6)", fontSize: 12, marginBottom: 2 },
+  cartBarTotal:   { color: "#fff", fontSize: 24, fontWeight: "800" },
+  cartBarTotalSub:{ color: "rgba(255,255,255,0.5)", fontSize: 13, fontWeight: "600" },
+  cartPayBtn:     { backgroundColor: "#0D7377", borderRadius: 10, paddingVertical: 12, paddingHorizontal: 18 },
+  cartPayBtnText: { color: "#fff", fontSize: 13, fontWeight: "800" },
 });
 
 export default UpgradeScreen;

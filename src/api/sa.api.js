@@ -145,3 +145,42 @@ export const saModulesApi = {
   listUpgradeRequests: () =>
     saClient.get("/superadmin/modules/upgrade-requests").then(unwrapSA),
 };
+
+// ─── Subscription / Pricing (custom per-society rates) ────────────────────────
+// Two distinct mechanisms — see SASocietyPricing.jsx for the full picture:
+//
+//   1. Grant a plan directly — updateSub({ plan, status, subscriptionEndsAt })
+//      No payment involved at all. This is how you give a society "all
+//      features free" — set plan: "premium", status: "active", and a
+//      far-future end date. Razorpay never gets called for this society
+//      until/unless you later clear it back to a payable plan.
+//
+//   2. Negotiate a discounted rate — setCustomPricing({ enabled, monthlyRupees, note })
+//      The society is still on a normal paid plan and still pays via
+//      Razorpay, just at a rate you set instead of the standard ₹599/₹999.
+//      This is how you do "₹10/month for this one society". monthlyRupees
+//      must be ≥ 1 — Razorpay itself has no concept of a ₹0 charge, so a
+//      fully-free society should use mechanism (1) above, not this one
+//      with monthlyRupees: 0.
+export const saSubscriptionApi = {
+  /**
+   * PATCH /superadmin/societies/:id/subscription
+   * Payload: { plan, status, endDate, priceMonthly, autoRenew, adminNotes, note }
+   * Directly sets the society's plan/status — no payment involved.
+   */
+  updateSub: (societyId, payload) =>
+    saClient.patch(`/superadmin/societies/${societyId}/subscription`, payload).then(unwrapSA),
+
+  /**
+   * PATCH /superadmin/societies/:id/custom-pricing
+   * Payload: { enabled: boolean, monthlyRupees?: number (≥1), note?: string }
+   * Sets/clears a negotiated Razorpay rate. Takes effect on the society's
+   * NEXT payment — does not retroactively change an already-active period.
+   */
+  setCustomPricing: (societyId, payload) =>
+    saClient.patch(`/superadmin/societies/${societyId}/custom-pricing`, payload).then(unwrapSA),
+
+  /** GET /superadmin/societies/:id — includes society + subscription, used to prefill the pricing screen */
+  getOne: (societyId) =>
+    saClient.get(`/superadmin/societies/${societyId}`).then(unwrapSA),
+};

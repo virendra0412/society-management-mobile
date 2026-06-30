@@ -385,6 +385,20 @@ const SASocieties = ({ navigation }) => {
             </TouchableOpacity>
 
             <TouchableOpacity
+              style={styles.pricingButton}
+              onPress={() => {
+                  const societyId = selectedSociety?._id || selectedSociety?.id;
+                  const societyName = selectedSociety?.name;
+                  setShowDetailsModal(false);
+                  setSelectedSociety(null);
+                  navigation.push("SASocietyPricing", { societyId, societyName });
+                }}
+              disabled={actionLoading}
+            >
+              <Text style={styles.pricingButtonText}>💰 Pricing & Plan</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
               style={styles.analyticsButton}
               onPress={() => {
                   const societyId = selectedSociety?._id || selectedSociety?.id;
@@ -781,6 +795,18 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.md,
   },
   modulesButtonText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  pricingButton: {
+    backgroundColor: "#0D7377",
+    borderRadius: 8,
+    paddingVertical: SPACING.lg,
+    alignItems: "center",
+    marginBottom: SPACING.md,
+  },
+  pricingButtonText: {
     color: "#fff",
     fontSize: 14,
     fontWeight: "600",
