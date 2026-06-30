@@ -94,8 +94,8 @@ const UpgradeScreen = () => {
     const meta = MODULE_META[key];
     const label = t(meta.labelKey, meta.label);
     Alert.alert(
-      t("upgrade_request_title", "Request %s", { label }),
-      t("upgrade_request_body", "This will notify our team to enable the %s module for your society. They will contact you to confirm pricing.", { label }),
+      t("upgrade_request_title", "Request {label}", { label }),
+      t("upgrade_request_body", "This will notify our team to enable the {label} module for your society. They will contact you to confirm pricing.", { label }),
       [
         { text: t("upgrade_request_cancel", "Cancel") },
         {
@@ -104,7 +104,7 @@ const UpgradeScreen = () => {
             setRequesting((prev) => ({ ...prev, [key]: true }));
             try {
               await modulesApi.requestUpgrade(key);
-              Alert.alert(t("upgrade_requested_title", "Requested!"), t("upgrade_request_success", "Your upgrade request for %s has been submitted. We'll review it shortly.", { label }));
+              Alert.alert(t("upgrade_requested_title", "Requested!"), t("upgrade_request_success", "Your upgrade request for {label} has been submitted. We'll review it shortly.", { label }));
               fetchStatus();
             } catch (err) {
               Alert.alert(t("error_title", "Error"), err.response?.data?.message || t("upgrade_request_failed", "Request failed. Please try again."));
@@ -136,7 +136,7 @@ const UpgradeScreen = () => {
       if (result.success) {
         Alert.alert(
           t("upgrade_payment_success_title", "Payment successful! 🎉"),
-          t("upgrade_payment_success_body", "Your society is now on the %s plan.", { plan: selectedPlan })
+          t("upgrade_payment_success_body", "Your society is now on the {plan} plan.", { plan: selectedPlan })
         );
         // Refresh everything that depends on the plan: module status, the
         // effective price (custom rate stays the same, standard rate may
@@ -153,8 +153,7 @@ const UpgradeScreen = () => {
       setPaying(false);
     }
   };
-
-
+  if (loading) {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" color={COLORS.primary} />
@@ -186,8 +185,8 @@ const UpgradeScreen = () => {
                 <Text style={{ fontSize: 12, fontWeight: "700", color: "#D97706", marginBottom: 4 }}>🎉 {t("upgrade_free_trial_badge", "FREE TRIAL")}</Text>
                 <Text style={{ fontSize: 15, fontWeight: "700", color: "#1F2937", marginBottom: 6 }}>
                   {trialDaysLeft === 1
-                    ? t("upgrade_trial_days_left_one", "%d day remaining", { count: trialDaysLeft })
-                    : t("upgrade_trial_days_left_other", "%d days remaining", { count: trialDaysLeft })}
+                    ? t("upgrade_trial_days_left_one", "{count} day remaining", { count: trialDaysLeft })
+                    : t("upgrade_trial_days_left_other", "{count} days remaining", { count: trialDaysLeft })}
                 </Text>
                 <Text style={{ fontSize: 13, color: "#4B5563", lineHeight: 18 }}>
                   {t("upgrade_trial_desc", "Every feature unlocked. After the trial, core features stay free forever. Upgrade to unlock maintenance billing & more.")}
@@ -279,7 +278,7 @@ const UpgradeScreen = () => {
                   <View style={styles.priceRow}>
                     <Text style={styles.priceAmount}>₹{cyclePrice.amountRupees}</Text>
                     <Text style={styles.priceSub}>
-                      {t("upgrade_price_for_months", "for %d month(s) · ₹%d/month equivalent", {
+                      {t("upgrade_price_for_months", "for {months} month(s) · ₹{perMonth}/month equivalent", {
                         months: cyclePrice.months,
                         perMonth: cyclePrice.monthlyEquivalent,
                       })}
@@ -297,7 +296,7 @@ const UpgradeScreen = () => {
                   ) : (
                     <Text style={styles.payBtnText}>
                       {isEnabled("PAYMENTS_ENABLED")
-                        ? t("upgrade_pay_btn", "Pay ₹%d Now", { amount: cyclePrice?.amountRupees || 0 })
+                        ? t("upgrade_pay_btn", "Pay ₹{amount} Now", { amount: cyclePrice?.amountRupees || 0 })
                         : t("upgrade_pay_coming_soon", "Online Payment Coming Soon")}
                     </Text>
                   )}

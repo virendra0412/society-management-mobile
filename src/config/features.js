@@ -34,7 +34,7 @@ const FLAGS = {
   // ── Payments (Razorpay) ────────────────────────────────────────────────────
   // react-native-razorpay is installed. Keep false until test-mode checklist passes.
   // Flip to true via OTA push — no store build needed.
-  PAYMENTS_ENABLED:         false,
+  PAYMENTS_ENABLED:         true,
   PAYMENTS_TEST_MODE:       true,  // force test mode; set false when switching to live keys
 
   // ── Biometric login ────────────────────────────────────────────────────────
