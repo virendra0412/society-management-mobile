@@ -310,6 +310,9 @@ const en = {
   upgrade_request_failed: "Request failed. Please try again.",
   upgrade_plan_basic: "Basic Plan",
   upgrade_plan_premium: "Premium Plan",
+  upgrade_plan_starter:       'Starter Plan',
+  upgrade_plan_professional:  'Professional Plan',
+  upgrade_plan_enterprise:    'Enterprise Plan',
 
   // ── Pick-your-own-modules checkout (replaces the old request-upgrade flow) ──
   upgrade_modules_pick_hint: "Check any module to add it to your order — pay once for all selected modules.",

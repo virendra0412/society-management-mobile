@@ -58,7 +58,7 @@ const UpgradeScreen = () => {
   // ── Plan payment (Razorpay) state ──────────────────────────────────────────
   const [pricing, setPricing] = useState(null);          // result of getMyPricing()
   const [pricingLoading, setPricingLoading] = useState(true);
-  const [selectedPlan, setSelectedPlan] = useState("basic");
+  const [selectedPlan, setSelectedPlan] = useState("starter");
   const [selectedCycle, setSelectedCycle] = useState("monthly");
   const [paying, setPaying] = useState(false);
 
@@ -67,7 +67,7 @@ const UpgradeScreen = () => {
       const res = await subscriptionPaymentApi.getMyPricing();
       setPricing(res.data);
       // If this society has a custom rate locked to one plan, default the
-      // selector to that plan instead of "basic" so the price shown matches.
+      // selector to that plan instead of "starter" so the price shown matches.
       if (res.data?.isCustomPricing && res.data?.plan) {
         setSelectedPlan(res.data.plan);
       }
@@ -240,7 +240,11 @@ const UpgradeScreen = () => {
               <>
                 <Text style={{ fontSize: 12, fontWeight: "700", color: "#06B6D4", marginBottom: 4 }}>✓ {t("upgrade_premium_plan_badge", "PREMIUM PLAN")}</Text>
                 <Text style={{ fontSize: 15, fontWeight: "700", color: "#1F2937", marginBottom: 6 }}>
-                  {plan === "basic" ? t("upgrade_plan_basic", "Basic Plan") : t("upgrade_plan_premium", "Premium Plan")}
+                  {plan === "starter"
+                    ? t("upgrade_plan_starter", "Starter Plan")
+                    : plan === "professional"
+                    ? t("upgrade_plan_professional", "Professional Plan")
+                    : t("upgrade_plan_enterprise", "Enterprise Plan")}
                 </Text>
                 <Text style={{ fontSize: 13, color: "#4B5563", lineHeight: 18 }}>
                   {t("upgrade_premium_plan_desc", "You have access to all features. Contact support if you need to modify your plan.")}
@@ -255,7 +259,7 @@ const UpgradeScreen = () => {
             is a manual sales-assisted request. This section lets the admin
             pay for basic/premium online immediately — using this society's
             custom negotiated rate automatically if a Super Admin has set one. */}
-        {plan !== "premium" && (
+        {plan !== "enterprise" && (
           <View style={styles.payCard}>
             <Text style={styles.payCardTitle}>💳 {t("upgrade_pay_title", "Upgrade Your Plan")}</Text>
 
@@ -279,14 +283,18 @@ const UpgradeScreen = () => {
                 {/* Plan selector — hidden when custom pricing locks the society to one plan */}
                 {!pricing.isCustomPricing && (
                   <View style={styles.pillRow}>
-                    {["basic", "premium"].map((p) => (
+                    {["starter", "professional", "enterprise"].map((p) => (
                       <TouchableOpacity
                         key={p}
                         style={[styles.planPill, selectedPlan === p && styles.planPillActive]}
                         onPress={() => setSelectedPlan(p)}
                       >
                         <Text style={[styles.planPillText, selectedPlan === p && styles.planPillTextActive]}>
-                          {p === "basic" ? t("upgrade_plan_basic", "Basic") : t("upgrade_plan_premium", "Premium")}
+                          {p === "starter"
+                            ? t("upgrade_plan_starter", "Starter")
+                            : p === "professional"
+                            ? t("upgrade_plan_professional", "Professional")
+                            : t("upgrade_plan_enterprise", "Enterprise")}
                         </Text>
                       </TouchableOpacity>
                     ))}
