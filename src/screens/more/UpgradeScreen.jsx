@@ -1,391 +1,512 @@
 /**
- * src/screens/more/UpgradeScreen.jsx
- * Society Admin view — shows module status (read-only) with "Request Upgrade" buttons
- * for locked modules. Mirrors what SA sees but is read-only.
+ * UpgradeScreen.jsx
+ *
+ * Design principle: one big tap = one clear outcome.
+ * No proration math, no credit breakdowns visible to the user.
+ * They see: plan name, what's included, price, one button.
+ *
+ * Structure:
+ *  1. Current status bar (small, top)
+ *  2. PLAN CARDS — full-width, one per plan, like Hotstar/Netflix
+ *     Each card shows name, tagline, included features, price + cycle toggle
+ *  3. BUILD YOUR OWN — checkbox list for à la carte, total at bottom
+ *  4. What you already have (active + free) — collapsed below fold
  */
 
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  StyleSheet,
-  ActivityIndicator,
-  Alert,
-  RefreshControl,
+  View, Text, ScrollView, TouchableOpacity, StyleSheet,
+  ActivityIndicator, Alert, RefreshControl, Dimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useAuth } from "../../context/AuthContext";
-import { useLanguage } from "../../context/LanguageContext";
+import { useAuth }   from "../../context/AuthContext";
 import { modulesApi } from "../../api/resources.api";
-import { subscriptionPaymentApi, paySubscription } from "../../api/subscriptionPayment.api";
-import { isEnabled } from "../../config/features";
-import { COLORS, SPACING } from "../../constants/theme";
+import {
+  subscriptionPaymentApi,
+  paySubscription,
+  payUpgrade,
+  payForModules,
+} from "../../api/subscriptionPayment.api";
+import { COLORS } from "../../constants/theme";
 
-const MODULE_META = {
-  notices:     { icon: "📢", labelKey: "upgrade_mod_notices_label", descKey: "upgrade_mod_notices_desc", label: "Notices", desc: "Post announcements. Always free." },
-  polls:       { icon: "🗳️", labelKey: "upgrade_mod_polls_label", descKey: "upgrade_mod_polls_desc", label: "Polls", desc: "Vote on decisions. Always free." },
-  contacts:    { icon: "📞", labelKey: "upgrade_mod_contacts_label", descKey: "upgrade_mod_contacts_desc", label: "Contacts", desc: "Emergency & vendor directory. Always free." },
-  issues:      { icon: "🔧", labelKey: "upgrade_mod_issues_label", descKey: "upgrade_mod_issues_desc", label: "Issues", desc: "Complaint tracking, escalation, assignment." },
-  visitors:    { icon: "👁️", labelKey: "upgrade_mod_visitors_label", descKey: "upgrade_mod_visitors_desc", label: "Visitor Mgmt", desc: "OTP entry, walk-ins, trusted visitors, visitor logs." },
-  maintenance: { icon: "💰", labelKey: "upgrade_mod_maintenance_label", descKey: "upgrade_mod_maintenance_desc", label: "Maintenance", desc: "Bills, payments, defaulter tracking." },
-  amenities:   { icon: "🏊", labelKey: "upgrade_mod_amenities_label", descKey: "upgrade_mod_amenities_desc", label: "Amenity Booking", desc: "Clubhouse, gym, pool slots. Conflict detection." },
-  events:      { icon: "🎉", labelKey: "upgrade_mod_events_label", descKey: "upgrade_mod_events_desc", label: "Events", desc: "RSVP management, attendance, notifications." },
-  parking:     { icon: "🅿️", labelKey: "upgrade_mod_parking_label", descKey: "upgrade_mod_parking_desc", label: "Parking", desc: "Slot assignment, visitor parking, vehicle registry." },
-  community:   { icon: "🤝", labelKey: "upgrade_mod_community_label", descKey: "upgrade_mod_community_desc", label: "Community Help", desc: "Resident-to-resident help & marketplace." },
-  analytics:   { icon: "📊", labelKey: "upgrade_mod_analytics_label", descKey: "upgrade_mod_analytics_desc", label: "Analytics", desc: "Collection rates, issue trends, visitor reports." },
-  multilang:   { icon: "🌍", labelKey: "upgrade_mod_multilang_label", descKey: "upgrade_mod_multilang_desc", label: "Multi-Language", desc: "Hindi + Gujarati + English support." },
+const { width: SW } = Dimensions.get("window");
+
+// ─── Plan definitions ─────────────────────────────────────────────────────────
+// Keep this the single source of truth for what users see.
+const PLANS = [
+  {
+    key:     "starter",
+    label:   "Starter",
+    tagline: "Perfect for small societies",
+    price:   599,
+    color:   "#3B82F6",
+    popular: false,
+    features: [
+      "Up to 100 residents",
+      "Visitor management & OTP entry",
+      "Issue tracking & complaints",
+      "Notices & Polls",
+      "Emergency contacts",
+    ],
+  },
+  {
+    key:     "professional",
+    label:   "Professional",
+    tagline: "Most popular — all daily operations",
+    price:   999,
+    color:   "#7C3AED",
+    popular: true,
+    features: [
+      "Up to 500 residents",
+      "Everything in Starter",
+      "Maintenance billing & payments",
+      "Amenity booking (gym, pool, hall)",
+      "Events & RSVP management",
+      "Parking management",
+    ],
+  },
+  {
+    key:     "enterprise",
+    label:   "Enterprise",
+    tagline: "For large townships & complexes",
+    price:   1799,
+    color:   "#0D7377",
+    popular: false,
+    features: [
+      "Unlimited residents",
+      "Everything in Professional",
+      "Community help & marketplace",
+      "Advanced analytics & reports",
+      "Multi-language (Hindi, Gujarati)",
+      "Priority support",
+    ],
+  },
+];
+
+const CYCLES = [
+  { key: "monthly",    label: "Monthly",     months: 1,  savePct: 0  },
+  { key: "quarterly",  label: "3 Months",    months: 3,  savePct: 8  },
+  { key: "halfyearly", label: "6 Months",    months: 6,  savePct: 13 },
+  { key: "annual",     label: "Yearly",      months: 12, savePct: 17 },
+];
+
+// À la carte modules
+const MODULES = [
+  { key: "visitors",    icon: "👁️",  label: "Visitor Management",  desc: "OTP entry, walk-ins, trusted visitors" },
+  { key: "maintenance", icon: "💰",  label: "Maintenance & Bills",  desc: "Billing, payments, defaulter tracking" },
+  { key: "amenities",   icon: "🏊",  label: "Amenity Booking",      desc: "Gym, pool, clubhouse slots" },
+  { key: "events",      icon: "🎉",  label: "Events",               desc: "RSVP, attendance tracking" },
+  { key: "parking",     icon: "🅿️",  label: "Parking",              desc: "Slot assignment, visitor parking" },
+  { key: "issues",      icon: "🔧",  label: "Issues & Complaints",  desc: "Complaint tracking, assignment" },
+  { key: "community",   icon: "🤝",  label: "Community Help",       desc: "Resident-to-resident marketplace" },
+  { key: "analytics",   icon: "📊",  label: "Analytics",            desc: "Reports, collection rates, trends" },
+  { key: "multilang",   icon: "🌍",  label: "Multi-Language",       desc: "Hindi + Gujarati + English" },
+];
+
+const PLAN_ORDER = { trial: 0, free: 1, starter: 2, professional: 3, enterprise: 4 };
+
+const fmtDate = (d) => d
+  ? new Date(d).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })
+  : null;
+
+const computePrice = (baseMonthly, cycleKey) => {
+  const c = CYCLES.find((x) => x.key === cycleKey) || CYCLES[0];
+  if (cycleKey === "annual") return Math.round(baseMonthly * 10); // pay 10 get 12
+  return Math.round(baseMonthly * c.months * (1 - c.savePct / 100));
 };
 
-const UpgradeScreen = () => {
-  const { plan, trialDaysLeft, user, refreshUser } = useAuth();
-  const { t } = useLanguage();
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [requesting, setRequesting] = useState({});
+// ─── Sub-components ───────────────────────────────────────────────────────────
 
-  // ── Plan payment (Razorpay) state ──────────────────────────────────────────
-  const [pricing, setPricing] = useState(null);          // result of getMyPricing()
-  const [pricingLoading, setPricingLoading] = useState(true);
-  const [selectedPlan, setSelectedPlan] = useState("basic");
-  const [selectedCycle, setSelectedCycle] = useState("monthly");
-  const [paying, setPaying] = useState(false);
+// Cycle switcher — tabs, not pills — sits above the plan cards
+const CycleTabs = ({ selected, onChange }) => (
+  <View style={cs.cycleBar}>
+    {CYCLES.map((c) => {
+      const on = selected === c.key;
+      return (
+        <TouchableOpacity
+          key={c.key}
+          style={[cs.cycleTab, on && cs.cycleTabOn]}
+          onPress={() => onChange(c.key)}
+          activeOpacity={0.7}
+        >
+          <Text style={[cs.cycleTabTxt, on && cs.cycleTabTxtOn]}>{c.label}</Text>
+          {c.savePct > 0 && (
+            <Text style={[cs.cycleSave, on && cs.cycleSaveOn]}>
+              {c.key === "annual" ? "2mo free" : `${c.savePct}% off`}
+            </Text>
+          )}
+        </TouchableOpacity>
+      );
+    })}
+  </View>
+);
 
-  const fetchPricing = useCallback(async () => {
-    try {
-      const res = await subscriptionPaymentApi.getMyPricing();
-      setPricing(res.data);
-      // If this society has a custom rate locked to one plan, default the
-      // selector to that plan instead of "basic" so the price shown matches.
-      if (res.data?.isCustomPricing && res.data?.plan) {
-        setSelectedPlan(res.data.plan);
-      }
-    } catch (err) {
-      // Non-fatal — the module-status section above still works without this.
-      // Most likely cause: payments not yet configured on the backend (503).
-    } finally {
-      setPricingLoading(false);
-    }
-  }, []);
+// Full-width plan card
+const PlanCard = ({
+  plan, cycle, isCurrentPlan, isUpgradable,
+  customRate, onPay, paying,
+}) => {
+  const base  = customRate ?? plan.price;
+  const total = computePrice(base, cycle);
+  const months = CYCLES.find((c) => c.key === cycle)?.months ?? 1;
+  const perMo  = Math.round(total / months);
+  const saving = base * months - total;
 
-  useEffect(() => {
-    fetchPricing();
-  }, [fetchPricing]);
-
-  const fetchStatus = useCallback(async () => {
-    try {
-      const res = await modulesApi.getStatus();
-      setData(res.data || res);
-    } catch (err) {
-      Alert.alert(t("error_title", "Error"), err.response?.data?.message || t("upgrade_load_status_failed", "Failed to load module status"));
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchStatus();
-  }, [fetchStatus]);
-
-  const handleRequestUpgrade = (key) => {
-    const meta = MODULE_META[key];
-    const label = t(meta.labelKey, meta.label);
-    Alert.alert(
-      t("upgrade_request_title", "Request {label}", { label }),
-      t("upgrade_request_body", "This will notify our team to enable the {label} module for your society. They will contact you to confirm pricing.", { label }),
-      [
-        { text: t("upgrade_request_cancel", "Cancel") },
-        {
-          text: t("upgrade_request_send", "Send Request"),
-          onPress: async () => {
-            setRequesting((prev) => ({ ...prev, [key]: true }));
-            try {
-              await modulesApi.requestUpgrade(key);
-              Alert.alert(t("upgrade_requested_title", "Requested!"), t("upgrade_request_success", "Your upgrade request for {label} has been submitted. We'll review it shortly.", { label }));
-              fetchStatus();
-            } catch (err) {
-              Alert.alert(t("error_title", "Error"), err.response?.data?.message || t("upgrade_request_failed", "Request failed. Please try again."));
-            } finally {
-              setRequesting((prev) => ({ ...prev, [key]: false }));
-            }
-          },
-        },
-      ]
-    );
-  };
-
-  // Looks up the rupee amount for the currently-selected plan + billing
-  // cycle from whatever getMyPricing() returned — custom-priced societies
-  // get a table keyed only by their own plan; standard societies get the
-  // full basic/premium table. Same shape either way: pricing[plan][cycle].
-  const cyclePrice = pricing?.pricing?.[selectedPlan]?.[selectedCycle] || null;
-
-  const handlePay = async () => {
-    if (!cyclePrice) return;
-    setPaying(true);
-    try {
-      const result = await paySubscription({
-        plan: selectedPlan,
-        billingCycle: selectedCycle,
-        user: { name: user?.name, email: user?.email, phone: user?.phone },
-      });
-
-      if (result.success) {
-        Alert.alert(
-          t("upgrade_payment_success_title", "Payment successful! 🎉"),
-          t("upgrade_payment_success_body", "Your society is now on the {plan} plan.", { plan: selectedPlan })
-        );
-        // Refresh everything that depends on the plan: module status, the
-        // effective price (custom rate stays the same, standard rate may
-        // change for the next renewal), and the user's subscription object
-        // in AuthContext so `plan` / `trialDaysLeft` update app-wide.
-        fetchStatus();
-        fetchPricing();
-        refreshUser();
-      } else if (!result.cancelled) {
-        Alert.alert(t("error_title", "Error"), result.error || t("upgrade_payment_failed", "Payment failed. Please try again."));
-      }
-      // result.cancelled → user dismissed the sheet, no alert needed.
-    } finally {
-      setPaying(false);
-    }
-  };
-  if (loading) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color={COLORS.primary} />
-      </View>
-    );
-  }
-
-  const modules = data?.modules || {};
-  const freeKeys = Object.keys(MODULE_META).filter((k) => MODULE_META[k] && modules[k]?.isFree);
-  const enabledPaid = Object.keys(MODULE_META).filter((k) => !modules[k]?.isFree && modules[k]?.enabled);
-  const lockedPaid  = Object.keys(MODULE_META).filter((k) => !modules[k]?.isFree && !modules[k]?.enabled);
+  const isSelected = isCurrentPlan;
+  const btnDisabled = isCurrentPlan || paying;
 
   return (
-    <SafeAreaView style={styles.container} edges={["bottom"]}>
-      <ScrollView
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchStatus(); }} />}
-        contentContainerStyle={styles.scroll}
-      >
-        <Text style={styles.pageTitle}>{t("upgrade_page_title", "Your Modules")}</Text>
-        <Text style={styles.pageSub}>
-          {t("upgrade_page_subtitle", "Manage features for your society. Locked modules show the option to request an upgrade from our team.")}
-        </Text>
+    <View style={[cs.planCard, plan.popular && cs.planCardPopular, { borderColor: plan.color + "55" }]}>
+      {plan.popular && (
+        <View style={[cs.popularBadge, { backgroundColor: plan.color }]}>
+          <Text style={cs.popularBadgeTxt}>MOST POPULAR</Text>
+        </View>
+      )}
 
-        {/* ── Plan Status Card ── */}
-        <View style={[styles.planCard, plan === "trial" ? { borderColor: "#F59E0B", backgroundColor: "#FFFBF0" } : { borderColor: "#E5E7EB", backgroundColor: "#F9FAFB" }]}>
-          <View style={{ marginBottom: 12 }}>
-            {plan === "trial" ? (
-              <>
-                <Text style={{ fontSize: 12, fontWeight: "700", color: "#D97706", marginBottom: 4 }}>🎉 {t("upgrade_free_trial_badge", "FREE TRIAL")}</Text>
-                <Text style={{ fontSize: 15, fontWeight: "700", color: "#1F2937", marginBottom: 6 }}>
-                  {trialDaysLeft === 1
-                    ? t("upgrade_trial_days_left_one", "{count} day remaining", { count: trialDaysLeft })
-                    : t("upgrade_trial_days_left_other", "{count} days remaining", { count: trialDaysLeft })}
+      <View style={cs.planCardTop}>
+        <View style={{ flex: 1 }}>
+          <Text style={[cs.planName, { color: plan.color }]}>{plan.label}</Text>
+          <Text style={cs.planTagline}>{plan.tagline}</Text>
+        </View>
+        <View style={cs.planPriceBlock}>
+          {customRate != null && (
+            <Text style={cs.planOrigPrice}>₹{computePrice(plan.price, cycle)}</Text>
+          )}
+          {saving > 0 && customRate == null && (
+            <Text style={cs.planSaveTag}>Save ₹{saving}</Text>
+          )}
+          <Text style={[cs.planPrice, { color: plan.color }]}>₹{total}</Text>
+          <Text style={cs.planPriceSub}>
+            {months > 1 ? `₹${perMo}/mo · ${months} months` : "per month"}
+          </Text>
+        </View>
+      </View>
+
+      <View style={cs.divider} />
+
+      {plan.features.map((f, i) => (
+        <View key={i} style={cs.featureRow}>
+          <Text style={[cs.featureDot, { color: plan.color }]}>✓</Text>
+          <Text style={cs.featureTxt}>{f}</Text>
+        </View>
+      ))}
+
+      {customRate != null && (
+        <View style={cs.customRateNote}>
+          <Text style={cs.customRateNoteTxt}>🎉 Special pricing for your society</Text>
+        </View>
+      )}
+
+      <TouchableOpacity
+        style={[
+          cs.planBtn,
+          { backgroundColor: isCurrentPlan ? "#E2E8F0" : plan.color },
+          btnDisabled && !isCurrentPlan && cs.planBtnLoading,
+        ]}
+        onPress={() => !btnDisabled && onPay(plan.key, cycle, total)}
+        activeOpacity={0.8}
+        disabled={btnDisabled}
+      >
+        {paying ? (
+          <ActivityIndicator size="small" color="#fff" />
+        ) : isCurrentPlan ? (
+          <Text style={[cs.planBtnTxt, { color: "#94A3B8" }]}>Current Plan</Text>
+        ) : (
+          <Text style={cs.planBtnTxt}>
+            {isUpgradable ? `Upgrade · Pay ₹${total}` : `Get ${plan.label} · ₹${total}`}
+          </Text>
+        )}
+      </TouchableOpacity>
+    </View>
+  );
+};
+
+// ─── Main screen ──────────────────────────────────────────────────────────────
+const UpgradeScreen = () => {
+  const { plan: currentPlan, trialDaysLeft, user, refreshUser } = useAuth();
+
+  const [moduleData,    setModuleData]    = useState(null);
+  const [pricingData,   setPricingData]   = useState(null);
+  const [loading,       setLoading]       = useState(true);
+  const [refreshing,    setRefreshing]    = useState(false);
+
+  const [cycle,         setCycle]         = useState("monthly");
+  const [payingPlan,    setPayingPlan]    = useState(null); // key of plan being paid
+
+  // À la carte
+  const [checked,       setChecked]       = useState({});
+  const [cartTotal,     setCartTotal]     = useState(null);
+  const [cartLoading,   setCartLoading]   = useState(false);
+  const [payingModules, setPayingModules] = useState(false);
+  const cartDebounce = useRef(null);
+
+  // ── Fetch ──────────────────────────────────────────────────────────────────
+  const loadAll = useCallback(async () => {
+    try {
+      const [modRes, priceRes] = await Promise.allSettled([
+        modulesApi.getStatus(),
+        subscriptionPaymentApi.getMyPricing(),
+      ]);
+      if (modRes.status === "fulfilled")   setModuleData(modRes.value.data || modRes.value);
+      if (priceRes.status === "fulfilled") setPricingData(priceRes.value.data);
+    } catch {}
+    finally { setLoading(false); setRefreshing(false); }
+  }, []);
+
+  useEffect(() => { loadAll(); }, [loadAll]);
+
+  // ── Cart total: fetch when checked modules change ──────────────────────────
+  const checkedKeys = Object.keys(checked).filter((k) => checked[k]);
+
+  useEffect(() => {
+    if (checkedKeys.length === 0) { setCartTotal(null); return; }
+    clearTimeout(cartDebounce.current);
+    cartDebounce.current = setTimeout(async () => {
+      setCartLoading(true);
+      try {
+        const res = await subscriptionPaymentApi.getModulesPreview(checkedKeys);
+        setCartTotal(res.data);
+      } catch { setCartTotal(null); }
+      finally { setCartLoading(false); }
+    }, 350);
+  }, [checkedKeys.join(",")]);
+
+  const toggleModule = (key) => setChecked((p) => {
+    const n = { ...p };
+    if (n[key]) delete n[key]; else n[key] = true;
+    return n;
+  });
+
+  // ── Plan payment ───────────────────────────────────────────────────────────
+  const handlePlanPay = async (planKey, billingCycle, amountRupees) => {
+    const planLabel = PLANS.find((p) => p.key === planKey)?.label || planKey;
+    const isUpgrade = PLAN_ORDER[planKey] > PLAN_ORDER[currentPlan];
+
+    setPayingPlan(planKey);
+    try {
+      const result = isUpgrade
+        ? await payUpgrade({ plan: planKey, billingCycle, user: { name: user?.name, email: user?.email, phone: user?.phone } })
+        : await paySubscription({ plan: planKey, billingCycle, user: { name: user?.name, email: user?.email, phone: user?.phone } });
+
+      if (result.success) {
+        Alert.alert("You're all set! 🎉", `${planLabel} plan is now active.`);
+        loadAll(); refreshUser();
+      } else if (!result.cancelled) {
+        Alert.alert("Payment failed", result.error || "Please try again.");
+      }
+    } catch (err) {
+      Alert.alert("Error", err.message || "Something went wrong.");
+    } finally {
+      setPayingPlan(null);
+    }
+  };
+
+  // ── Module payment ─────────────────────────────────────────────────────────
+  const handleModulesPay = async () => {
+    if (checkedKeys.length === 0) return;
+    setPayingModules(true);
+    try {
+      const result = await payForModules({
+        modules: checkedKeys,
+        user: { name: user?.name, email: user?.email, phone: user?.phone },
+      });
+      if (result.success) {
+        const names = checkedKeys.map((k) => MODULES.find((m) => m.key === k)?.label || k);
+        Alert.alert("Activated! 🎉",
+          names.length === 1 ? `${names[0]} is now active.` : `${names.join(", ")} are now active.`);
+        setChecked({});
+        setCartTotal(null);
+        loadAll();
+      } else if (!result.cancelled) {
+        Alert.alert("Payment failed", result.error || "Please try again.");
+      }
+    } catch (err) {
+      Alert.alert("Error", err.message || "Something went wrong.");
+    } finally {
+      setPayingModules(false);
+    }
+  };
+
+  // ── Render ─────────────────────────────────────────────────────────────────
+  if (loading) {
+    return <View style={cs.center}><ActivityIndicator size="large" color={COLORS.primary} /></View>;
+  }
+
+  const modules          = moduleData?.modules || {};
+  const modulePricing    = pricingData?.modulePricing || {};
+  const customRate       = pricingData?.isCustomPricing ? pricingData.customMonthlyRupees : null;
+  const renewalDate      = pricingData?.renewalDate;
+  const pendingPlan      = pricingData?.pendingPlan;
+  const pendingPlanAt    = pricingData?.pendingPlanAt;
+
+  const activeEnabledPaid = MODULES.filter((m) => modules[m.key]?.enabled && !modules[m.key]?.isFree);
+  const lockablePaid      = MODULES.filter((m) => !modules[m.key]?.enabled && !modules[m.key]?.isFree);
+  const freeMods          = MODULES.filter((m) => modules[m.key]?.isFree);
+
+  // Plans to show: only higher than current
+  const upgradablePlans = PLANS.filter((p) => PLAN_ORDER[p.key] > PLAN_ORDER[currentPlan || "free"]);
+  const onEnterprise    = currentPlan === "enterprise";
+
+  return (
+    <SafeAreaView style={cs.container} edges={["bottom"]}>
+      <ScrollView
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); loadAll(); }} />}
+        contentContainerStyle={cs.scroll}
+        showsVerticalScrollIndicator={false}
+      >
+
+        {/* ── Status bar ── */}
+        <View style={cs.statusBar}>
+          {currentPlan === "trial" ? (
+            <>
+              <Text style={cs.statusEmoji}>🎉</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={cs.statusTitle}>Free Trial — {trialDaysLeft ?? "—"} days left</Text>
+                <Text style={cs.statusSub}>All features unlocked. Pick a plan to keep them.</Text>
+              </View>
+            </>
+          ) : currentPlan === "free" ? (
+            <>
+              <Text style={cs.statusEmoji}>✦</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={cs.statusTitle}>Free Plan</Text>
+                <Text style={cs.statusSub}>Notices, Polls & Contacts always free. Upgrade for more.</Text>
+              </View>
+            </>
+          ) : (
+            <>
+              <Text style={cs.statusEmoji}>✓</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={cs.statusTitle}>{currentPlan?.charAt(0).toUpperCase() + currentPlan?.slice(1)} Plan</Text>
+                <Text style={cs.statusSub}>
+                  {renewalDate ? `Renews ${fmtDate(renewalDate)}` : "Active"}
+                  {pendingPlan ? `  ·  Downgrading to ${pendingPlan} on ${fmtDate(pendingPlanAt)}` : ""}
                 </Text>
-                <Text style={{ fontSize: 13, color: "#4B5563", lineHeight: 18 }}>
-                  {t("upgrade_trial_desc", "Every feature unlocked. After the trial, core features stay free forever. Upgrade to unlock maintenance billing & more.")}
-                </Text>
-              </>
-            ) : plan === "free" ? (
-              <>
-                <Text style={{ fontSize: 12, fontWeight: "700", color: "#10B981", marginBottom: 4 }}>✓ {t("upgrade_free_plan_badge", "FREE PLAN")}</Text>
-                <Text style={{ fontSize: 15, fontWeight: "700", color: "#1F2937", marginBottom: 6 }}>
-                  {t("upgrade_free_plan_title", "Core features, forever")}
-                </Text>
-                <Text style={{ fontSize: 13, color: "#4B5563", lineHeight: 18 }}>
-                  {t("upgrade_free_plan_desc", "Notices, polls, contacts, and visitors are always free. Upgrade anytime to unlock billing & amenities.")}
-                </Text>
-              </>
-            ) : (
-              <>
-                <Text style={{ fontSize: 12, fontWeight: "700", color: "#06B6D4", marginBottom: 4 }}>✓ {t("upgrade_premium_plan_badge", "PREMIUM PLAN")}</Text>
-                <Text style={{ fontSize: 15, fontWeight: "700", color: "#1F2937", marginBottom: 6 }}>
-                  {plan === "basic" ? t("upgrade_plan_basic", "Basic Plan") : t("upgrade_plan_premium", "Premium Plan")}
-                </Text>
-                <Text style={{ fontSize: 13, color: "#4B5563", lineHeight: 18 }}>
-                  {t("upgrade_premium_plan_desc", "You have access to all features. Contact support if you need to modify your plan.")}
-                </Text>
-              </>
-            )}
-          </View>
+              </View>
+            </>
+          )}
         </View>
 
-        {/* ── Pay & Upgrade Plan (Razorpay) ──────────────────────────────────
-            Separate from the per-module "Request Upgrade" flow below, which
-            is a manual sales-assisted request. This section lets the admin
-            pay for basic/premium online immediately — using this society's
-            custom negotiated rate automatically if a Super Admin has set one. */}
-        {plan !== "premium" && (
-          <View style={styles.payCard}>
-            <Text style={styles.payCardTitle}>💳 {t("upgrade_pay_title", "Upgrade Your Plan")}</Text>
+        {/* ── Section 1: PLAN CARDS ── */}
+        {!onEnterprise && upgradablePlans.length > 0 && (
+          <View style={cs.section}>
+            <Text style={cs.sectionHeading}>Choose a Plan</Text>
 
-            {pricingLoading ? (
-              <ActivityIndicator size="small" color={COLORS.primary} style={{ marginVertical: 12 }} />
-            ) : !pricing ? (
-              <Text style={styles.payUnavailable}>
-                {t("upgrade_pay_unavailable", "Online payment isn't available right now. Contact support to upgrade your plan.")}
-              </Text>
-            ) : (
-              <>
-                {pricing.isCustomPricing && (
-                  <View style={styles.customBadge}>
-                    <Text style={styles.customBadgeText}>
-                      🎉 {t("upgrade_custom_pricing_badge", "Special pricing for your society")}
-                      {pricing.note ? ` — ${pricing.note}` : ""}
-                    </Text>
-                  </View>
-                )}
+            {/* Billing cycle selector — ONE place, above all cards */}
+            <CycleTabs selected={cycle} onChange={setCycle} />
 
-                {/* Plan selector — hidden when custom pricing locks the society to one plan */}
-                {!pricing.isCustomPricing && (
-                  <View style={styles.pillRow}>
-                    {["basic", "premium"].map((p) => (
-                      <TouchableOpacity
-                        key={p}
-                        style={[styles.planPill, selectedPlan === p && styles.planPillActive]}
-                        onPress={() => setSelectedPlan(p)}
-                      >
-                        <Text style={[styles.planPillText, selectedPlan === p && styles.planPillTextActive]}>
-                          {p === "basic" ? t("upgrade_plan_basic", "Basic") : t("upgrade_plan_premium", "Premium")}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                )}
+            {upgradablePlans.map((plan) => (
+              <PlanCard
+                key={plan.key}
+                plan={plan}
+                cycle={cycle}
+                isCurrentPlan={plan.key === currentPlan}
+                isUpgradable={PLAN_ORDER[plan.key] > PLAN_ORDER[currentPlan]}
+                customRate={customRate}
+                onPay={handlePlanPay}
+                paying={payingPlan === plan.key}
+              />
+            ))}
 
-                {/* Billing cycle selector */}
-                <View style={[styles.pillRow, { marginTop: 8 }]}>
-                  {Object.keys(pricing.pricing?.[selectedPlan] || {}).map((cycleKey) => (
-                    <TouchableOpacity
-                      key={cycleKey}
-                      style={[styles.cyclePill, selectedCycle === cycleKey && styles.cyclePillActive]}
-                      onPress={() => setSelectedCycle(cycleKey)}
-                    >
-                      <Text style={[styles.cyclePillText, selectedCycle === cycleKey && styles.cyclePillTextActive]}>
-                        {t(`upgrade_cycle_${cycleKey}`, cycleKey)}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
+            <Text style={cs.footNote}>
+              Cancel anytime · Secure checkout via Razorpay · GST applicable
+            </Text>
+          </View>
+        )}
 
-                {cyclePrice && (
-                  <View style={styles.priceRow}>
-                    <Text style={styles.priceAmount}>₹{cyclePrice.amountRupees}</Text>
-                    <Text style={styles.priceSub}>
-                      {t("upgrade_price_for_months", "for {months} month(s) · ₹{perMonth}/month equivalent", {
-                        months: cyclePrice.months,
-                        perMonth: cyclePrice.monthlyEquivalent,
-                      })}
-                    </Text>
-                  </View>
-                )}
+        {/* ── Section 2: BUILD YOUR OWN (à la carte) ── */}
+        {lockablePaid.length > 0 && (
+          <View style={cs.section}>
+            <Text style={cs.sectionHeading}>Build Your Own</Text>
+            <Text style={cs.sectionSub}>
+              Just want specific features? Pick only what you need.
+            </Text>
 
+            {lockablePaid.map((mod) => {
+              const isOn    = !!checked[mod.key];
+              const mPrice  = modulePricing[mod.key];
+              const price   = mPrice?.amountRupees ?? 0;
+
+              return (
                 <TouchableOpacity
-                  style={[styles.payBtn, (!isEnabled("PAYMENTS_ENABLED") || paying || !cyclePrice) && styles.payBtnDisabled]}
-                  onPress={handlePay}
-                  disabled={!isEnabled("PAYMENTS_ENABLED") || paying || !cyclePrice}
+                  key={mod.key}
+                  style={[cs.modRow, isOn && cs.modRowOn]}
+                  onPress={() => toggleModule(mod.key)}
+                  activeOpacity={0.7}
                 >
-                  {paying ? (
-                    <ActivityIndicator size="small" color="#fff" />
-                  ) : (
-                    <Text style={styles.payBtnText}>
-                      {isEnabled("PAYMENTS_ENABLED")
-                        ? t("upgrade_pay_btn", "Pay ₹{amount} Now", { amount: cyclePrice?.amountRupees || 0 })
-                        : t("upgrade_pay_coming_soon", "Online Payment Coming Soon")}
+                  {/* Checkbox */}
+                  <View style={[cs.cb, isOn && cs.cbOn]}>
+                    {isOn && <Text style={cs.cbTick}>✓</Text>}
+                  </View>
+
+                  <Text style={[cs.modIcon, { opacity: isOn ? 1 : 0.5 }]}>{mod.icon}</Text>
+
+                  <View style={cs.modBody}>
+                    <Text style={[cs.modLabel, isOn && cs.modLabelOn]}>{mod.label}</Text>
+                    <Text style={cs.modDesc}>{mod.desc}</Text>
+                  </View>
+
+                  <View style={cs.modPrice}>
+                    <Text style={[cs.modPriceAmt, isOn && { color: "#0D7377" }]}>
+                      ₹{price}
                     </Text>
-                  )}
+                    <Text style={cs.modPricePer}>/mo</Text>
+                  </View>
                 </TouchableOpacity>
-              </>
+              );
+            })}
+
+            {/* Sticky cart footer */}
+            {checkedKeys.length > 0 && (
+              <View style={cs.cart}>
+                <View style={cs.cartLeft}>
+                  <Text style={cs.cartItems}>
+                    {checkedKeys.length} module{checkedKeys.length > 1 ? "s" : ""} selected
+                  </Text>
+                  {cartLoading ? (
+                    <Text style={cs.cartTotal}>Calculating…</Text>
+                  ) : cartTotal ? (
+                    <Text style={cs.cartTotal}>₹{cartTotal.amountRupees} / month</Text>
+                  ) : null}
+                </View>
+                <TouchableOpacity
+                  style={[cs.cartBtn, (payingModules || cartLoading) && cs.cartBtnOff]}
+                  onPress={handleModulesPay}
+                  disabled={payingModules || cartLoading}
+                >
+                  {payingModules
+                    ? <ActivityIndicator size="small" color="#fff" />
+                    : <Text style={cs.cartBtnTxt}>
+                        Pay ₹{cartTotal?.amountRupees ?? "…"}
+                      </Text>}
+                </TouchableOpacity>
+              </View>
             )}
           </View>
         )}
 
-        {/* Active Modules */}
-        {enabledPaid.length > 0 && (
-          <>
-            <Text style={styles.sectionTitle}>✅ {t("upgrade_section_active_paid", "Active Paid Modules")}</Text>
-            {enabledPaid.map((key) => {
-              const meta = MODULE_META[key];
-    const label = t(meta.labelKey, meta.label);
-              return (
-                <View key={key} style={[styles.card, styles.cardEnabled]}>
-                  <Text style={styles.cardIcon}>{meta.icon}</Text>
-                  <View style={styles.cardBody}>
-                    <Text style={styles.cardName}>{t(meta.labelKey, meta.label)}</Text>
-                    <Text style={styles.cardDesc}>{t(meta.descKey, meta.desc)}</Text>
-                  </View>
-                  <View style={styles.activeBadge}>
-                    <Text style={styles.activeBadgeText}>{t("upgrade_badge_active", "Active")}</Text>
-                  </View>
-                </View>
-              );
-            })}
-          </>
-        )}
+        {/* ── Section 3: What you already have ── */}
+        {(activeEnabledPaid.length > 0 || freeMods.length > 0) && (
+          <View style={cs.section}>
+            <Text style={cs.sectionHeading}>What You Have</Text>
 
-        {/* Locked Modules */}
-        {lockedPaid.length > 0 && (
-          <>
-            <Text style={styles.sectionTitle}>🔒 {t("upgrade_section_available", "Available Upgrades")}</Text>
-            {lockedPaid.map((key) => {
-              const meta = MODULE_META[key];
-    const label = t(meta.labelKey, meta.label);
-              const isPending = modules[key]?.pendingRequest;
-              const isRequesting = requesting[key];
-
-              return (
-                <View key={key} style={[styles.card, styles.cardLocked]}>
-                  <Text style={[styles.cardIcon, styles.cardIconLocked]}>{meta.icon}</Text>
-                  <View style={styles.cardBody}>
-                    <Text style={[styles.cardName, styles.cardNameLocked]}>{t(meta.labelKey, meta.label)}</Text>
-                    <Text style={styles.cardDesc}>{t(meta.descKey, meta.desc)}</Text>
-                  </View>
-                  {isPending ? (
-                    <View style={styles.pendingBadge}>
-                      <Text style={styles.pendingBadgeText}>{t("upgrade_badge_pending", "Pending")}</Text>
-                    </View>
-                  ) : (
-                    <TouchableOpacity
-                      style={[styles.requestBtn, isRequesting && styles.requestBtnDisabled]}
-                      onPress={() => handleRequestUpgrade(key)}
-                      disabled={isRequesting}
-                    >
-                      {isRequesting
-                        ? <ActivityIndicator size="small" color={COLORS.primary} />
-                        : <Text style={styles.requestBtnText}>{t("upgrade_btn_request", "Request")}</Text>
-                      }
-                    </TouchableOpacity>
-                  )}
-                </View>
-              );
-            })}
-          </>
-        )}
-
-        {/* Free Modules */}
-        <Text style={styles.sectionTitle}>🆓 {t("upgrade_section_free", "Always Free")}</Text>
-        {freeKeys.map((key) => {
-          const meta = MODULE_META[key];
-    const label = t(meta.labelKey, meta.label);
-          return (
-            <View key={key} style={[styles.card, styles.cardFree]}>
-              <Text style={styles.cardIcon}>{meta.icon}</Text>
-              <View style={styles.cardBody}>
-                <Text style={styles.cardName}>{t(meta.labelKey, meta.label)}</Text>
-                <Text style={styles.cardDesc}>{t(meta.descKey, meta.desc)}</Text>
+            {activeEnabledPaid.map((mod) => (
+              <View key={mod.key} style={cs.haveRow}>
+                <Text style={cs.haveIcon}>{mod.icon}</Text>
+                <Text style={cs.haveLabel}>{mod.label}</Text>
+                <View style={cs.activePill}><Text style={cs.activePillTxt}>Active</Text></View>
               </View>
-              <View style={styles.freeBadge}>
-                <Text style={styles.freeBadgeText}>{t("upgrade_badge_free", "FREE")}</Text>
+            ))}
+
+            {freeMods.map((mod) => (
+              <View key={mod.key} style={cs.haveRow}>
+                <Text style={cs.haveIcon}>{mod.icon}</Text>
+                <Text style={cs.haveLabel}>{mod.label}</Text>
+                <View style={cs.freePill}><Text style={cs.freePillTxt}>Free</Text></View>
               </View>
-            </View>
-          );
-        })}
+            ))}
+          </View>
+        )}
 
         <View style={{ height: 40 }} />
       </ScrollView>
@@ -393,68 +514,94 @@ const UpgradeScreen = () => {
   );
 };
 
-const styles = StyleSheet.create({
-  container:    { flex: 1, backgroundColor: "#F8FAFC" },
-  center:       { flex: 1, justifyContent: "center", alignItems: "center" },
-  scroll:       { padding: 16 },
+// ─── Styles ───────────────────────────────────────────────────────────────────
+const cs = StyleSheet.create({
+  container: { flex: 1, backgroundColor: "#F1F5F9" },
+  center:    { flex: 1, justifyContent: "center", alignItems: "center" },
+  scroll:    { paddingHorizontal: 16, paddingTop: 12 },
 
-  pageTitle:    { fontSize: 24, fontWeight: "800", color: "#1E293B", marginBottom: 6 },
-  pageSub:      { fontSize: 14, color: "#64748B", lineHeight: 20, marginBottom: 24 },
+  // Status bar
+  statusBar:   { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: "#0F2040", borderRadius: 14, padding: 14, marginBottom: 20 },
+  statusEmoji: { fontSize: 22, color: "#fff" },
+  statusTitle: { fontSize: 15, fontWeight: "800", color: "#fff" },
+  statusSub:   { fontSize: 12, color: "rgba(255,255,255,0.6)", marginTop: 2, lineHeight: 16 },
 
-  planCard:     { borderRadius: 12, borderWidth: 1.5, padding: 14, marginBottom: 20, elevation: 1, shadowColor: "#000", shadowOpacity: 0.05, shadowRadius: 4, shadowOffset: { width: 0, height: 2 } },
+  // Sections
+  section:        { marginBottom: 24 },
+  sectionHeading: { fontSize: 18, fontWeight: "800", color: "#1E293B", marginBottom: 4 },
+  sectionSub:     { fontSize: 13, color: "#64748B", marginBottom: 14, lineHeight: 18 },
+  footNote:       { fontSize: 11, color: "#94A3B8", textAlign: "center", marginTop: 4 },
 
-  payCard:       { backgroundColor: "#fff", borderRadius: 12, padding: 16, marginBottom: 20, borderWidth: 1.5, borderColor: "#0D7377", elevation: 1, shadowColor: "#000", shadowOpacity: 0.05, shadowRadius: 4, shadowOffset: { width: 0, height: 2 } },
-  payCardTitle:  { fontSize: 15, fontWeight: "800", color: "#1E293B", marginBottom: 10 },
-  payUnavailable:{ fontSize: 13, color: "#94A3B8", lineHeight: 18 },
+  // Cycle tabs
+  cycleBar:       { flexDirection: "row", backgroundColor: "#E2E8F0", borderRadius: 12, padding: 3, marginBottom: 16 },
+  cycleTab:       { flex: 1, borderRadius: 10, paddingVertical: 8, alignItems: "center" },
+  cycleTabOn:     { backgroundColor: "#fff", shadowColor: "#000", shadowOpacity: 0.08, shadowRadius: 4, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
+  cycleTabTxt:    { fontSize: 12, fontWeight: "700", color: "#94A3B8" },
+  cycleTabTxtOn:  { color: "#1E293B" },
+  cycleSave:      { fontSize: 9, fontWeight: "700", color: "#94A3B8", marginTop: 1 },
+  cycleSaveOn:    { color: "#10B981" },
 
-  customBadge:      { backgroundColor: "#FEF3C7", borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8, marginBottom: 10 },
-  customBadgeText:  { color: "#92400E", fontSize: 12, fontWeight: "700", lineHeight: 16 },
+  // Plan cards
+  planCard:        { backgroundColor: "#fff", borderRadius: 18, borderWidth: 1.5, borderColor: "#E2E8F0", padding: 18, marginBottom: 14, overflow: "hidden" },
+  planCardPopular: { borderWidth: 2 },
 
-  pillRow:        { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  planPill:       { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, borderWidth: 1.5, borderColor: "#E2E8F0" },
-  planPillActive: { backgroundColor: "#0F2040", borderColor: "#0F2040" },
-  planPillText:       { fontSize: 13, fontWeight: "700", color: "#64748B" },
-  planPillTextActive: { color: "#fff" },
+  popularBadge:    { position: "absolute", top: 0, right: 0, paddingHorizontal: 12, paddingVertical: 5, borderBottomLeftRadius: 12 },
+  popularBadgeTxt: { color: "#fff", fontSize: 10, fontWeight: "800", letterSpacing: 0.5 },
 
-  cyclePill:        { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, borderWidth: 1.5, borderColor: "#E2E8F0" },
-  cyclePillActive:  { backgroundColor: "#0D7377", borderColor: "#0D7377" },
-  cyclePillText:        { fontSize: 12, fontWeight: "600", color: "#64748B", textTransform: "capitalize" },
-  cyclePillTextActive:  { color: "#fff" },
+  planCardTop:    { flexDirection: "row", alignItems: "flex-start", marginBottom: 14 },
+  planName:       { fontSize: 20, fontWeight: "800" },
+  planTagline:    { fontSize: 12, color: "#64748B", marginTop: 3, lineHeight: 16 },
+  planPriceBlock: { alignItems: "flex-end" },
+  planPrice:      { fontSize: 28, fontWeight: "800" },
+  planPriceSub:   { fontSize: 11, color: "#64748B", marginTop: 2, textAlign: "right" },
+  planOrigPrice:  { fontSize: 12, color: "#94A3B8", textDecorationLine: "line-through", textAlign: "right" },
+  planSaveTag:    { fontSize: 11, fontWeight: "700", color: "#10B981", textAlign: "right" },
 
-  priceRow:    { marginTop: 14, marginBottom: 14 },
-  priceAmount: { fontSize: 26, fontWeight: "800", color: "#0F2040" },
-  priceSub:    { fontSize: 12, color: "#64748B", marginTop: 2 },
+  divider: { height: 1, backgroundColor: "#F1F5F9", marginBottom: 12 },
 
-  payBtn:         { backgroundColor: "#0D7377", borderRadius: 10, paddingVertical: 13, alignItems: "center" },
-  payBtnDisabled: { backgroundColor: "#94A3B8" },
-  payBtnText:     { color: "#fff", fontSize: 14, fontWeight: "800" },
+  featureRow: { flexDirection: "row", alignItems: "flex-start", gap: 8, marginBottom: 7 },
+  featureDot: { fontSize: 13, fontWeight: "800", marginTop: 1 },
+  featureTxt: { fontSize: 13, color: "#374151", flex: 1, lineHeight: 18 },
 
-  sectionTitle: { fontSize: 13, fontWeight: "700", color: "#64748B", letterSpacing: 0.5, textTransform: "uppercase", marginBottom: 10, marginTop: 8 },
+  customRateNote:    { backgroundColor: "#FEF3C7", borderRadius: 8, padding: 8, marginTop: 10 },
+  customRateNoteTxt: { fontSize: 12, fontWeight: "700", color: "#92400E" },
 
-  card:         { flexDirection: "row", alignItems: "center", backgroundColor: "#fff", borderRadius: 12, padding: 14, marginBottom: 10, elevation: 1, shadowColor: "#000", shadowOpacity: 0.05, shadowRadius: 4, shadowOffset: { width: 0, height: 2 } },
-  cardEnabled:  { borderLeftWidth: 3, borderLeftColor: "#10B981" },
-  cardLocked:   { borderLeftWidth: 3, borderLeftColor: "#E2E8F0", opacity: 0.9 },
-  cardFree:     { borderLeftWidth: 3, borderLeftColor: "#3B82F6" },
+  planBtn:       { borderRadius: 12, paddingVertical: 14, alignItems: "center", marginTop: 14 },
+  planBtnLoading:{ opacity: 0.7 },
+  planBtnTxt:    { color: "#fff", fontSize: 15, fontWeight: "800" },
 
-  cardIcon:     { fontSize: 22, marginRight: 12 },
-  cardIconLocked: { opacity: 0.5 },
-  cardBody:     { flex: 1 },
-  cardName:     { fontSize: 15, fontWeight: "700", color: "#1E293B" },
-  cardNameLocked: { color: "#94A3B8" },
-  cardDesc:     { fontSize: 12, color: "#64748B", marginTop: 2, lineHeight: 16 },
+  // Module rows (à la carte)
+  modRow:      { flexDirection: "row", alignItems: "center", backgroundColor: "#fff", borderRadius: 12, padding: 14, marginBottom: 8, borderWidth: 1.5, borderColor: "#E2E8F0" },
+  modRowOn:    { borderColor: "#0D7377", backgroundColor: "#F0FDFC" },
+  cb:          { width: 22, height: 22, borderRadius: 6, borderWidth: 2, borderColor: "#CBD5E1", marginRight: 12, alignItems: "center", justifyContent: "center" },
+  cbOn:        { backgroundColor: "#0D7377", borderColor: "#0D7377" },
+  cbTick:      { color: "#fff", fontSize: 13, fontWeight: "900" },
+  modIcon:     { fontSize: 22, marginRight: 12 },
+  modBody:     { flex: 1 },
+  modLabel:    { fontSize: 14, fontWeight: "700", color: "#475569" },
+  modLabelOn:  { color: "#0F2040" },
+  modDesc:     { fontSize: 12, color: "#94A3B8", marginTop: 2, lineHeight: 16 },
+  modPrice:    { alignItems: "flex-end", minWidth: 44 },
+  modPriceAmt: { fontSize: 15, fontWeight: "800", color: "#1E293B" },
+  modPricePer: { fontSize: 10, color: "#94A3B8" },
 
-  activeBadge:  { backgroundColor: "#D1FAE5", borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 },
-  activeBadgeText: { color: "#065F46", fontSize: 11, fontWeight: "700" },
+  // Cart bar
+  cart:       { backgroundColor: "#0F2040", borderRadius: 14, padding: 16, flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 6 },
+  cartLeft:   { flex: 1 },
+  cartItems:  { color: "rgba(255,255,255,0.6)", fontSize: 12, marginBottom: 2 },
+  cartTotal:  { color: "#fff", fontSize: 20, fontWeight: "800" },
+  cartBtn:    { backgroundColor: "#0D7377", borderRadius: 10, paddingVertical: 12, paddingHorizontal: 20 },
+  cartBtnOff: { opacity: 0.6 },
+  cartBtnTxt: { color: "#fff", fontSize: 14, fontWeight: "800" },
 
-  freeBadge:    { backgroundColor: "#DBEAFE", borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 },
-  freeBadgeText: { color: "#1E40AF", fontSize: 11, fontWeight: "700" },
-
-  pendingBadge: { backgroundColor: "#FEF3C7", borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 },
-  pendingBadgeText: { color: "#92400E", fontSize: 11, fontWeight: "700" },
-
-  requestBtn:   { borderWidth: 1.5, borderColor: COLORS.primary || "#0F2040", borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 },
-  requestBtnDisabled: { opacity: 0.5 },
-  requestBtnText: { color: COLORS.primary || "#0F2040", fontSize: 12, fontWeight: "700" },
+  // What you have
+  haveRow:       { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: "#F1F5F9" },
+  haveIcon:      { fontSize: 20, width: 28, textAlign: "center" },
+  haveLabel:     { flex: 1, fontSize: 14, fontWeight: "600", color: "#1E293B" },
+  activePill:    { backgroundColor: "#D1FAE5", borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 },
+  activePillTxt: { fontSize: 11, fontWeight: "700", color: "#065F46" },
+  freePill:      { backgroundColor: "#DBEAFE", borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 },
+  freePillTxt:   { fontSize: 11, fontWeight: "700", color: "#1E40AF" },
 });
 
 export default UpgradeScreen;

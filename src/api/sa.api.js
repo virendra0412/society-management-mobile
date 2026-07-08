@@ -1,147 +1,121 @@
 /**
  * src/api/sa.api.js
- * All 19 Super Admin API calls — grouped by domain.
- * (React Native / Expo version - same as web, no changes needed)
- *
- * Every method uses saClient so tokens are completely isolated from society API.
+ * All Super Admin API calls — grouped by domain.
  */
 
 import saClient, { unwrapSA } from "./saClient";
 
-// ─── Auth (5 endpoints) ────────────────────────────────────────────────────────
+// ─── Auth ──────────────────────────────────────────────────────────────────────
 export const saAuthApi = {
-  /** POST /superadmin/auth/login */
-  login: (payload) => {
-    return saClient.post("/superadmin/auth/login", payload).then((res) => {
-      return unwrapSA(res);
-    }).catch((err) => {
-      console.error("[saAuthApi.login] Error:", {
-        status: err.response?.status,
-        message: err.response?.data?.message,
-        error: err.message,
-      });
-      throw err;
-    });
-  },
-
-  /** POST /superadmin/auth/refresh */
+  login: (payload) =>
+    saClient.post("/superadmin/auth/login", payload).then(unwrapSA),
   refresh: (token) =>
-    saClient
-      .post("/superadmin/auth/refresh", { refreshToken: token })
-      .then(unwrapSA),
-
-  /** POST /superadmin/auth/logout */
+    saClient.post("/superadmin/auth/refresh", { refreshToken: token }).then(unwrapSA),
   logout: () => saClient.post("/superadmin/auth/logout").then(unwrapSA),
-
-  /** GET /superadmin/auth/me */
-  me: () => saClient.get("/superadmin/auth/me").then(unwrapSA),
-
-  /** PATCH /superadmin/auth/change-password */
+  me: ()    => saClient.get("/superadmin/auth/me").then(unwrapSA),
   changePassword: (payload) =>
-    saClient
-      .patch("/superadmin/auth/change-password", payload)
-      .then(unwrapSA),
+    saClient.patch("/superadmin/auth/change-password", payload).then(unwrapSA),
 };
 
-// ─── Applications (5 endpoints) ────────────────────────────────────────────────
+// ─── Applications ──────────────────────────────────────────────────────────────
 export const saApplicationsApi = {
-  /**
-   * POST /superadmin/applications  — Public (no SA token required)
-   * Used by the public society-apply form.
-   */
-  apply: (payload) =>
-    saClient.post("/superadmin/applications", payload).then(unwrapSA),
-
-  /** GET /superadmin/applications?status=pending|approved|rejected */
-  getAll: (params = {}) =>
-    saClient.get("/superadmin/applications", { params }).then(unwrapSA),
-
-  /** GET /superadmin/applications/:id */
-  getOne: (id) =>
-    saClient.get(`/superadmin/applications/${id}`).then(unwrapSA),
-
-  /** PATCH /superadmin/applications/:id/approve — creates Society + admin User + trial subscription */
-  approve: (id) =>
-    saClient
-      .patch(`/superadmin/applications/${id}/approve`)
-      .then(unwrapSA),
-
-  /** PATCH /superadmin/applications/:id/reject */
-  reject: (id, note) =>
-    saClient
-      .patch(`/superadmin/applications/${id}/reject`, { note })
-      .then(unwrapSA),
+  apply:   (payload) => saClient.post("/superadmin/applications", payload).then(unwrapSA),
+  getAll:  (params = {}) => saClient.get("/superadmin/applications", { params }).then(unwrapSA),
+  getOne:  (id) => saClient.get(`/superadmin/applications/${id}`).then(unwrapSA),
+  approve: (id) => saClient.patch(`/superadmin/applications/${id}/approve`).then(unwrapSA),
+  reject:  (id, note) => saClient.patch(`/superadmin/applications/${id}/reject`, { note }).then(unwrapSA),
 };
 
-// ─── Societies (7 endpoints) ──────────────────────────────────────────────────
+// ─── Societies ─────────────────────────────────────────────────────────────────
 export const saSocietiesApi = {
-  /** GET /superadmin/societies?plan=&status=&search= */
-  getAll: (params = {}) =>
-    saClient.get("/superadmin/societies", { params }).then(unwrapSA),
+  getAll:        (params = {}) => saClient.get("/superadmin/societies", { params }).then(unwrapSA),
+  getOne:        (id) => saClient.get(`/superadmin/societies/${id}`).then(unwrapSA),
+  updateSub:     (id, payload) => saClient.patch(`/superadmin/societies/${id}/subscription`, payload).then(unwrapSA),
+  suspend:       (id, reason)  => saClient.patch(`/superadmin/societies/${id}/suspend`, { reason }).then(unwrapSA),
+  reactivate:    (id) => saClient.patch(`/superadmin/societies/${id}/reactivate`).then(unwrapSA),
+  transferAdmin: (id, payload) => saClient.patch(`/superadmin/societies/${id}/transfer-admin`, payload).then(unwrapSA),
+  resetAdminPass:(id) => saClient.post(`/superadmin/societies/${id}/reset-admin-password`).then(unwrapSA),
+};
 
-  /** GET /superadmin/societies/:id */
-  getOne: (id) =>
-    saClient.get(`/superadmin/societies/${id}`).then(unwrapSA),
+// ─── Analytics ─────────────────────────────────────────────────────────────────
+export const saAnalyticsApi = {
+  overview:      (params = {}) => saClient.get("/superadmin/analytics/overview", { params }).then(unwrapSA),
+  societyDetail: (id) => saClient.get(`/superadmin/analytics/societies/${id}`).then(unwrapSA),
+};
+
+// ─── Module Management ──────────────────────────────────────────────────────────
+export const saModulesApi = {
+  getModules:          (societyId) => saClient.get(`/superadmin/societies/${societyId}/modules`).then(unwrapSA),
+  updateModules:       (societyId, payload) => saClient.patch(`/superadmin/societies/${societyId}/modules`, payload).then(unwrapSA),
+  applyBundle:         (societyId, payload) => saClient.post(`/superadmin/societies/${societyId}/modules/bundle`, payload).then(unwrapSA),
+  listUpgradeRequests: () => saClient.get("/superadmin/modules/upgrade-requests").then(unwrapSA),
+};
+
+// ─── Subscription / Pricing ────────────────────────────────────────────────────
+//
+// THREE mechanisms, each with a different purpose:
+//
+//   A) updateSub({ plan, status, endDate, priceMonthly, note })
+//      Directly sets plan/status — no Razorpay, no payment. Use for
+//      fully-free / comped societies (friends, pilots, demos).
+//      plan: "enterprise", status: "active", endDate: 10 years from now = free forever.
+//
+//   B) setCustomPricing({ enabled, monthlyRupees, note })
+//      Society stays on a payable plan but pays a negotiated Razorpay rate
+//      instead of the standard price. ₹10/month pilot customer = this.
+//      Takes effect on their NEXT payment.
+//
+//   C) setDiscount({ pct?, flatRupees?, code?, validUntil?, note?, clear? })
+//      Apply a coupon / percentage / flat discount on top of whatever rate
+//      is already set (custom or standard). Also takes effect on next payment.
+//      Set clear: true to remove a discount entirely.
+//
+//   D) scheduleDowngrade({ toPlan, note? })
+//      Queue a plan downgrade for the next renewal date. Society keeps the
+//      current plan until then. Job applies it automatically at endDate.
+//      Cannot schedule an upgrade (use admin's Upgrade screen for that).
+//
+export const saSubscriptionApi = {
+  /** GET /superadmin/societies/:id — includes subscription, prefills screen */
+  getOne: (societyId) =>
+    saClient.get(`/superadmin/societies/${societyId}`).then(unwrapSA),
 
   /**
    * PATCH /superadmin/societies/:id/subscription
-   * Payload: { plan, status, trialEndsAt, subscriptionEndsAt }
+   * { plan, status, endDate, priceMonthly, autoRenew, adminNotes, note }
+   * Direct grant — no Razorpay.
    */
-  updateSub: (id, payload) =>
-    saClient
-      .patch(`/superadmin/societies/${id}/subscription`, payload)
-      .then(unwrapSA),
+  updateSub: (societyId, payload) =>
+    saClient.patch(`/superadmin/societies/${societyId}/subscription`, payload).then(unwrapSA),
 
-  /** PATCH /superadmin/societies/:id/suspend  { reason } */
-  suspend: (id, reason) =>
-    saClient
-      .patch(`/superadmin/societies/${id}/suspend`, { reason })
-      .then(unwrapSA),
+  /**
+   * PATCH /superadmin/societies/:id/custom-pricing
+   * { enabled: boolean, monthlyRupees?: number (≥1), note?: string }
+   * Sets/clears a negotiated Razorpay rate. Takes effect on next payment.
+   * monthlyRupees must be ≥ 1 — use updateSub for truly-free societies.
+   */
+  setCustomPricing: (societyId, payload) =>
+    saClient.patch(`/superadmin/societies/${societyId}/custom-pricing`, payload).then(unwrapSA),
 
-  /** PATCH /superadmin/societies/:id/reactivate */
-  reactivate: (id) =>
-    saClient
-      .patch(`/superadmin/societies/${id}/reactivate`)
-      .then(unwrapSA),
+  /**
+   * PATCH /superadmin/societies/:id/discount
+   * { pct?, flatRupees?, code?, validUntil?, note?, clear? }
+   * Set or clear a coupon/discount. Applied on top of any custom rate.
+   * Takes effect on next payment.
+   *   clear: true  → remove existing discount entirely
+   *   pct: 20      → 20% off
+   *   flatRupees: 100 → ₹100 off
+   *   validUntil   → auto-expires on that date (optional)
+   */
+  setDiscount: (societyId, payload) =>
+    saClient.patch(`/superadmin/societies/${societyId}/discount`, payload).then(unwrapSA),
 
-  /** PATCH /superadmin/societies/:id/transfer-admin  { newAdminUserId } or { newAdminEmail } */
-  transferAdmin: (id, payload) =>
-    saClient
-      .patch(`/superadmin/societies/${id}/transfer-admin`, payload)
-      .then(unwrapSA),
-
-  /** POST /superadmin/societies/:id/reset-admin-password */
-  resetAdminPass: (id) =>
-    saClient
-      .post(`/superadmin/societies/${id}/reset-admin-password`)
-      .then(unwrapSA),
-};
-
-// ─── Analytics (2 endpoints) ──────────────────────────────────────────────────
-export const saAnalyticsApi = {
-  /** GET /superadmin/analytics/overview?period=7d|30d|90d */
-  overview: (params = {}) =>
-    saClient.get("/superadmin/analytics/overview", { params }).then(unwrapSA),
-
-  /** GET /superadmin/analytics/societies/:id */
-  societyDetail: (id) =>
-    saClient.get(`/superadmin/analytics/societies/${id}`).then(unwrapSA),
-};
-// ─── Module Management (Section 06) ───────────────────────────────────────────
-export const saModulesApi = {
-  /** GET /superadmin/societies/:id/modules */
-  getModules: (societyId) =>
-    saClient.get(`/superadmin/societies/${societyId}/modules`).then(unwrapSA),
-
-  /** PATCH /superadmin/societies/:id/modules  { modules: {visitors: true}, charges: {visitors: 350} } */
-  updateModules: (societyId, payload) =>
-    saClient.patch(`/superadmin/societies/${societyId}/modules`, payload).then(unwrapSA),
-
-  /** POST /superadmin/societies/:id/modules/bundle  { bundle: "starter"|"operations"|"fullstack", replaceAll?: bool } */
-  applyBundle: (societyId, payload) =>
-    saClient.post(`/superadmin/societies/${societyId}/modules/bundle`, payload).then(unwrapSA),
-
-  /** GET /superadmin/modules/upgrade-requests — list all pending upgrade requests across societies */
-  listUpgradeRequests: () =>
-    saClient.get("/superadmin/modules/upgrade-requests").then(unwrapSA),
+  /**
+   * PATCH /superadmin/societies/:id/schedule-downgrade
+   * { toPlan: "starter"|"professional"|"free", note? }
+   * Queue a downgrade for the society's next renewal date.
+   * Current plan stays active until endDate. Job applies it automatically.
+   */
+  scheduleDowngrade: (societyId, payload) =>
+    saClient.patch(`/superadmin/societies/${societyId}/schedule-downgrade`, payload).then(unwrapSA),
 };
