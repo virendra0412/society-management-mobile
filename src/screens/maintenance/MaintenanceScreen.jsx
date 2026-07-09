@@ -41,6 +41,7 @@ import {
 } from "../../components/ui";
 import { C, PAYMENT_STATUS_COLOR, BILL_STATUS, PAYMENT_METHODS } from "../../constants/theme";
 import { timeAgo } from "../../utils/timeago";
+import { ResidentPaymentCard } from "./ResidentPaymentCard";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -475,7 +476,7 @@ const DiscountModal = ({ open, onClose, paymentRecord, billId, onSaved }) => {
 // ═══════════════════════════════════════════════════════════════════════════════
 // ─── BILL DETAIL MODAL ────────────────────────────────────────────────────────
 // ═══════════════════════════════════════════════════════════════════════════════
-const BillDetailModal = ({ open, billId, onClose, isAdmin }) => {
+const BillDetailModal = ({ open, billId, onClose, isAdmin, paymentSettings, onOpenSubmitProof }) => {
   const toast = useToast();
   const { t } = useLanguage();
   const [bill,         setBill]         = useState(null);
@@ -715,40 +716,25 @@ const BillDetailModal = ({ open, billId, onClose, isAdmin }) => {
                   }
                 </>
               ) : (
-                // Resident: own record only
+                // Resident: own record — full card with proof submission CTA
                 <>
                   <SectionLabel title={t("maint_your_payment_label","Your Payment")} />
                   {(bill.payments?.length ?? 0) > 0 ? (() => {
-                    const p  = bill.payments[0];
-                    if (!p) return <EmptyState icon="💰" message={t("maint_no_payment_record","No payment record yet. Bill may not have been published for your flat.")} />;
-                    const sc = PAYMENT_STATUS_COLOR[p.status] || {};
-                    const isPaid = p.status === "paid" || p.status === "waived";
+                    const p = bill.payments[0];
+                    if (!p) return <EmptyState icon="💰" message={t("maint_no_payment_record","No payment record yet.")} />;
                     return (
-                      <View style={S.residentPayCard}>
-                        <View style={S.paymentMeta}>
-                          <Badge label={t(`maint_pay_status_${p.status}`, p.status.charAt(0).toUpperCase() + p.status.slice(1))} bg={sc.bg} text={sc.text} dot={sc.dot} />
-                          <Text style={[S.paymentAmt, { color: isPaid ? C.green : C.red }]}>
-                            {fmt(isPaid ? (p.paidAmount || p.totalDue) : p.totalDue)}
-                          </Text>
-                        </View>
-                        {p.penalty  > 0 && <Text style={S.penaltyText}>+{fmt(p.penalty)} {t("maint_late_penalty","late penalty")}</Text>}
-                        {p.discount > 0 && <Text style={S.discountText}>-{fmt(p.discount)} {t("maint_discount_label","discount")}</Text>}
-                        {isPaid && p.paidAt && (
-                          <Text style={S.paidMeta}>
-                            {t("maint_paid_on","Paid")} {fmtDate(p.paidAt)} {t("maint_via","via")} {t(`maint_method_${p.paymentMethod}`, p.paymentMethod)}
-                          </Text>
-                        )}
-                        {!isPaid && (
-                          <View style={[S.alertBox, { backgroundColor: C.amber + "15" }]}>
-                            <Text style={{ fontSize: 12, color: C.amber, fontWeight: "600" }}>
-                              {t("maint_due_by_alert","⏰ Payment due by {date}. Please pay at the office or contact admin.").replace("{date}", fmtDate(bill.dueDate))}
-                            </Text>
-                          </View>
-                        )}
-                      </View>
+                      <ResidentPaymentCard
+                        payment={p}
+                        bill={bill}
+                        paymentSettings={paymentSettings}
+                        onSubmitProof={() => {
+                          onClose();
+                          onOpenSubmitProof({ billId: bill._id, paymentId: p._id, billTitle: bill.title, totalDue: p.totalDue, paymentSettings });
+                        }}
+                      />
                     );
                   })() : (
-                    <EmptyState icon="💰" message={t("maint_no_payment_record","No payment record yet. Bill may not have been published for your flat.")} />
+                    <EmptyState icon="💰" message={t("maint_no_payment_record","No payment record yet.")} />
                   )}
                 </>
               )}
@@ -955,7 +941,7 @@ const BILL_STATUS_FILTER_KEYS = {
   Closed:    "maint_filter_closed",
 };
 
-const MaintenanceDashboard = ({ isAdmin, onOpenBill, onOpenMyPayments, onOpenDefaulters }) => {
+const MaintenanceDashboard = ({ isAdmin, onOpenBill, onOpenMyPayments, onOpenDefaulters, onOpenQueue, onOpenSettings }) => {
   const { t } = useLanguage();
   const toast = useToast();
   const [bills,        setBills]        = useState([]);
@@ -1069,6 +1055,28 @@ const MaintenanceDashboard = ({ isAdmin, onOpenBill, onOpenMyPayments, onOpenDef
               <Text style={S.shortcutSub}>{t("maint_defaulter_shortcut_sub", "Residents with unpaid or overdue records")}</Text>
             </View>
             <Text style={[S.shortcutArrow, { color: C.red }]}>›</Text>
+          </TouchableOpacity>
+        )}
+
+        {/* Verification queue shortcut (admin only) */}
+        {isAdmin && (
+          <TouchableOpacity onPress={onOpenQueue} activeOpacity={0.85} style={[S.shortcutCard, { borderColor: C.amber + "40" }]}>
+            <View>
+              <Text style={[S.shortcutTitle, { color: C.amber }]}>🕐 Pending Verifications</Text>
+              <Text style={S.shortcutSub}>Review submitted payment proofs from residents</Text>
+            </View>
+            <Text style={[S.shortcutArrow, { color: C.amber }]}>›</Text>
+          </TouchableOpacity>
+        )}
+
+        {/* Payment settings shortcut (admin only) */}
+        {isAdmin && (
+          <TouchableOpacity onPress={onOpenSettings} activeOpacity={0.85} style={S.shortcutCard}>
+            <View>
+              <Text style={S.shortcutTitle}>⚙️ Payment Settings</Text>
+              <Text style={S.shortcutSub}>Configure bank account, UPI QR, and accepted methods</Text>
+            </View>
+            <Text style={S.shortcutArrow}>›</Text>
           </TouchableOpacity>
         )}
 
@@ -1188,27 +1196,64 @@ const MaintenanceDashboard = ({ isAdmin, onOpenBill, onOpenMyPayments, onOpenDef
 // ═══════════════════════════════════════════════════════════════════════════════
 // ─── ROOT MaintenanceScreen ───────────────────────────────────────────────────
 // ═══════════════════════════════════════════════════════════════════════════════
-export const MaintenanceScreen = () => {
+export const MaintenanceScreen = ({ navigation }) => {
   const { isAdmin } = useAuth();
-  const [view,       setView]      = useState("dashboard"); // "dashboard" | "my-payments" | "defaulters"
-  const [openBillId, setOpenBillId]= useState(null);
+  const [view,            setView]           = useState("dashboard"); // "dashboard" | "my-payments" | "defaulters" | "queue" | "settings" | "submit-proof"
+  const [openBillId,      setOpenBillId]     = useState(null);
+  const [paymentSettings, setPaymentSettings]= useState({});
+  const [submitProofParams, setSubmitProofParams] = useState(null);
 
-  if (view === "my-payments") return <MyPaymentsView  onBack={() => setView("dashboard")} />;
-  if (view === "defaulters")  return <DefaulterView   onBack={() => setView("dashboard")} />;
+  // Load payment settings once so they're available for resident proof submission
+  useEffect(() => {
+    maintenanceApi.getPaymentSettings()
+      .then(({ paymentSettings: s }) => setPaymentSettings(s || {}))
+      .catch(() => {}); // non-fatal
+  }, []);
+
+  if (view === "my-payments")  return <MyPaymentsView  onBack={() => setView("dashboard")} />;
+  if (view === "defaulters")   return <DefaulterView   onBack={() => setView("dashboard")} />;
+
+  // New views — rendered inline via navigation prop (native navigator) if available,
+  // or as stack-style replacements in the same tab otherwise
+  if (view === "queue") {
+    const VerificationQueueScreen = require("./VerificationQueueScreen").default;
+    return <VerificationQueueScreen navigation={{ goBack: () => setView("dashboard") }} />;
+  }
+  if (view === "settings") {
+    const PaymentSettingsScreen = require("./PaymentSettingsScreen").default;
+    return <PaymentSettingsScreen navigation={{ goBack: () => setView("dashboard") }} />;
+  }
+  if (view === "submit-proof" && submitProofParams) {
+    const SubmitProofScreen = require("./SubmitProofScreen").default;
+    return (
+      <SubmitProofScreen
+        route={{ params: submitProofParams }}
+        navigation={{ goBack: () => { setView("dashboard"); setSubmitProofParams(null); } }}
+      />
+    );
+  }
 
   return (
     <>
       <MaintenanceDashboard
         isAdmin={isAdmin}
-        onOpenBill={(id)     => setOpenBillId(id)}
-        onOpenMyPayments={()  => setView("my-payments")}
-        onOpenDefaulters={()  => setView("defaulters")}
+        onOpenBill={(id)         => setOpenBillId(id)}
+        onOpenMyPayments={()     => setView("my-payments")}
+        onOpenDefaulters={()     => setView("defaulters")}
+        onOpenQueue={()          => setView("queue")}
+        onOpenSettings={()       => setView("settings")}
       />
       <BillDetailModal
         open={!!openBillId}
         billId={openBillId}
         onClose={() => setOpenBillId(null)}
         isAdmin={isAdmin}
+        paymentSettings={paymentSettings}
+        onOpenSubmitProof={(params) => {
+          setOpenBillId(null);
+          setSubmitProofParams(params);
+          setView("submit-proof");
+        }}
       />
     </>
   );
