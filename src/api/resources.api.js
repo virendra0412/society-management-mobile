@@ -199,10 +199,10 @@ export const maintenanceApi = {
   },
 
   downloadReportCsv: async (path, params = {}) =>
-    client.get(`/maintenance/reports/${path}`, {
-      params:       { ...params, format: "csv" },
-      responseType: "text",
-    }).then((r) => r.data),
+  client.get(`/maintenance/reports/${path}`, {
+    params:       { format: "csv", ...params },
+    responseType: "text",
+  }).then((r) => r.data),
 };
 
 // ─── Parking ──────────────────────────────────────────────────────────────────
