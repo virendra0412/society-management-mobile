@@ -3,17 +3,23 @@
  *
  * Shared utilities for downloading, saving, and sharing maintenance reports.
  *
- * Uses only packages already in the project:
- *   expo-file-system  — write temp files
- *   expo-sharing      — share sheet (WhatsApp, Drive, Mail, AirDrop…)
- *   expo-web-browser  — open HTML report in device browser (→ Print → PDF)
+ * Uses only packages already in the project, plus expo-print:
+ *   expo-print        — render HTML → a real local PDF file, on-device
+ *   expo-file-system   — write/copy temp files
+ *   expo-sharing       — share sheet (WhatsApp, Drive, Mail, AirDrop, or just Save)
+ *   expo-web-browser    — open HTML report in device browser (fallback only)
  *
  * Flow:
- *   openHtml(url, token)           → opens the HTML report in the browser
+ *   downloadPdf({ htmlString, filename })  → renders HTML to a PDF file, then
+ *                                             opens the share sheet (which
+ *                                             includes "Save to Files"/"Save
+ *                                             to Drive" — this IS the download).
+ *   openHtml(url)                  → opens the HTML report in the browser (fallback)
  *   shareHtml(url, token, name)    → downloads HTML → shares via share sheet
  *   shareCsv(csvString, filename)  → writes CSV → shares via share sheet
  */
 
+import * as Print       from "expo-print";
 import * as FileSystem  from "expo-file-system";
 import * as Sharing     from "expo-sharing";
 import * as WebBrowser  from "expo-web-browser";
@@ -29,7 +35,40 @@ export const buildAuthUrl = (baseUrl, token, extraParams = {}) => {
   return `${baseUrl}&${qs}`;
 };
 
-// ─── Open in browser (for Print / Save as PDF) ───────────────────────────────
+// ─── Render HTML → real PDF file → share/save sheet ──────────────────────────
+// This is the "one-tap download" path. expo-print renders the HTML natively
+// on-device into an actual .pdf file (no server-side PDF library needed —
+// the backend just needs to keep serving print-ready HTML, which it already
+// does via ?format=html). We then copy it to a nicely-named file and hand it
+// to the share sheet, which on both iOS and Android includes a "Save to
+// Files" / "Save to device" option — that's the download.
+
+export const downloadPdf = async ({ htmlString, filename = "report.pdf" }) => {
+  try {
+    const { uri } = await Print.printToFileAsync({ html: htmlString, base64: false });
+
+    // printToFileAsync names the file something generic (e.g. Print-xxxx.pdf);
+    // copy it to a readable name before handing it to the share sheet.
+    const safeName = filename.endsWith(".pdf") ? filename : `${filename}.pdf`;
+    const dest = FileSystem.cacheDirectory + safeName;
+    await FileSystem.copyAsync({ from: uri, to: dest });
+
+    const canShare = await Sharing.isAvailableAsync();
+    if (!canShare) {
+      Alert.alert("Sharing not available", "Your device does not support file sharing.");
+      return;
+    }
+    await Sharing.shareAsync(dest, {
+      mimeType: "application/pdf",
+      dialogTitle: "Save or Share PDF",
+      UTI: "com.adobe.pdf",
+    });
+  } catch (e) {
+    Alert.alert("Error", "Could not generate the PDF. Please try again.");
+  }
+};
+
+// ─── Open in browser (fallback for Print / Save as PDF manually) ─────────────
 
 export const openHtml = async (url) => {
   try {
@@ -97,7 +136,7 @@ export const shareCsv = async ({ csvString, filename = "report.csv" }) => {
 // ─── Convenience: share both HTML and CSV from the same report ────────────────
 
 export const REPORT_ACTIONS = [
-  { key: "html",  icon: "🖨️", label: "Print / PDF",        sub: "Open in browser → Print" },
+  { key: "html",  icon: "⬇️", label: "Download PDF",        sub: "Save or share as a real PDF" },
   { key: "csv",   icon: "📊", label: "Export Excel",        sub: "Share as .csv file" },
   { key: "share", icon: "📲", label: "Share via WhatsApp", sub: "Share report file" },
 ];

@@ -34,14 +34,12 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { maintenanceApi }      from "../../../api/resources.api";
-import { BASE_URL }            from "../../../api/client";
-import { tokenStorage }        from "../../../utils/storage";
 import { useAuth }             from "../../../context/AuthContext";
 import { useToast }            from "../../../context/ToastContext";
 import { Spinner, Card }       from "../../../components/ui";
 import { C }                   from "../../../constants/theme";
 import {
-  openHtml, shareHtml, shareCsv,
+  downloadPdf, shareHtml, shareCsv,
 } from "./reportUtils";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -77,8 +75,8 @@ const BackHeader = ({ title, subtitle, onBack }) => (
 const ReportActions = ({ onPrint, onCsv, onShare, loading }) => (
   <View style={S.actions}>
     <TouchableOpacity style={S.actionBtn} onPress={onPrint} disabled={loading} activeOpacity={0.7}>
-      {loading === "html" ? <ActivityIndicator size={14} color={C.navy} /> : <Text style={S.actionIcon}>🖨️</Text>}
-      <Text style={S.actionLabel}>Print / PDF</Text>
+      {loading === "html" ? <ActivityIndicator size={14} color={C.navy} /> : <Text style={S.actionIcon}>⬇️</Text>}
+      <Text style={S.actionLabel}>Download PDF</Text>
     </TouchableOpacity>
     <TouchableOpacity style={S.actionBtn} onPress={onCsv} disabled={loading} activeOpacity={0.7}>
       {loading === "csv" ? <ActivityIndicator size={14} color={C.navy} /> : <Text style={S.actionIcon}>📊</Text>}
@@ -160,14 +158,6 @@ const YearPicker = ({ year, onChange }) => (
   </View>
 );
 
-// ─── Shared: build authenticated HTML URL ────────────────────────────────────
-
-const buildUrl = (path, params = {}) => {
-  const token = tokenStorage.getAccess();
-  const qs    = new URLSearchParams({ ...params, token }).toString();
-  return `${BASE_URL}/maintenance/reports/${path}?${qs}`;
-};
-
 // ─── Shared: download HTML string from API ───────────────────────────────────
 
 const fetchHtml = async (path, params = {}) => {
@@ -206,10 +196,10 @@ const CollectionSection = ({ bills }) => {
   const handlePrint = useCallback(async () => {
     setLoading("html");
     try {
-      const url = buildUrl("collection", { month, format: "html" });
-      await openHtml(url);
+      const html = await maintenanceApi.downloadReportCsv("collection", { month, format: "html" });
+      await downloadPdf({ htmlString: html, filename: `collection-${month}.pdf` });
     } catch (e) {
-      toast.error("Could not open report.");
+      toast.error("Could not generate the PDF.");
     } finally {
       setLoading(null);
     }
@@ -259,10 +249,10 @@ const BillSection = ({ bills }) => {
     if (!selectedBill) { toast.error("Please select a bill first."); return; }
     setLoading("html");
     try {
-      const url = buildUrl(`bill/${selectedBill._id}`, { format: "html" });
-      await openHtml(url);
+      const html = await maintenanceApi.downloadReportCsv(`bill/${selectedBill._id}`, { format: "html" });
+      await downloadPdf({ htmlString: html, filename: `bill-${selectedBill.billMonth || selectedBill._id}.pdf` });
     } catch (e) {
-      toast.error("Could not open report.");
+      toast.error("Could not generate the PDF.");
     } finally { setLoading(null); }
   };
 
@@ -378,10 +368,10 @@ const ResidentHistorySection = () => {
     if (!selected) { toast.error("Please select a resident first."); return; }
     setLoading("html");
     try {
-      const url = buildUrl("history", { residentId: selected._id, year, format: "html" });
-      await openHtml(url);
+      const html = await maintenanceApi.downloadReportCsv("history", { residentId: selected._id, year, format: "html" });
+      await downloadPdf({ htmlString: html, filename: `history-${selected.flat || selected._id}-${year}.pdf` });
     } catch (e) {
-      toast.error("Could not open report.");
+      toast.error("Could not generate the PDF.");
     } finally { setLoading(null); }
   };
 
@@ -464,10 +454,10 @@ const MyHistorySection = ({ user }) => {
   const handlePrint = async () => {
     setLoading("html");
     try {
-      const url = buildUrl("history", { year, format: "html" });
-      await openHtml(url);
+      const html = await maintenanceApi.downloadReportCsv("history", { year, format: "html" });
+      await downloadPdf({ htmlString: html, filename: `my-payments-${year}.pdf` });
     } catch (e) {
-      toast.error("Could not open report.");
+      toast.error("Could not generate the PDF.");
     } finally { setLoading(null); }
   };
 
@@ -521,10 +511,10 @@ const SummarySection = () => {
   const handlePrint = async () => {
     setLoading("html");
     try {
-      const url = buildUrl("summary", { year, format: "html" });
-      await openHtml(url);
+      const html = await maintenanceApi.downloadReportCsv("summary", { year, format: "html" });
+      await downloadPdf({ htmlString: html, filename: `financial-summary-${year}.pdf` });
     } catch (e) {
-      toast.error("Could not open report.");
+      toast.error("Could not generate the PDF.");
     } finally { setLoading(null); }
   };
 

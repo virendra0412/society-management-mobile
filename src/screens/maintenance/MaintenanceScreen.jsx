@@ -634,17 +634,16 @@ const BillDetailModal = ({ open, billId, onClose, isAdmin, paymentSettings, paym
                 )}
               </View>
 
-              {/* Download Bill — available once published */}
+              {/* Download Bill — available once published, admin only */}
               {bill.isPublished && (
                 <TouchableOpacity
                   style={[S.receiptDownloadBtn, { marginTop: 4 }]}
                   activeOpacity={0.8}
-                  onPress={() => {
-                    const { openHtml: openR } = require("./reports/reportUtils");
-                    const { tokenStorage: ts } = require("../../utils/storage");
-                    const { BASE_URL: BU }     = require("../../api/client");
-                    const url = `${BU}/maintenance/reports/bill/${bill._id}?token=${ts.getAccess()}&format=html`;
-                    openR(url);
+                  onPress={async () => {
+                    const { maintenanceApi: api }    = require("../../api/resources.api");
+                    const { downloadPdf: dl }        = require("./reports/reportUtils");
+                    const html = await api.downloadReportCsv(`bill/${bill._id}`, { format: "html" });
+                    await dl({ htmlString: html, filename: `bill-${bill.billMonth || bill._id}.pdf` });
                   }}
                 >
                   <Text style={{ fontSize: 16 }}>📋</Text>
@@ -730,6 +729,23 @@ const BillDetailModal = ({ open, billId, onClose, isAdmin, paymentSettings, paym
                                 </TouchableOpacity>
                               </View>
                             )}
+                            {/* Admin: quick one-tap receipt download for this resident */}
+                            {isPaid && (
+                              <View style={S.recordActions}>
+                                <TouchableOpacity
+                                  onPress={async () => {
+                                    const { maintenanceApi: api } = require("../../api/resources.api");
+                                    const { downloadPdf: dl }     = require("./reports/reportUtils");
+                                    const html = await api.downloadReportCsv(`receipt/${bill._id}/${p._id}`, { format: "html" });
+                                    await dl({ htmlString: html, filename: `receipt-${p.flat || p._id}.pdf` });
+                                  }}
+                                  style={S.recordBtn}
+                                  activeOpacity={0.75}
+                                >
+                                  <Text style={S.recordBtnText}>🧾 Receipt</Text>
+                                </TouchableOpacity>
+                              </View>
+                            )}
                           </View>
                         );
                       })
@@ -759,13 +775,11 @@ const BillDetailModal = ({ open, billId, onClose, isAdmin, paymentSettings, paym
                           <TouchableOpacity
                           style={S.receiptDownloadBtn}
                             activeOpacity={0.8}
-                            onPress={() => {
-                              const { openHtml: openR } = require("./reports/reportUtils");
-                              const { tokenStorage: ts } = require("../../utils/storage");
-                              const { BASE_URL: BU }     = require("../../api/client");
-                              const token = ts.getAccess();
-                              const url   = `${BU}/maintenance/reports/receipt/${bill._id}/${p._id}?token=${token}`;
-                              openR(url);
+                            onPress={async () => {
+                              const { maintenanceApi: api } = require("../../api/resources.api");
+                              const { downloadPdf: dl }     = require("./reports/reportUtils");
+                              const html = await api.downloadReportCsv(`receipt/${bill._id}/${p._id}`, { format: "html" });
+                              await dl({ htmlString: html, filename: `receipt-${p.flat || p._id}.pdf` });
                             }}
                           >
                             <Text style={{ fontSize: 16 }}>🧾</Text>
@@ -894,6 +908,23 @@ const MyPaymentsView = ({ onBack }) => {
                   </View>
                   {isPaid && p.paidAt && (
                     <Text style={S.paidMeta}>Paid {fmtDate(p.paidAt)} via {p.paymentMethod}</Text>
+                  )}
+                  {isPaid && (
+                    <TouchableOpacity
+                      style={[S.receiptDownloadBtn, { marginTop: 8 }]}
+                      activeOpacity={0.8}
+                      onPress={async () => {
+                        const { maintenanceApi: api } = require("../../api/resources.api");
+                        const { downloadPdf: dl }     = require("./reports/reportUtils");
+                        const html = await api.downloadReportCsv(`receipt/${p.billId}/${p._id}`, { format: "html" });
+                        await dl({ htmlString: html, filename: `receipt-${p.billId}.pdf` });
+                      }}
+                    >
+                      <Text style={{ fontSize: 14 }}>🧾</Text>
+                      <Text style={{ fontSize: 12, fontWeight: "700", color: C.teal }}>
+                        Download Receipt
+                      </Text>
+                    </TouchableOpacity>
                   )}
                 </View>
                 <Text style={{ fontSize: 28, opacity: isPaid ? 1 : 0.35 }}>
