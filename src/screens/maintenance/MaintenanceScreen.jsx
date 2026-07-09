@@ -476,7 +476,7 @@ const DiscountModal = ({ open, onClose, paymentRecord, billId, onSaved }) => {
 // ═══════════════════════════════════════════════════════════════════════════════
 // ─── BILL DETAIL MODAL ────────────────────────────────────────────────────────
 // ═══════════════════════════════════════════════════════════════════════════════
-const BillDetailModal = ({ open, billId, onClose, isAdmin, paymentSettings, onOpenSubmitProof }) => {
+const BillDetailModal = ({ open, billId, onClose, isAdmin, paymentSettings, paymentVerificationEnabled = true, onOpenSubmitProof }) => {
   const toast = useToast();
   const { t } = useLanguage();
   const [bill,         setBill]         = useState(null);
@@ -633,6 +633,26 @@ const BillDetailModal = ({ open, billId, onClose, isAdmin, paymentSettings, onOp
                   </Btn>
                 )}
               </View>
+
+              {/* Download Bill — available once published */}
+              {bill.isPublished && (
+                <TouchableOpacity
+                  style={[S.receiptDownloadBtn, { marginTop: 4 }]}
+                  activeOpacity={0.8}
+                  onPress={() => {
+                    const { openHtml: openR } = require("./reports/reportUtils");
+                    const { tokenStorage: ts } = require("../../utils/storage");
+                    const { BASE_URL: BU }     = require("../../api/client");
+                    const url = `${BU}/maintenance/reports/bill/${bill._id}?token=${ts.getAccess()}&format=html`;
+                    openR(url);
+                  }}
+                >
+                  <Text style={{ fontSize: 16 }}>📋</Text>
+                  <Text style={{ fontSize: 13, fontWeight: "700", color: C.navy }}>
+                    Download Full Bill Report
+                  </Text>
+                </TouchableOpacity>
+              )}
             </View>
           )}
 
@@ -723,15 +743,38 @@ const BillDetailModal = ({ open, billId, onClose, isAdmin, paymentSettings, onOp
                     const p = bill.payments[0];
                     if (!p) return <EmptyState icon="💰" message={t("maint_no_payment_record","No payment record yet.")} />;
                     return (
-                      <ResidentPaymentCard
-                        payment={p}
-                        bill={bill}
-                        paymentSettings={paymentSettings}
-                        onSubmitProof={() => {
-                          onClose();
-                          onOpenSubmitProof({ billId: bill._id, paymentId: p._id, billTitle: bill.title, totalDue: p.totalDue, paymentSettings });
-                        }}
-                      />
+                      <>
+                        <ResidentPaymentCard
+                          payment={p}
+                          bill={bill}
+                          paymentSettings={paymentSettings}
+                          paymentVerificationEnabled={paymentVerificationEnabled}
+                          onSubmitProof={() => {
+                            onClose();
+                            onOpenSubmitProof({ billId: bill._id, paymentId: p._id, billTitle: bill.title, totalDue: p.totalDue, paymentSettings });
+                          }}
+                        />
+                        {/* Receipt download — only for paid/waived records */}
+                        {(p.status === "paid" || p.status === "waived") && (
+                          <TouchableOpacity
+                          style={S.receiptDownloadBtn}
+                            activeOpacity={0.8}
+                            onPress={() => {
+                              const { openHtml: openR } = require("./reports/reportUtils");
+                              const { tokenStorage: ts } = require("../../utils/storage");
+                              const { BASE_URL: BU }     = require("../../api/client");
+                              const token = ts.getAccess();
+                              const url   = `${BU}/maintenance/reports/receipt/${bill._id}/${p._id}?token=${token}`;
+                              openR(url);
+                            }}
+                          >
+                            <Text style={{ fontSize: 16 }}>🧾</Text>
+                            <Text style={{ fontSize: 13, fontWeight: "700", color: C.teal }}>
+                              Download Receipt
+                            </Text>
+                          </TouchableOpacity>
+                        )}
+                      </>
                     );
                   })() : (
                     <EmptyState icon="💰" message={t("maint_no_payment_record","No payment record yet.")} />
@@ -941,7 +984,11 @@ const BILL_STATUS_FILTER_KEYS = {
   Closed:    "maint_filter_closed",
 };
 
-const MaintenanceDashboard = ({ isAdmin, onOpenBill, onOpenMyPayments, onOpenDefaulters, onOpenQueue, onOpenSettings }) => {
+const MaintenanceDashboard = ({
+  isAdmin, verificationEnabled = true,
+  onOpenBill, onOpenMyPayments, onOpenDefaulters,
+  onOpenQueue, onOpenSettings, onOpenReports, onBillsLoaded,
+}) => {
   const { t } = useLanguage();
   const toast = useToast();
   const [bills,        setBills]        = useState([]);
@@ -999,7 +1046,9 @@ const MaintenanceDashboard = ({ isAdmin, onOpenBill, onOpenMyPayments, onOpenDef
       if (statusFilter === "Closed")    { params.isClosed = true; }
       if (monthFilter) params.billMonth = monthFilter;
       const res = await maintenanceApi.getAllBills(params);
-      setBills(res.data?.bills || []);
+      const loaded = res.data?.bills || [];
+      setBills(loaded);
+      onBillsLoaded?.(loaded);
     } catch (e) {
       setError(e?.response?.data?.message || t("payments_load_bills_failed", "Failed to load bills."));
     } finally {
@@ -1058,8 +1107,8 @@ const MaintenanceDashboard = ({ isAdmin, onOpenBill, onOpenMyPayments, onOpenDef
           </TouchableOpacity>
         )}
 
-        {/* Verification queue shortcut (admin only) */}
-        {isAdmin && (
+        {/* Verification queue shortcut — hidden when feature is disabled */}
+        {isAdmin && verificationEnabled && (
           <TouchableOpacity onPress={onOpenQueue} activeOpacity={0.85} style={[S.shortcutCard, { borderColor: C.amber + "40" }]}>
             <View>
               <Text style={[S.shortcutTitle, { color: C.amber }]}>🕐 Pending Verifications</Text>
@@ -1070,13 +1119,24 @@ const MaintenanceDashboard = ({ isAdmin, onOpenBill, onOpenMyPayments, onOpenDef
         )}
 
         {/* Payment settings shortcut (admin only) */}
-        {isAdmin && (
+        {isAdmin && verificationEnabled && (
           <TouchableOpacity onPress={onOpenSettings} activeOpacity={0.85} style={S.shortcutCard}>
             <View>
               <Text style={S.shortcutTitle}>⚙️ Payment Settings</Text>
               <Text style={S.shortcutSub}>Configure bank account, UPI QR, and accepted methods</Text>
             </View>
             <Text style={S.shortcutArrow}>›</Text>
+          </TouchableOpacity>
+        )}
+
+        {/* Reports shortcut — always visible to admin */}
+        {isAdmin && (
+          <TouchableOpacity onPress={onOpenReports} activeOpacity={0.85} style={[S.shortcutCard, { borderColor: C.navy + "30" }]}>
+            <View>
+              <Text style={[S.shortcutTitle, { color: C.navy }]}>📄 Reports</Text>
+              <Text style={S.shortcutSub}>Download, print or share PDF / Excel reports</Text>
+            </View>
+            <Text style={[S.shortcutArrow, { color: C.navy }]}>›</Text>
           </TouchableOpacity>
         )}
 
@@ -1198,23 +1258,26 @@ const MaintenanceDashboard = ({ isAdmin, onOpenBill, onOpenMyPayments, onOpenDef
 // ═══════════════════════════════════════════════════════════════════════════════
 export const MaintenanceScreen = ({ navigation }) => {
   const { isAdmin } = useAuth();
-  const [view,            setView]           = useState("dashboard"); // "dashboard" | "my-payments" | "defaulters" | "queue" | "settings" | "submit-proof"
-  const [openBillId,      setOpenBillId]     = useState(null);
-  const [paymentSettings, setPaymentSettings]= useState({});
-  const [submitProofParams, setSubmitProofParams] = useState(null);
+  const [view,                  setView]                  = useState("dashboard");
+  const [openBillId,            setOpenBillId]            = useState(null);
+  const [paymentSettings,       setPaymentSettings]       = useState({});
+  const [verificationEnabled,   setVerificationEnabled]   = useState(true); // BUG 2 FIX
+  const [bills,                 setBills]                 = useState([]);   // shared with ReportsScreen
+  const [submitProofParams,     setSubmitProofParams]     = useState(null);
 
-  // Load payment settings once so they're available for resident proof submission
+  // Load payment settings once — now also reads paymentVerificationEnabled (Bug 2 fix)
   useEffect(() => {
     maintenanceApi.getPaymentSettings()
-      .then(({ paymentSettings: s }) => setPaymentSettings(s || {}))
-      .catch(() => {}); // non-fatal
+      .then(({ paymentSettings: s, paymentVerificationEnabled: v }) => {
+        setPaymentSettings(s || {});
+        if (v !== undefined) setVerificationEnabled(v);
+      })
+      .catch(() => {});
   }, []);
 
   if (view === "my-payments")  return <MyPaymentsView  onBack={() => setView("dashboard")} />;
   if (view === "defaulters")   return <DefaulterView   onBack={() => setView("dashboard")} />;
 
-  // New views — rendered inline via navigation prop (native navigator) if available,
-  // or as stack-style replacements in the same tab otherwise
   if (view === "queue") {
     const VerificationQueueScreen = require("./VerificationQueueScreen").default;
     return <VerificationQueueScreen navigation={{ goBack: () => setView("dashboard") }} />;
@@ -1222,6 +1285,10 @@ export const MaintenanceScreen = ({ navigation }) => {
   if (view === "settings") {
     const PaymentSettingsScreen = require("./PaymentSettingsScreen").default;
     return <PaymentSettingsScreen navigation={{ goBack: () => setView("dashboard") }} />;
+  }
+  if (view === "reports") {
+    const ReportsScreen = require("./reports/ReportsScreen").default;
+    return <ReportsScreen onBack={() => setView("dashboard")} bills={bills} />;
   }
   if (view === "submit-proof" && submitProofParams) {
     const SubmitProofScreen = require("./SubmitProofScreen").default;
@@ -1237,11 +1304,14 @@ export const MaintenanceScreen = ({ navigation }) => {
     <>
       <MaintenanceDashboard
         isAdmin={isAdmin}
-        onOpenBill={(id)         => setOpenBillId(id)}
-        onOpenMyPayments={()     => setView("my-payments")}
-        onOpenDefaulters={()     => setView("defaulters")}
-        onOpenQueue={()          => setView("queue")}
-        onOpenSettings={()       => setView("settings")}
+        verificationEnabled={verificationEnabled}
+        onOpenBill={(id)      => setOpenBillId(id)}
+        onOpenMyPayments={()  => setView("my-payments")}
+        onOpenDefaulters={()  => setView("defaulters")}
+        onOpenQueue={()       => setView("queue")}
+        onOpenSettings={()    => setView("settings")}
+        onOpenReports={()     => setView("reports")}
+        onBillsLoaded={setBills}
       />
       <BillDetailModal
         open={!!openBillId}
@@ -1249,6 +1319,7 @@ export const MaintenanceScreen = ({ navigation }) => {
         onClose={() => setOpenBillId(null)}
         isAdmin={isAdmin}
         paymentSettings={paymentSettings}
+        paymentVerificationEnabled={verificationEnabled}
         onOpenSubmitProof={(params) => {
           setOpenBillId(null);
           setSubmitProofParams(params);
@@ -1285,6 +1356,7 @@ const S = StyleSheet.create({
 
   // Shortcuts
   shortcutCard:     { backgroundColor: C.teal + "0D", borderWidth: 1.5, borderColor: C.teal + "25", borderRadius: 14, padding: 14, marginBottom: 10, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  receiptDownloadBtn: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: C.teal + "10", borderRadius: 10, borderWidth: 1.5, borderColor: C.teal + "30", padding: 12, marginTop: 12 },
   shortcutDanger:   { backgroundColor: C.red + "08", borderColor: C.red + "20" },
   shortcutTitle:    { fontSize: 14, fontWeight: "700" },
   shortcutSub:      { fontSize: 12, color: C.gray500, marginTop: 2 },

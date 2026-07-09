@@ -186,6 +186,23 @@ export const maintenanceApi = {
       headers: { "Content-Type": "multipart/form-data" },
     }).then(unwrap);
   },
+
+  // ── Reports — return raw HTML or CSV strings ──────────────────────────────
+  // The controller streams HTML/CSV directly; responseType: "text" is essential.
+  // Mobile writes the response to a temp file then opens / shares it.
+
+  getReportUrl: (path, params = {}) => {
+    // Build a full authenticated URL for use with expo-web-browser (HTML reports)
+    // The auth token is passed as a query param since web-browser can't set headers.
+    const qs = new URLSearchParams({ ...params, format: "html" }).toString();
+    return `${client.defaults.baseURL}/maintenance/reports/${path}?${qs}`;
+  },
+
+  downloadReportCsv: async (path, params = {}) =>
+    client.get(`/maintenance/reports/${path}`, {
+      params:       { ...params, format: "csv" },
+      responseType: "text",
+    }).then((r) => r.data),
 };
 
 // ─── Parking ──────────────────────────────────────────────────────────────────
