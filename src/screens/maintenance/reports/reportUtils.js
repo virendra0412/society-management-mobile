@@ -20,7 +20,7 @@
  */
 
 import * as Print       from "expo-print";
-import * as FileSystem  from "expo-file-system";
+import * as FileSystem  from "expo-file-system/legacy";
 import * as Sharing     from "expo-sharing";
 import * as WebBrowser  from "expo-web-browser";
 import { Alert, Platform } from "react-native";
@@ -45,26 +45,35 @@ export const buildAuthUrl = (baseUrl, token, extraParams = {}) => {
 
 export const downloadPdf = async ({ htmlString, filename = "report.pdf" }) => {
   try {
+    console.log("[downloadPdf] Starting PDF generation, HTML size:", htmlString?.length);
+    
     const { uri } = await Print.printToFileAsync({ html: htmlString, base64: false });
+    console.log("[downloadPdf] Print completed, uri:", uri);
 
     // printToFileAsync names the file something generic (e.g. Print-xxxx.pdf);
     // copy it to a readable name before handing it to the share sheet.
     const safeName = filename.endsWith(".pdf") ? filename : `${filename}.pdf`;
     const dest = FileSystem.cacheDirectory + safeName;
+    console.log("[downloadPdf] Copying from:", uri, "to:", dest);
     await FileSystem.copyAsync({ from: uri, to: dest });
+    console.log("[downloadPdf] Copy completed");
 
     const canShare = await Sharing.isAvailableAsync();
+    console.log("[downloadPdf] canShare:", canShare);
     if (!canShare) {
       Alert.alert("Sharing not available", "Your device does not support file sharing.");
       return;
     }
+    console.log("[downloadPdf] Opening share sheet");
     await Sharing.shareAsync(dest, {
       mimeType: "application/pdf",
       dialogTitle: "Save or Share PDF",
       UTI: "com.adobe.pdf",
     });
+    console.log("[downloadPdf] Share completed");
   } catch (e) {
-    Alert.alert("Error", "Could not generate the PDF. Please try again.");
+    console.error("[downloadPdf] ERROR:", e.message, e);
+    Alert.alert("Error", `Could not generate the PDF. ${e.message || "Please try again."}`);
   }
 };
 

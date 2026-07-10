@@ -198,11 +198,17 @@ export const maintenanceApi = {
     return `${client.defaults.baseURL}/maintenance/reports/${path}?${qs}`;
   },
 
+  downloadReportHtml: async (path, params = {}) =>
+    client.get(`/maintenance/reports/${path}`, {
+      params:       { format: "html", ...params },
+      responseType: "text",
+    }).then((r) => r.data),
+
   downloadReportCsv: async (path, params = {}) =>
-  client.get(`/maintenance/reports/${path}`, {
-    params:       { format: "csv", ...params },
-    responseType: "text",
-  }).then((r) => r.data),
+    client.get(`/maintenance/reports/${path}`, {
+      params:       { format: "csv", ...params },
+      responseType: "text",
+    }).then((r) => r.data),
 };
 
 // ─── Parking ──────────────────────────────────────────────────────────────────

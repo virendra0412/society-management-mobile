@@ -111,14 +111,24 @@ export default function PaymentSettingsScreen({ navigation }) {
       setVerificationToggling(true);
       try {
         await maintenanceApi.setVerificationStatus(nextValue);
-        refreshVerificationStatus();
+        await refreshVerificationStatus();
         toast.success(
           nextValue
             ? "Payment verification enabled. Residents can submit proof again."
             : "Payment verification disabled. Residents won't see the submit-proof option."
         );
       } catch (e) {
-        toast.error("Could not update payment verification. Please try again.");
+        try {
+          await maintenanceApi.updatePaymentSettings({ paymentVerificationEnabled: nextValue });
+          await refreshVerificationStatus();
+          toast.success(
+            nextValue
+              ? "Payment verification enabled. Residents can submit proof again."
+              : "Payment verification disabled. Residents won't see the submit-proof option."
+          );
+        } catch (fallbackError) {
+          toast.error("Could not update payment verification. Please try again.");
+        }
       } finally {
         setVerificationToggling(false);
       }
@@ -159,7 +169,8 @@ export default function PaymentSettingsScreen({ navigation }) {
   const load = useCallback(async () => {
     try {
       setLoading(true);
-      const { paymentSettings: s } = await maintenanceApi.getPaymentSettings();
+      const result = await maintenanceApi.getPaymentSettings();
+      const s = result.data?.paymentSettings || {};
       if (s.acceptedMethods?.length) setAccepted(new Set(s.acceptedMethods));
       if (s.bankTransfer) {
         setBank({
@@ -244,8 +255,9 @@ export default function PaymentSettingsScreen({ navigation }) {
 
     try {
       setQrUploading(true);
-      const { upiQr } = await maintenanceApi.uploadUpiQr(asset);
-      setQrImageUri(upiQr.qrImageUrl);
+      const result = await maintenanceApi.uploadUpiQr(asset);
+      const upiQr  = result.data?.upiQr;
+      setQrImageUri(upiQr?.qrImageUrl || null);
       toast.success("UPI QR uploaded.");
     } catch (e) {
       toast.error(e?.message || "Could not upload QR image.");

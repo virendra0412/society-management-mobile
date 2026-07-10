@@ -642,7 +642,7 @@ const BillDetailModal = ({ open, billId, onClose, isAdmin, paymentSettings, paym
                   onPress={async () => {
                     const { maintenanceApi: api }    = require("../../api/resources.api");
                     const { downloadPdf: dl }        = require("./reports/reportUtils");
-                    const html = await api.downloadReportCsv(`bill/${bill._id}`, { format: "html" });
+                    const html = await api.downloadReportHtml(`bill/${bill._id}`);
                     await dl({ htmlString: html, filename: `bill-${bill.billMonth || bill._id}.pdf` });
                   }}
                 >
@@ -736,7 +736,7 @@ const BillDetailModal = ({ open, billId, onClose, isAdmin, paymentSettings, paym
                                   onPress={async () => {
                                     const { maintenanceApi: api } = require("../../api/resources.api");
                                     const { downloadPdf: dl }     = require("./reports/reportUtils");
-                                    const html = await api.downloadReportCsv(`receipt/${bill._id}/${p._id}`, { format: "html" });
+                                    const html = await api.downloadReportHtml(`receipt/${bill._id}/${p._id}`);
                                     await dl({ htmlString: html, filename: `receipt-${p.flat || p._id}.pdf` });
                                   }}
                                   style={S.recordBtn}
@@ -778,7 +778,7 @@ const BillDetailModal = ({ open, billId, onClose, isAdmin, paymentSettings, paym
                             onPress={async () => {
                               const { maintenanceApi: api } = require("../../api/resources.api");
                               const { downloadPdf: dl }     = require("./reports/reportUtils");
-                              const html = await api.downloadReportCsv(`receipt/${bill._id}/${p._id}`, { format: "html" });
+                              const html = await api.downloadReportHtml(`receipt/${bill._id}/${p._id}`);
                               await dl({ htmlString: html, filename: `receipt-${p.flat || p._id}.pdf` });
                             }}
                           >
@@ -916,7 +916,7 @@ const MyPaymentsView = ({ onBack }) => {
                       onPress={async () => {
                         const { maintenanceApi: api } = require("../../api/resources.api");
                         const { downloadPdf: dl }     = require("./reports/reportUtils");
-                        const html = await api.downloadReportCsv(`receipt/${p.billId}/${p._id}`, { format: "html" });
+                        const html = await api.downloadReportHtml(`receipt/${p.billId}/${p._id}`);
                         await dl({ htmlString: html, filename: `receipt-${p.billId}.pdf` });
                       }}
                     >
@@ -1150,7 +1150,7 @@ const MaintenanceDashboard = ({
         )}
 
         {/* Payment settings shortcut (admin only) */}
-        {isAdmin && verificationEnabled && (
+        {isAdmin && (
           <TouchableOpacity onPress={onOpenSettings} activeOpacity={0.85} style={S.shortcutCard}>
             <View>
               <Text style={S.shortcutTitle}>⚙️ Payment Settings</Text>
@@ -1165,7 +1165,7 @@ const MaintenanceDashboard = ({
           <TouchableOpacity onPress={onOpenReports} activeOpacity={0.85} style={[S.shortcutCard, { borderColor: C.navy + "30" }]}>
             <View>
               <Text style={[S.shortcutTitle, { color: C.navy }]}>📄 Reports</Text>
-              <Text style={S.shortcutSub}>Download, print or share PDF / Excel reports</Text>
+              <Text style={S.shortcutSub}>Download PDF, export CSV, or share via WhatsApp</Text>
             </View>
             <Text style={[S.shortcutArrow, { color: C.navy }]}>›</Text>
           </TouchableOpacity>
@@ -1296,11 +1296,16 @@ export const MaintenanceScreen = ({ navigation }) => {
   const [bills,                 setBills]                 = useState([]);   // shared with ReportsScreen
   const [submitProofParams,     setSubmitProofParams]     = useState(null);
 
-  // Load payment settings once — now also reads paymentVerificationEnabled (Bug 2 fix)
+  // Load payment settings once — reads paymentSettings (for resident proof flow)
+  // and paymentVerificationEnabled (gates queue shortcut + submit-proof CTA)
   useEffect(() => {
     maintenanceApi.getPaymentSettings()
-      .then(({ paymentSettings: s, paymentVerificationEnabled: v }) => {
+      .then((result) => {
+        const s = result.data?.paymentSettings;
+        const v = result.data?.paymentVerificationEnabled;
         setPaymentSettings(s || {});
+        // Only update if the server returned an explicit value;
+        // default stays true so societies without the flag set behave correctly
         if (v !== undefined) setVerificationEnabled(v);
       })
       .catch(() => {});
