@@ -173,7 +173,7 @@ export const Spinner = ({ size = 24, color = C.teal }) => (
 
 // ─── Btn ──────────────────────────────────────────────────────────────────────
 export const Btn = ({
-  children, onPress, loading, disabled, variant = "primary",
+  children, label, onPress, loading, disabled, variant = "primary",
   style, small,
 }) => {
   const bg = {
@@ -208,7 +208,7 @@ export const Btn = ({
       {loading
         ? <ActivityIndicator size="small" color={tc} />
         : <Text style={[styles.btnText, { color: tc, fontSize: small ? 12 : 14 }]}>
-            {children}
+            {label ?? children}
           </Text>
       }
     </TouchableOpacity>
@@ -369,8 +369,13 @@ export const Modal = ({ open, onClose, onOpen, apiError, title, children }) => {
 };
 
 // ─── ScreenHeader ─────────────────────────────────────────────────────────────
-export const ScreenHeader = ({ title, subtitle, action, style }) => (
+export const ScreenHeader = ({ title, subtitle, action, onBack, style }) => (
   <View style={[styles.screenHeader, style]}>
+    {onBack && (
+      <TouchableOpacity onPress={onBack} activeOpacity={0.7} style={styles.screenBackBtn}>
+        <Text style={styles.screenBackIcon}>‹</Text>
+      </TouchableOpacity>
+    )}
     <View style={{ flex: 1 }}>
       <Text style={styles.screenTitle}>{title}</Text>
       {subtitle && <Text style={styles.screenSub}>{subtitle}</Text>}
@@ -433,9 +438,11 @@ const styles = StyleSheet.create({
   modalApiErrorText:{ fontSize:13, color:"#B91C1C", fontWeight:"600", lineHeight:19 },
 
   // ScreenHeader
-  screenHeader: { paddingHorizontal:16, paddingTop:16, paddingBottom:12, flexDirection:"row", alignItems:"center" },
-  screenTitle:  { fontSize:22, fontWeight:"800", color:C.navy },
-  screenSub:    { fontSize:12, color:C.gray500, marginTop:2 },
+  screenHeader:   { paddingHorizontal:16, paddingTop:16, paddingBottom:12, flexDirection:"row", alignItems:"center" },
+  screenBackBtn:  { marginRight:8, padding:4 },
+  screenBackIcon: { fontSize:32, color:C.navy, fontWeight:"300", lineHeight:36 },
+  screenTitle:    { fontSize:22, fontWeight:"800", color:C.navy },
+  screenSub:      { fontSize:12, color:C.gray500, marginTop:2 },
 
   // FilterPill
   pill:         { paddingHorizontal:14, paddingVertical:6, borderRadius:20, borderWidth:1.5, borderColor:C.gray100, marginRight:8 },

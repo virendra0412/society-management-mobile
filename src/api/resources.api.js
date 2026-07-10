@@ -151,6 +151,64 @@ export const maintenanceApi = {
   recordPayment: (billId, paymentId, d)      => client.patch(`/maintenance/${billId}/payments/${paymentId}`,             d).then(unwrap),
   applyDiscount: (billId, paymentId, amount) => client.patch(`/maintenance/${billId}/payments/${paymentId}/discount`,    { discount: amount }).then(unwrap),
   deleteBill:    (id)         => client.delete(`/maintenance/${id}`).then(unwrap),
+
+  // ── Manual payment proof workflow ──────────────────────────────────────────
+  // Resident: submit proof (method + UTR) after paying offline
+  submitProof: (billId, paymentId, d) =>
+    client.post(`/maintenance/${billId}/payments/${paymentId}/submit-proof`, d).then(unwrap),
+
+  // Admin: verification queue
+  getPendingVerifications: (p = {}) =>
+    client.get("/maintenance/pending-verifications", { params: p }).then(unwrap),
+
+  // Admin: approve or reject a submitted proof
+  verifyPayment: (billId, paymentId) =>
+    client.patch(`/maintenance/${billId}/payments/${paymentId}/verify`).then(unwrap),
+  rejectPayment: (billId, paymentId, reason) =>
+    client.patch(`/maintenance/${billId}/payments/${paymentId}/reject`, { reason }).then(unwrap),
+
+  // ── Payment-verification on/off switch ──────────────────────────────────────
+  // Read state via modulesApi.getStatus() — already includes it for any member.
+  // Only admin/treasurer can change it (for their own society).
+  setVerificationStatus: (enabled) =>
+    client.patch("/maintenance/verification-status", { enabled }).then(unwrap),
+
+  // ── Payment settings (admin configures once; residents read on bill view) ──
+  getPaymentSettings: () =>
+    client.get("/maintenance/payment-settings").then(unwrap),
+  updatePaymentSettings: (d) =>
+    client.patch("/maintenance/payment-settings", d).then(unwrap),
+  uploadUpiQr: (asset) => {
+    const fd  = new FormData();
+    const ext = (asset.uri.split(".").pop() || "jpg").replace("jpg", "jpeg");
+    fd.append("qrImage", { uri: asset.uri, name: `qr.${ext}`, type: `image/${ext}` });
+    return client.post("/maintenance/payment-settings/upi-qr", fd, {
+      headers: { "Content-Type": "multipart/form-data" },
+    }).then(unwrap);
+  },
+
+  // ── Reports — return raw HTML or CSV strings ──────────────────────────────
+  // The controller streams HTML/CSV directly; responseType: "text" is essential.
+  // Mobile writes the response to a temp file then opens / shares it.
+
+  getReportUrl: (path, params = {}) => {
+    // Build a full authenticated URL for use with expo-web-browser (HTML reports)
+    // The auth token is passed as a query param since web-browser can't set headers.
+    const qs = new URLSearchParams({ ...params, format: "html" }).toString();
+    return `${client.defaults.baseURL}/maintenance/reports/${path}?${qs}`;
+  },
+
+  downloadReportHtml: async (path, params = {}) =>
+    client.get(`/maintenance/reports/${path}`, {
+      params:       { format: "html", ...params },
+      responseType: "text",
+    }).then((r) => r.data),
+
+  downloadReportCsv: async (path, params = {}) =>
+    client.get(`/maintenance/reports/${path}`, {
+      params:       { format: "csv", ...params },
+      responseType: "text",
+    }).then((r) => r.data),
 };
 
 // ─── Parking ──────────────────────────────────────────────────────────────────
