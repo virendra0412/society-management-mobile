@@ -41,6 +41,7 @@ import {
 } from "../../components/ui";
 import { C, PAYMENT_STATUS_COLOR, BILL_STATUS, PAYMENT_METHODS } from "../../constants/theme";
 import { timeAgo } from "../../utils/timeago";
+import { ResidentPaymentCard } from "./ResidentPaymentCard";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -475,7 +476,7 @@ const DiscountModal = ({ open, onClose, paymentRecord, billId, onSaved }) => {
 // ═══════════════════════════════════════════════════════════════════════════════
 // ─── BILL DETAIL MODAL ────────────────────────────────────────────────────────
 // ═══════════════════════════════════════════════════════════════════════════════
-const BillDetailModal = ({ open, billId, onClose, isAdmin }) => {
+const BillDetailModal = ({ open, billId, onClose, isAdmin, paymentSettings, paymentVerificationEnabled = true, onOpenSubmitProof }) => {
   const toast = useToast();
   const { t } = useLanguage();
   const [bill,         setBill]         = useState(null);
@@ -632,6 +633,25 @@ const BillDetailModal = ({ open, billId, onClose, isAdmin }) => {
                   </Btn>
                 )}
               </View>
+
+              {/* Download Bill — available once published, admin only */}
+              {bill.isPublished && (
+                <TouchableOpacity
+                  style={[S.receiptDownloadBtn, { marginTop: 4 }]}
+                  activeOpacity={0.8}
+                  onPress={async () => {
+                    const { maintenanceApi: api }    = require("../../api/resources.api");
+                    const { downloadPdf: dl }        = require("./reports/reportUtils");
+                    const html = await api.downloadReportHtml(`bill/${bill._id}`);
+                    await dl({ htmlString: html, filename: `bill-${bill.billMonth || bill._id}.pdf` });
+                  }}
+                >
+                  <Text style={{ fontSize: 16 }}>📋</Text>
+                  <Text style={{ fontSize: 13, fontWeight: "700", color: C.navy }}>
+                    Download Full Bill Report
+                  </Text>
+                </TouchableOpacity>
+              )}
             </View>
           )}
 
@@ -709,46 +729,69 @@ const BillDetailModal = ({ open, billId, onClose, isAdmin }) => {
                                 </TouchableOpacity>
                               </View>
                             )}
+                            {/* Admin: quick one-tap receipt download for this resident */}
+                            {isPaid && (
+                              <View style={S.recordActions}>
+                                <TouchableOpacity
+                                  onPress={async () => {
+                                    const { maintenanceApi: api } = require("../../api/resources.api");
+                                    const { downloadPdf: dl }     = require("./reports/reportUtils");
+                                    const html = await api.downloadReportHtml(`receipt/${bill._id}/${p._id}`);
+                                    await dl({ htmlString: html, filename: `receipt-${p.flat || p._id}.pdf` });
+                                  }}
+                                  style={S.recordBtn}
+                                  activeOpacity={0.75}
+                                >
+                                  <Text style={S.recordBtnText}>🧾 Receipt</Text>
+                                </TouchableOpacity>
+                              </View>
+                            )}
                           </View>
                         );
                       })
                   }
                 </>
               ) : (
-                // Resident: own record only
+                // Resident: own record — full card with proof submission CTA
                 <>
                   <SectionLabel title={t("maint_your_payment_label","Your Payment")} />
                   {(bill.payments?.length ?? 0) > 0 ? (() => {
-                    const p  = bill.payments[0];
-                    if (!p) return <EmptyState icon="💰" message={t("maint_no_payment_record","No payment record yet. Bill may not have been published for your flat.")} />;
-                    const sc = PAYMENT_STATUS_COLOR[p.status] || {};
-                    const isPaid = p.status === "paid" || p.status === "waived";
+                    const p = bill.payments[0];
+                    if (!p) return <EmptyState icon="💰" message={t("maint_no_payment_record","No payment record yet.")} />;
                     return (
-                      <View style={S.residentPayCard}>
-                        <View style={S.paymentMeta}>
-                          <Badge label={t(`maint_pay_status_${p.status}`, p.status.charAt(0).toUpperCase() + p.status.slice(1))} bg={sc.bg} text={sc.text} dot={sc.dot} />
-                          <Text style={[S.paymentAmt, { color: isPaid ? C.green : C.red }]}>
-                            {fmt(isPaid ? (p.paidAmount || p.totalDue) : p.totalDue)}
-                          </Text>
-                        </View>
-                        {p.penalty  > 0 && <Text style={S.penaltyText}>+{fmt(p.penalty)} {t("maint_late_penalty","late penalty")}</Text>}
-                        {p.discount > 0 && <Text style={S.discountText}>-{fmt(p.discount)} {t("maint_discount_label","discount")}</Text>}
-                        {isPaid && p.paidAt && (
-                          <Text style={S.paidMeta}>
-                            {t("maint_paid_on","Paid")} {fmtDate(p.paidAt)} {t("maint_via","via")} {t(`maint_method_${p.paymentMethod}`, p.paymentMethod)}
-                          </Text>
-                        )}
-                        {!isPaid && (
-                          <View style={[S.alertBox, { backgroundColor: C.amber + "15" }]}>
-                            <Text style={{ fontSize: 12, color: C.amber, fontWeight: "600" }}>
-                              {t("maint_due_by_alert","⏰ Payment due by {date}. Please pay at the office or contact admin.").replace("{date}", fmtDate(bill.dueDate))}
+                      <>
+                        <ResidentPaymentCard
+                          payment={p}
+                          bill={bill}
+                          paymentSettings={paymentSettings}
+                          paymentVerificationEnabled={paymentVerificationEnabled}
+                          onSubmitProof={() => {
+                            onClose();
+                            onOpenSubmitProof({ billId: bill._id, paymentId: p._id, billTitle: bill.title, totalDue: p.totalDue, paymentSettings });
+                          }}
+                        />
+                        {/* Receipt download — only for paid/waived records */}
+                        {(p.status === "paid" || p.status === "waived") && (
+                          <TouchableOpacity
+                          style={S.receiptDownloadBtn}
+                            activeOpacity={0.8}
+                            onPress={async () => {
+                              const { maintenanceApi: api } = require("../../api/resources.api");
+                              const { downloadPdf: dl }     = require("./reports/reportUtils");
+                              const html = await api.downloadReportHtml(`receipt/${bill._id}/${p._id}`);
+                              await dl({ htmlString: html, filename: `receipt-${p.flat || p._id}.pdf` });
+                            }}
+                          >
+                            <Text style={{ fontSize: 16 }}>🧾</Text>
+                            <Text style={{ fontSize: 13, fontWeight: "700", color: C.teal }}>
+                              Download Receipt
                             </Text>
-                          </View>
+                          </TouchableOpacity>
                         )}
-                      </View>
+                      </>
                     );
                   })() : (
-                    <EmptyState icon="💰" message={t("maint_no_payment_record","No payment record yet. Bill may not have been published for your flat.")} />
+                    <EmptyState icon="💰" message={t("maint_no_payment_record","No payment record yet.")} />
                   )}
                 </>
               )}
@@ -866,6 +909,23 @@ const MyPaymentsView = ({ onBack }) => {
                   {isPaid && p.paidAt && (
                     <Text style={S.paidMeta}>Paid {fmtDate(p.paidAt)} via {p.paymentMethod}</Text>
                   )}
+                  {isPaid && (
+                    <TouchableOpacity
+                      style={[S.receiptDownloadBtn, { marginTop: 8 }]}
+                      activeOpacity={0.8}
+                      onPress={async () => {
+                        const { maintenanceApi: api } = require("../../api/resources.api");
+                        const { downloadPdf: dl }     = require("./reports/reportUtils");
+                        const html = await api.downloadReportHtml(`receipt/${p.billId}/${p._id}`);
+                        await dl({ htmlString: html, filename: `receipt-${p.billId}.pdf` });
+                      }}
+                    >
+                      <Text style={{ fontSize: 14 }}>🧾</Text>
+                      <Text style={{ fontSize: 12, fontWeight: "700", color: C.teal }}>
+                        Download Receipt
+                      </Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
                 <Text style={{ fontSize: 28, opacity: isPaid ? 1 : 0.35 }}>
                   {isPaid ? "✅" : "⏳"}
@@ -955,7 +1015,11 @@ const BILL_STATUS_FILTER_KEYS = {
   Closed:    "maint_filter_closed",
 };
 
-const MaintenanceDashboard = ({ isAdmin, onOpenBill, onOpenMyPayments, onOpenDefaulters }) => {
+const MaintenanceDashboard = ({
+  isAdmin, verificationEnabled = true,
+  onOpenBill, onOpenMyPayments, onOpenDefaulters,
+  onOpenQueue, onOpenSettings, onOpenReports, onBillsLoaded,
+}) => {
   const { t } = useLanguage();
   const toast = useToast();
   const [bills,        setBills]        = useState([]);
@@ -1013,7 +1077,9 @@ const MaintenanceDashboard = ({ isAdmin, onOpenBill, onOpenMyPayments, onOpenDef
       if (statusFilter === "Closed")    { params.isClosed = true; }
       if (monthFilter) params.billMonth = monthFilter;
       const res = await maintenanceApi.getAllBills(params);
-      setBills(res.data?.bills || []);
+      const loaded = res.data?.bills || [];
+      setBills(loaded);
+      onBillsLoaded?.(loaded);
     } catch (e) {
       setError(e?.response?.data?.message || t("payments_load_bills_failed", "Failed to load bills."));
     } finally {
@@ -1069,6 +1135,39 @@ const MaintenanceDashboard = ({ isAdmin, onOpenBill, onOpenMyPayments, onOpenDef
               <Text style={S.shortcutSub}>{t("maint_defaulter_shortcut_sub", "Residents with unpaid or overdue records")}</Text>
             </View>
             <Text style={[S.shortcutArrow, { color: C.red }]}>›</Text>
+          </TouchableOpacity>
+        )}
+
+        {/* Verification queue shortcut — hidden when feature is disabled */}
+        {isAdmin && verificationEnabled && (
+          <TouchableOpacity onPress={onOpenQueue} activeOpacity={0.85} style={[S.shortcutCard, { borderColor: C.amber + "40" }]}>
+            <View>
+              <Text style={[S.shortcutTitle, { color: C.amber }]}>🕐 Pending Verifications</Text>
+              <Text style={S.shortcutSub}>Review submitted payment proofs from residents</Text>
+            </View>
+            <Text style={[S.shortcutArrow, { color: C.amber }]}>›</Text>
+          </TouchableOpacity>
+        )}
+
+        {/* Payment settings shortcut (admin only) */}
+        {isAdmin && (
+          <TouchableOpacity onPress={onOpenSettings} activeOpacity={0.85} style={S.shortcutCard}>
+            <View>
+              <Text style={S.shortcutTitle}>⚙️ Payment Settings</Text>
+              <Text style={S.shortcutSub}>Configure bank account, UPI QR, and accepted methods</Text>
+            </View>
+            <Text style={S.shortcutArrow}>›</Text>
+          </TouchableOpacity>
+        )}
+
+        {/* Reports shortcut — always visible to admin */}
+        {isAdmin && (
+          <TouchableOpacity onPress={onOpenReports} activeOpacity={0.85} style={[S.shortcutCard, { borderColor: C.navy + "30" }]}>
+            <View>
+              <Text style={[S.shortcutTitle, { color: C.navy }]}>📄 Reports</Text>
+              <Text style={S.shortcutSub}>Download PDF, export CSV, or share via WhatsApp</Text>
+            </View>
+            <Text style={[S.shortcutArrow, { color: C.navy }]}>›</Text>
           </TouchableOpacity>
         )}
 
@@ -1188,27 +1287,80 @@ const MaintenanceDashboard = ({ isAdmin, onOpenBill, onOpenMyPayments, onOpenDef
 // ═══════════════════════════════════════════════════════════════════════════════
 // ─── ROOT MaintenanceScreen ───────────────────────────────────────────────────
 // ═══════════════════════════════════════════════════════════════════════════════
-export const MaintenanceScreen = () => {
+export const MaintenanceScreen = ({ navigation }) => {
   const { isAdmin } = useAuth();
-  const [view,       setView]      = useState("dashboard"); // "dashboard" | "my-payments" | "defaulters"
-  const [openBillId, setOpenBillId]= useState(null);
+  const [view,                  setView]                  = useState("dashboard");
+  const [openBillId,            setOpenBillId]            = useState(null);
+  const [paymentSettings,       setPaymentSettings]       = useState({});
+  const [verificationEnabled,   setVerificationEnabled]   = useState(true); // BUG 2 FIX
+  const [bills,                 setBills]                 = useState([]);   // shared with ReportsScreen
+  const [submitProofParams,     setSubmitProofParams]     = useState(null);
 
-  if (view === "my-payments") return <MyPaymentsView  onBack={() => setView("dashboard")} />;
-  if (view === "defaulters")  return <DefaulterView   onBack={() => setView("dashboard")} />;
+  // Load payment settings once — reads paymentSettings (for resident proof flow)
+  // and paymentVerificationEnabled (gates queue shortcut + submit-proof CTA)
+  useEffect(() => {
+    maintenanceApi.getPaymentSettings()
+      .then((result) => {
+        const s = result.data?.paymentSettings;
+        const v = result.data?.paymentVerificationEnabled;
+        setPaymentSettings(s || {});
+        // Only update if the server returned an explicit value;
+        // default stays true so societies without the flag set behave correctly
+        if (v !== undefined) setVerificationEnabled(v);
+      })
+      .catch(() => {});
+  }, []);
+
+  if (view === "my-payments")  return <MyPaymentsView  onBack={() => setView("dashboard")} />;
+  if (view === "defaulters")   return <DefaulterView   onBack={() => setView("dashboard")} />;
+
+  if (view === "queue") {
+    const VerificationQueueScreen = require("./VerificationQueueScreen").default;
+    return <VerificationQueueScreen navigation={{ goBack: () => setView("dashboard") }} />;
+  }
+  if (view === "settings") {
+    const PaymentSettingsScreen = require("./PaymentSettingsScreen").default;
+    return <PaymentSettingsScreen navigation={{ goBack: () => setView("dashboard") }} />;
+  }
+  if (view === "reports") {
+    const ReportsScreen = require("./reports/ReportsScreen").default;
+    return <ReportsScreen onBack={() => setView("dashboard")} bills={bills} />;
+  }
+  if (view === "submit-proof" && submitProofParams) {
+    const SubmitProofScreen = require("./SubmitProofScreen").default;
+    return (
+      <SubmitProofScreen
+        route={{ params: submitProofParams }}
+        navigation={{ goBack: () => { setView("dashboard"); setSubmitProofParams(null); } }}
+      />
+    );
+  }
 
   return (
     <>
       <MaintenanceDashboard
         isAdmin={isAdmin}
-        onOpenBill={(id)     => setOpenBillId(id)}
+        verificationEnabled={verificationEnabled}
+        onOpenBill={(id)      => setOpenBillId(id)}
         onOpenMyPayments={()  => setView("my-payments")}
         onOpenDefaulters={()  => setView("defaulters")}
+        onOpenQueue={()       => setView("queue")}
+        onOpenSettings={()    => setView("settings")}
+        onOpenReports={()     => setView("reports")}
+        onBillsLoaded={setBills}
       />
       <BillDetailModal
         open={!!openBillId}
         billId={openBillId}
         onClose={() => setOpenBillId(null)}
         isAdmin={isAdmin}
+        paymentSettings={paymentSettings}
+        paymentVerificationEnabled={verificationEnabled}
+        onOpenSubmitProof={(params) => {
+          setOpenBillId(null);
+          setSubmitProofParams(params);
+          setView("submit-proof");
+        }}
       />
     </>
   );
@@ -1240,6 +1392,7 @@ const S = StyleSheet.create({
 
   // Shortcuts
   shortcutCard:     { backgroundColor: C.teal + "0D", borderWidth: 1.5, borderColor: C.teal + "25", borderRadius: 14, padding: 14, marginBottom: 10, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  receiptDownloadBtn: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: C.teal + "10", borderRadius: 10, borderWidth: 1.5, borderColor: C.teal + "30", padding: 12, marginTop: 12 },
   shortcutDanger:   { backgroundColor: C.red + "08", borderColor: C.red + "20" },
   shortcutTitle:    { fontSize: 14, fontWeight: "700" },
   shortcutSub:      { fontSize: 12, color: C.gray500, marginTop: 2 },
