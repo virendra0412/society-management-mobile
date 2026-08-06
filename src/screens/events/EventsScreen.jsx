@@ -453,11 +453,15 @@ const EventDetailView = ({ eventId, onBack, isAdmin }) => {
   const handleRsvp = async ({ status, guestCount }) => {
     setRsvpLoading(true);
     try {
-      const res = await eventsApi.rsvp(event._id, {
+      await eventsApi.rsvp(event._id, {
         status,
         guestCount: status === "going" ? guestCount : undefined,
       });
-      setEvent(res.data?.event);
+      // Re-fetch the full event so RSVP counts + myRsvp are accurate.
+      // DO NOT use res.data?.event — the RSVP endpoint returns { rsvpCounts }
+      // not { event }, so setEvent(res.data?.event) would set event to
+      // undefined and trigger the "Event not found" error state.
+      await load();
       const msgs = {
         going: t("Events.RsvpGoingSuccess", "You're going! 🎉"),
         maybe: t("Events.RsvpMaybeSuccess", "Marked as maybe 🤔"),
@@ -473,8 +477,9 @@ const EventDetailView = ({ eventId, onBack, isAdmin }) => {
   const handleRemoveRsvp = async () => {
     setRsvpLoading(true);
     try {
-      const res = await eventsApi.removeRsvp(event._id);
-      setEvent(res.data?.event);
+      await eventsApi.removeRsvp(event._id);
+      // Re-fetch — removeRsvp endpoint returns { message } only, no event object.
+      await load();
       toast.success(t("Events.RsvpRemoved", "RSVP removed."));
     } catch (e) {
       toast.error(e?.response?.data?.message || t("Events.RemoveRsvpFailed", "Failed to remove RSVP."));

@@ -22,14 +22,18 @@ import { saApplicationsApi } from "../../api/sa.api";
 import { COLORS, SPACING } from "../../constants/theme";
 
 const SAApplications = () => {
-  const [applications, setApplications] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [filter, setFilter] = useState("pending");
-  const [selectedApp, setSelectedApp] = useState(null);
-  const [showModal, setShowModal] = useState(false);
-  const [rejectNote, setRejectNote] = useState("");
+  const [applications, setApplications]   = useState([]);
+  const [loading, setLoading]             = useState(true);
+  const [refreshing, setRefreshing]       = useState(false);
+  const [filter, setFilter]               = useState("pending");
+  const [selectedApp, setSelectedApp]     = useState(null);
+  const [showModal, setShowModal]         = useState(false);
+  const [rejectNote, setRejectNote]       = useState("");
   const [actionLoading, setActionLoading] = useState(false);
+
+  // ── Approval result state — shows temp password when email failed / dev env ──
+  const [approvalResult, setApprovalResult]         = useState(null);
+  const [showApprovalModal, setShowApprovalModal]   = useState(false);
 
   const filters = ["pending", "approved", "rejected"];
 
@@ -53,7 +57,7 @@ const SAApplications = () => {
   const handleApprove = async (id) => {
     Alert.alert(
       "Approve Application",
-      "This will create a new society. Continue?",
+      "This will create a new society and send login credentials to the admin. Continue?",
       [
         { text: "Cancel" },
         {
@@ -61,9 +65,23 @@ const SAApplications = () => {
           onPress: async () => {
             setActionLoading(true);
             try {
-              await saApplicationsApi.approve(id);
-              Alert.alert("Success", "Application approved");
+              const result = await saApplicationsApi.approve(id);
+              const data   = result?.data;
+
               fetchApplications();
+
+              // Always show a result modal so SA knows what happened.
+              // If the email sent successfully → tell SA so they don't manually
+              // share the password. If it failed → show the temp password
+              // explicitly so SA can share it with the admin another way.
+              setApprovalResult({
+                adminEmail:   data?.adminUser?.email || "—",
+                tempPassword: data?.tempPassword || null,
+                emailSent:    data?.emailSent ?? false,
+                message:      data?.message || "Application approved.",
+              });
+              setShowApprovalModal(true);
+
             } catch (error) {
               Alert.alert(
                 "Error",
@@ -280,6 +298,78 @@ const SAApplications = () => {
           </View>
         </SafeAreaView>
       </Modal>
+
+      {/* ── Approval Result Modal ─────────────────────────────────────────── */}
+      {/* Shows temp password when email failed; confirms email sent otherwise */}
+      <Modal
+        visible={showApprovalModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => { setShowApprovalModal(false); setApprovalResult(null); }}
+      >
+        <View style={styles.approvalOverlay}>
+          <View style={styles.approvalSheet}>
+
+            <Text style={styles.approvalIcon}>
+              {approvalResult?.emailSent ? "✅" : "⚠️"}
+            </Text>
+
+            <Text style={styles.approvalTitle}>Society Approved</Text>
+
+            <Text style={styles.approvalSub}>
+              Admin email: {approvalResult?.adminEmail}
+            </Text>
+
+            {/* Email sent successfully — SA doesn't need to do anything */}
+            {approvalResult?.emailSent && (
+              <View style={styles.approvalInfoBox}>
+                <Text style={styles.approvalInfoLabel}>Credentials emailed</Text>
+                <Text style={styles.approvalInfoText}>
+                  Login email and temporary password have been sent to{" "}
+                  <Text style={{ fontWeight: "700" }}>{approvalResult?.adminEmail}</Text>.
+                  {"\n"}The admin will be prompted to set a new password on first login.
+                </Text>
+              </View>
+            )}
+
+            {/* Email failed — show temp password so SA can share manually */}
+            {!approvalResult?.emailSent && approvalResult?.tempPassword && (
+              <View style={[styles.approvalInfoBox, { borderColor: "#F59E0B", backgroundColor: "#FFFBEB" }]}>
+                <Text style={[styles.approvalInfoLabel, { color: "#92400E" }]}>
+                  ⚠️ Email failed — share manually
+                </Text>
+                <Text style={styles.approvalInfoText}>
+                  The credentials email could not be sent. Share these details
+                  with the admin directly and ask them to change the password on first login.
+                </Text>
+                <View style={styles.credBox}>
+                  <View style={styles.credRow}>
+                    <Text style={styles.credLabel}>Email</Text>
+                    <Text style={styles.credValue} selectable>{approvalResult.adminEmail}</Text>
+                  </View>
+                  <View style={[styles.credRow, { borderTopWidth: 1, borderColor: "#E5E7EB" }]}>
+                    <Text style={styles.credLabel}>Temp Password</Text>
+                    <Text style={[styles.credValue, { fontFamily: "monospace", color: "#0D7377" }]} selectable>
+                      {approvalResult.tempPassword}
+                    </Text>
+                  </View>
+                </View>
+                <Text style={[styles.approvalInfoText, { marginTop: 8, fontSize: 11, color: "#92400E" }]}>
+                  Fix: add SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, EMAIL_FROM to your production environment variables.
+                </Text>
+              </View>
+            )}
+
+            <TouchableOpacity
+              style={styles.approvalCloseBtn}
+              onPress={() => { setShowApprovalModal(false); setApprovalResult(null); }}
+            >
+              <Text style={styles.approvalCloseBtnText}>Done</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
     </SafeAreaView>
   );
 };
@@ -489,6 +579,56 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
   },
+
+  // Approval result modal
+  approvalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 24,
+  },
+  approvalSheet: {
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    padding: 24,
+    width: "100%",
+    maxWidth: 400,
+    alignItems: "center",
+  },
+  approvalIcon:     { fontSize: 40, marginBottom: 12 },
+  approvalTitle:    { fontSize: 18, fontWeight: "700", color: "#0F2040", marginBottom: 4 },
+  approvalSub:      { fontSize: 13, color: "#6B7280", marginBottom: 16, textAlign: "center" },
+  approvalInfoBox:  {
+    width: "100%",
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#D1FAE5",
+    backgroundColor: "#F0FDF4",
+    padding: 14,
+    marginBottom: 16,
+  },
+  approvalInfoLabel:{ fontSize: 11, fontWeight: "700", color: "#065F46", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 },
+  approvalInfoText: { fontSize: 13, color: "#374151", lineHeight: 18 },
+  credBox: {
+    marginTop: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    overflow: "hidden",
+    backgroundColor: "#F9FAFB",
+  },
+  credRow:    { padding: 10, flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  credLabel:  { fontSize: 11, color: "#6B7280", textTransform: "uppercase", fontWeight: "600" },
+  credValue:  { fontSize: 14, fontWeight: "700", color: "#111827", maxWidth: "60%", textAlign: "right" },
+  approvalCloseBtn: {
+    width: "100%",
+    paddingVertical: 14,
+    backgroundColor: "#0D7377",
+    borderRadius: 10,
+    alignItems: "center",
+  },
+  approvalCloseBtnText: { color: "#fff", fontSize: 15, fontWeight: "700" },
 });
 
 export default SAApplications;
